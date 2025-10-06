@@ -6,59 +6,54 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { CalendarDays, MapPin, Building2, User, Music, FileText, Heart, Shield } from "lucide-react"
+import { Form } from "@/components/ui/form"
+import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import Link from "next/link"
+
+// Import components
+import { PersonalInformation } from "./student/PersonalInformation"
+import { ContactInformation } from "./student/ContactInformation"
+import { EventPreferences } from "./student/EventPreferences"
+import { EmergencySafety } from "./student/EmergencySafety"
+import { AdditionalInformation } from "./student/AdditionalInformation"
+import { DraftManager } from "./student/DraftManager"
 
 const formSchema = z.object({
-  // Student Information
+  // Personal Information
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   age: z.string().min(1, "Age is required").refine((val) => {
     const num = parseInt(val)
     return num >= 16 && num <= 30
   }, "Age must be between 16 and 30"),
   gender: z.string().min(1, "Gender is required"),
+  ageBracket: z.string().min(1, "Age bracket is required"),
   school: z.string().min(2, "School name is required"),
   courseYear: z.string().min(1, "Course/Year Level is required"),
-  contactNumber: z.string().min(10, "Valid contact number is required").regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+  
+  // Contact Information
   email: z.string().email("Valid email address is required"),
+  contactNumber: z.string().min(10, "Valid contact number is required").regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+  landline: z.string().optional(),
+  mailingAddress: z.string().optional(),
   
-  // Performance Details
-  performanceType: z.string().min(1, "Performance type is required"),
-  otherPerformanceType: z.string().optional(),
-  performanceTitle: z.string().min(1, "Performance title is required"),
-  duration: z.string().min(1, "Duration is required"),
-  numberOfPerformers: z.string().min(1, "Number of performers is required"),
-  groupMembers: z.string().optional(),
+  // Event Preferences
+  attendeeType: z.string().min(1, "Attendee type is required"),
   
-  // Health & Fitness Declaration
-  healthDeclaration: z.boolean().refine((val) => val === true, "Health declaration is required"),
+  // Emergency & Safety
+  emergencyContactPerson: z.string().min(2, "Emergency contact person is required"),
+  emergencyContactNumber: z.string().min(10, "Emergency contact number is required"),
+  specialAssistance: z.string().optional(),
   
-  // Consent & Agreement
-  consentAgreement: z.boolean().refine((val) => val === true, "Consent agreement is required"),
-  
-  // Additional fields for completeness
-  parentGuardianSignature: z.string().optional(),
-  schoolOfficialName: z.string().optional(),
-  schoolOfficialPosition: z.string().optional(),
+  // Additional Information
+  hearAboutEvent: z.string().min(1, "Please specify how you heard about the event"),
+  hearAboutOthers: z.string().optional(),
+  dataPrivacyConsent: z.boolean().refine((val) => val === true, "Data privacy consent is required"),
 })
 
 type FormData = z.infer<typeof formSchema>
 
 export default function RegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showOtherPerformance, setShowOtherPerformance] = useState(false)
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -66,21 +61,20 @@ export default function RegistrationPage() {
       fullName: "",
       age: "",
       gender: "",
+      ageBracket: "",
       school: "",
       courseYear: "",
-      contactNumber: "",
       email: "",
-      performanceType: "",
-      otherPerformanceType: "",
-      performanceTitle: "",
-      duration: "",
-      numberOfPerformers: "1",
-      groupMembers: "",
-      healthDeclaration: false,
-      consentAgreement: false,
-      parentGuardianSignature: "",
-      schoolOfficialName: "",
-      schoolOfficialPosition: "",
+      contactNumber: "",
+      landline: "",
+      mailingAddress: "",
+      attendeeType: "",
+      emergencyContactPerson: "",
+      emergencyContactNumber: "",
+      specialAssistance: "",
+      hearAboutEvent: "",
+      hearAboutOthers: "",
+      dataPrivacyConsent: false,
     },
   })
 
@@ -98,503 +92,192 @@ export default function RegistrationPage() {
     }
   }
 
-  const performanceTypes = [
-    "Singing",
-    "Dancing", 
-    "Musical Instrument",
-    "Spoken Word/Poetry",
-    "Theatrical/Drama",
-    "Other"
-  ]
-
-  const genderOptions = [
-    "Male",
-    "Female", 
-    "Non-binary",
-    "Prefer not to say"
+  const sections = [
+    { 
+      id: "personal", 
+      title: "Personal Information", 
+      icon: "👤", 
+      component: <PersonalInformation form={form} />,
+      description: "Basic personal details and identification"
+    },
+    { 
+      id: "contact", 
+      title: "Contact Information", 
+      icon: "📧", 
+      component: <ContactInformation form={form} />,
+      description: "Email, phone, and address information"
+    },
+    { 
+      id: "events", 
+      title: "Event Preferences", 
+      icon: "📅", 
+      component: <EventPreferences form={form} />,
+      description: "Select events and dates to attend"
+    },
+    { 
+      id: "emergency", 
+      title: "Emergency & Safety", 
+      icon: "🛡️", 
+      component: <EmergencySafety form={form} />,
+      description: "Emergency contact and safety information"
+    },
+    { 
+      id: "additional", 
+      title: "Additional Information", 
+      icon: "📋", 
+      component: <AdditionalInformation form={form} />,
+      description: "Additional details and consent"
+    }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h1 className="text-3xl font-bold text-blue-900 mb-2">Maritime Talent Quest 2025</h1>
-            <h2 className="text-xl font-semibold text-blue-700 mb-4">Student Application Form</h2>
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                <span><strong>Event Date:</strong> October 23, 2025</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                <span><strong>Organizer:</strong> Manila EGC Marine Supply Inc.</span>
-              </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col gap-6">
+        
+        {/* Header with Banner */}
+        <div className="relative w-full h-48 rounded-lg overflow-hidden group bg-gradient-to-r from-blue-600 to-cyan-600">
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all duration-300"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h1 className="text-4xl font-bold mb-2">BEACON 2025</h1>
+              <p className="text-xl opacity-90">VISITOR REGISTRATION</p>
             </div>
+          </div>
+          <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+            <Link href="/">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/90 hover:bg-white text-gray-800 border-gray-300"
+                title="Back to Home"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
-            {/* A. Student Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  A. Student Information
-                </CardTitle>
-                <CardDescription>
-                  Please provide your personal details and contact information.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Full Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your full name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="age"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Age *</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="25" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+        {/* Main Content */}
+        <Card className="relative flex-1 flex flex-col p-6 shadow-xl">
+          <CardHeader className="pb-6">
+            <CardTitle className="text-2xl uppercase text-blue-900 dark:text-blue-100">
+              BEACON 2025 Visitor Registration
+            </CardTitle>
+            <div className="w-24 h-1 bg-blue-600 rounded-full"></div>
+            <CardDescription className="text-base">
+              <div className="text-gray-700 dark:text-gray-300">
+                <p className="font-semibold mb-2">
+                  Official Registration Form – Conference | Philippine Ships & Boats In-Water Show | Blue Runway Fashion Show
+                </p>
+                <p>
+                  September 29 – October 1, 2025 | SMX Convention Center, MOA Complex, Pasay City
+                </p>
+              </div>
+            </CardDescription>
+          </CardHeader>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Gender *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {genderOptions.map((gender) => (
-                              <SelectItem key={gender} value={gender}>
-                                {gender}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="school"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>School *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your school name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+          <CardContent className="flex-1 p-0">
+            {/* Draft Manager */}
+            <div className="mb-6">
+              <DraftManager />
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="courseYear"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Course/Year Level *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Bachelor of Science in Marine Engineering - 3rd Year" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="contactNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Number *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+63 912 345 6789" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address *</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="your.email@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* B. Performance Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Music className="h-5 w-5" />
-                  B. Performance Details
-                </CardTitle>
-                <CardDescription>
-                  Tell us about your planned performance for the talent quest.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="performanceType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type of Performance *</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          field.onChange(value)
-                          setShowOtherPerformance(value === "Other")
-                        }} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select performance type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {performanceTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {showOtherPerformance && (
-                  <FormField
-                    control={form.control}
-                    name="otherPerformanceType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Please specify other performance type</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Describe your performance type" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="relative">
+                
+                {/* Loading Overlay */}
+                {isSubmitting && (
+                  <div className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40 flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                      <p className="text-sm font-medium">Submitting Registration...</p>
+                      <p className="text-xs text-muted-foreground">Please do not close this window</p>
+                    </div>
+                  </div>
                 )}
 
-                <FormField
-                  control={form.control}
-                  name="performanceTitle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title of Piece/Performance *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter the title of your performance" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Timeline Layout */}
+                <div className="space-y-8">
+                  {sections.map((section, index) => (
+                    <div key={section.id} className="flex gap-6">
+                      
+                      {/* Timeline Icon and Line */}
+                      <div className="flex flex-col items-center flex-shrink-0">
+                        <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
+                          {section.icon}
+                        </div>
+                        {index < sections.length - 1 && (
+                          <div className="w-0.5 h-16 bg-blue-200 dark:bg-blue-800 mt-4"></div>
+                        )}
+                      </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="duration"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Duration (max 5 mins) *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 3 minutes 30 seconds" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Maximum duration allowed is 5 minutes
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="numberOfPerformers"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Performers *</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="1" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Include yourself in the count
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      {/* Content */}
+                      <div className="flex-1 pb-8">
+                        <div className="mb-4">
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            {section.title}
+                          </h2>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {section.description}
+                          </p>
+                        </div>
+                        
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                          {section.component}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="groupMembers"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Names of Group Members (if applicable)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="List the full names of all group members, one per line"
-                          className="min-h-20"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Only fill this if you're performing as a group
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* C. Requirements */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  C. Requirements
-                </CardTitle>
-                <CardDescription>
-                  Please ensure you have the following documents ready for submission.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm mt-0.5">1</div>
-                    <div>
-                      <p className="font-medium text-gray-900">Certification from school confirming enrollment</p>
-                      <p className="text-sm text-gray-600">Official document from your institution</p>
+                {/* Submit Section */}
+                <div className="flex gap-6 mt-8">
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
+                      ✓
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm mt-0.5">2</div>
-                    <div>
-                      <p className="font-medium text-gray-900">Copy of valid School ID</p>
-                      <p className="text-sm text-gray-600">Clear photocopy of your current school identification</p>
+                  
+                  <div className="flex-1">
+                    <div className="mb-4">
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        Complete Registration
+                      </h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Submit your registration for BEACON 2025
+                      </p>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                      <Button
+                        type="submit"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6"
+                        size="lg"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Submitting Registration...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="mr-2 h-5 w-5" />
+                            Complete Registration
+                          </>
+                        )}
+                      </Button>
+                      
+                      <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+                        You will receive a confirmation email after successful registration
+                      </p>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* D. Health & Fitness Declaration */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="h-5 w-5" />
-                  D. Health & Fitness Declaration
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-gray-700 leading-relaxed">
-                      I certify that I am physically fit and in good health to participate in the Maritime Talent Quest 2025.
-                      I declare that there are no medical conditions or concerns that may hinder my ability to perform safely.
-                    </p>
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="healthDeclaration"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="font-medium">
-                            I confirm the health and fitness declaration above *
-                          </FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <FormMessage />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* E. Consent & Agreement */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  E. Consent & Agreement
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-gray-700 leading-relaxed">
-                      I hereby declare that the information provided above is true and correct. I agree to abide by the rules and
-                      regulations of the Maritime Talent Quest 2025. I consent to the use of my name, school, photographs, and
-                      videos for event documentation and publicity purposes.
-                    </p>
-                  </div>
-                  
-                  <FormField
-                    control={form.control}
-                    name="consentAgreement"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="font-medium">
-                            I agree to the consent and agreement terms above *
-                          </FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <FormMessage />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* F. Additional Information (Optional) */}
-            <Card>
-              <CardHeader>
-                <CardTitle>F. Additional Information (Optional)</CardTitle>
-                <CardDescription>
-                  Additional fields for parent/guardian signature (if under 18) and school endorsement.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="parentGuardianSignature"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Parent/Guardian Name (if under 18 years old)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Full name of parent or guardian" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Required only if you are under 18 years of age
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="schoolOfficialName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>School Official Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Name of endorsing school official" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="schoolOfficialPosition"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>School Official Position</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Dean, Registrar, Student Affairs Officer" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Submit Button */}
-            <div className="flex justify-center pt-6">
-              <Button 
-                type="submit" 
-                size="lg"
-                disabled={isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
-              >
-                {isSubmitting ? "Submitting Application..." : "Submit Application"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-
-        {/* Footer */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg text-center text-sm text-gray-600">
-          <p>
-            <strong>Important:</strong> Please ensure all required fields are completed accurately. 
-            Incomplete applications may not be processed.
-          </p>
-          <p className="mt-2">
-            For questions or assistance, please contact the organizers at Manila EGC Marine Supply Inc.
-          </p>
-        </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
