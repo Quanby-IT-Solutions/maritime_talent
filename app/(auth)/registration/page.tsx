@@ -196,47 +196,28 @@ export default function RegistrationPage() {
   ]
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen flex flex-col bg-[#e8f3ff] dark:bg-slate-900">
       <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col gap-6">
         
         {/* Header with Banner */}
-        <div className="relative w-full h-48 rounded-lg overflow-hidden group bg-gradient-to-r from-blue-600 to-cyan-600">
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all duration-300"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white">
-              <h1 className="text-4xl font-bold mb-2">BEACON 2025</h1>
-              <p className="text-xl opacity-90">VISITOR REGISTRATION</p>
-            </div>
-          </div>
-          <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
-            <Link href="/">
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-white/90 hover:bg-white text-gray-800 border-gray-300"
-                title="Back to Home"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
+        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm flex items-center justify-center">
+          <div className="text-center px-4">
+            <h1 className="text-3xl font-semibold tracking-wide text-black mb-1">STUDENT REGISTRATION</h1>
+            <p className="text-sm text-black/70">Application Form</p>
           </div>
         </div>
 
         {/* Main Content */}
-        <Card className="relative flex-1 flex flex-col p-6 shadow-xl">
+        <Card className="relative flex-1 flex flex-col p-6 shadow-lg border border-gray-200 bg-white">
           <CardHeader className="pb-6">
-            <CardTitle className="text-2xl uppercase text-blue-900 dark:text-blue-100">
-              BEACON 2025 Visitor Registration
+            <CardTitle className="text-2xl uppercase text-black dark:text-gray-100 tracking-wide">
+              Student Registration
             </CardTitle>
-            <div className="w-24 h-1 bg-blue-600 rounded-full"></div>
+            <div className="w-24 h-[3px] bg-black dark:bg-gray-200 rounded-full"></div>
             <CardDescription className="text-base">
-              <div className="text-gray-700 dark:text-gray-300">
-                <p className="font-semibold mb-2">
-                  Official Registration Form – Conference | Philippine Ships & Boats In-Water Show | Blue Runway Fashion Show
-                </p>
-                <p>
-                  September 29 – October 1, 2025 | SMX Convention Center, MOA Complex, Pasay City
-                </p>
+              <div className="text-black dark:text-gray-300 space-y-1">
+                <p className="font-semibold">Official Student Application Form</p>
+                <p className="text-sm">Please complete all required fields below.</p>
               </div>
             </CardDescription>
           </CardHeader>
@@ -272,21 +253,21 @@ export default function RegistrationPage() {
                       <div className="flex-none flex flex-col items-center justify-start space-y-1 pr-2 pb-1">
                         <Icon
                           icon={item.icon}
-                          className="rounded-full bg-blue-600/20 text-blue-700 dark:text-white dark:border-white border-2 border-blue-600 lg:p-2 p-1 lg:h-12 lg:w-12 h-8 w-8"
+                          className="rounded-full bg-gray-100 text-black dark:text-white dark:border-gray-300 border-2 border-black lg:p-2 p-1 lg:h-12 lg:w-12 h-8 w-8"
                           width="24"
                           height="24"
                         />
                         {Array.from({ length: item.lineCount }).map((_, i) => (
                           <span
                             key={i}
-                            className={`border-l-2 ${idx === timelineItems.length - 1 ? 'border-transparent' : 'border-blue-600'} h-2`}
+                            className={`border-l-2 ${idx === timelineItems.length - 1 ? 'border-transparent' : 'border-black'} h-2`}
                           ></span>
                         ))}
                       </div>
                       <div className="flex-1 flex flex-col lg:mt-3">
-                        <h2 className="text-lg font-semibold">{item.title}</h2>
+                        <h2 className="text-lg font-semibold text-black dark:text-gray-100">{item.title}</h2>
                         <div className="lg:ml-4 py-4 h-fit">
-                          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
                             {item.component}
                           </div>
                         </div>
@@ -297,11 +278,11 @@ export default function RegistrationPage() {
 
                 {/* Submit Section */}
                 {/* Submit Section - timeline style continuation */}
-                <div ref={submitRef} className="min-h-24 flex flex-row lg:gap-4 mt-4">
+                <div ref={submitRef} className="min-h-24 flex flex-row lg:gap-4 mt-6">
                   <div className="flex-none flex flex-col items-center justify-start space-y-1 pr-2 pb-1 ">
                     <Icon
                       icon="line-md:downloading-loop"
-                      className="rounded-full bg-blue-600/20 text-blue-700 dark:text-white dark:border-white border-2 border-blue-600 lg:p-2 p-1 lg:h-12 lg:w-12 h-8 w-8"
+                      className="rounded-full bg-gray-100 text-black dark:text-white dark:border-gray-300 border-2 border-black lg:p-2 p-1 lg:h-12 lg:w-12 h-8 w-8"
                       width="24"
                       height="24"
                     />
@@ -309,7 +290,7 @@ export default function RegistrationPage() {
                   <div className="flex-1 space-y-4">
                     <Button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      className="w-full bg-black hover:bg-gray-900 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black"
                       size="lg"
                       disabled={isSubmitting}
                     >
