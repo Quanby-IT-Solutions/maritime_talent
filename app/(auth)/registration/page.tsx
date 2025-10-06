@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
 import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import Image from "next/image"
 import { Icon } from "@iconify/react"
 import Link from "next/link"
 
@@ -199,11 +200,27 @@ export default function RegistrationPage() {
     <div className="min-h-screen flex flex-col bg-[#e8f3ff] dark:bg-slate-900">
       <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col gap-6">
         
-        {/* Header with Banner */}
-        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm flex items-center justify-center">
-          <div className="text-center px-4">
-            <h1 className="text-3xl font-semibold tracking-wide text-black mb-1">STUDENT REGISTRATION</h1>
-            <p className="text-sm text-black/70">Application Form</p>
+        {/* Header Banner Replaced with Provided Image */}
+        <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
+          <Image
+            src="https://register.thebeaconexpo.com/images/beacon-reg.png"
+            alt="Student Registration Banner"
+            width={1600}
+            height={400}
+            priority
+            className="w-full h-auto object-cover"
+          />
+          <div className="absolute inset-0 flex items-end justify-end p-2 gap-2">
+            <Link href="/">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/90 cursor-pointer hover:bg-white text-gray-800 border-gray-300"
+                title="Back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
 
