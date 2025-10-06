@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
 import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import { Icon } from "@iconify/react"
 import Link from "next/link"
 
 // Import components
@@ -55,6 +56,7 @@ type FormData = z.infer<typeof formSchema>
 export default function RegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Initialize form before any watchers
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -76,7 +78,62 @@ export default function RegistrationPage() {
       hearAboutOthers: "",
       dataPrivacyConsent: false,
     },
+    mode: 'onChange'
   })
+
+  // Refs for measuring container heights per section (dynamic vertical line segments like BEACON)
+  const personalRef = useRef<HTMLDivElement>(null)
+  const contactRef = useRef<HTMLDivElement>(null)
+  const eventsRef = useRef<HTMLDivElement>(null)
+  const emergencyRef = useRef<HTMLDivElement>(null)
+  const additionalRef = useRef<HTMLDivElement>(null)
+  const submitRef = useRef<HTMLDivElement>(null)
+
+  // Vertical line segment counts (approx. each segment ~8px high + gap)
+  const [personalLines, setPersonalLines] = useState(6)
+  const [contactLines, setContactLines] = useState(6)
+  const [eventsLines, setEventsLines] = useState(6)
+  const [emergencyLines, setEmergencyLines] = useState(6)
+  const [additionalLines, setAdditionalLines] = useState(6)
+
+  // Helper: measure content height and convert to number of line segments like original project
+  const calcLines = useCallback((ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return 6
+    const content = ref.current.querySelector('.h-fit') as HTMLElement | null
+    const target = content ?? ref.current
+    const h = target.offsetHeight
+    // Each segment (border-l-2 h-2) effectively ~8px height + ~4px gap => ~12px; use 10 for denser look
+    return Math.max(6, Math.round(h / 24))
+  }, [])
+
+  const recomputeLines = useCallback(() => {
+    setPersonalLines(calcLines(personalRef))
+    setContactLines(calcLines(contactRef))
+    setEventsLines(calcLines(eventsRef))
+    setEmergencyLines(calcLines(emergencyRef))
+    setAdditionalLines(calcLines(additionalRef))
+  }, [calcLines])
+
+  useEffect(() => {
+    recomputeLines()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Recompute when form values that likely alter height change
+  const watchAll = form.watch()
+  useEffect(() => {
+    const t = setTimeout(recomputeLines, 120)
+    return () => clearTimeout(t)
+  }, [watchAll, recomputeLines])
+
+  // Recompute on window resize
+  useEffect(() => {
+    const handler = () => recomputeLines()
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [recomputeLines])
+
+  // (form already initialized above)
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
@@ -92,39 +149,47 @@ export default function RegistrationPage() {
     }
   }
 
-  const sections = [
-    { 
-      id: "personal", 
-      title: "Personal Information", 
-      icon: "👤", 
+  // Icon mapping using iconify (similar style to BEACON project) : Use consistent color classes
+  // const iconClasses = "rounded-full bg-c1/30 text-c1 dark:text-white dark:border-white border-2 border-c1 lg:p-2 p-1 lg:h-12 lg:w-12 h-8 w-8 flex items-center justify-center"
+
+  const timelineItems = [
+    {
+      ref: personalRef,
+      lineCount: personalLines,
+      title: "Personal Information",
+      icon: "mdi:account",
       component: <PersonalInformation form={form} />,
       description: "Basic personal details and identification"
     },
-    { 
-      id: "contact", 
-      title: "Contact Information", 
-      icon: "📧", 
+    {
+      ref: contactRef,
+      lineCount: contactLines,
+      title: "Contact Information",
+      icon: "mdi:email",
       component: <ContactInformation form={form} />,
       description: "Email, phone, and address information"
     },
-    { 
-      id: "events", 
-      title: "Event Preferences", 
-      icon: "📅", 
+    {
+      ref: eventsRef,
+      lineCount: eventsLines,
+      title: "Event Preferences",
+      icon: "mdi:calendar-multiple",
       component: <EventPreferences form={form} />,
       description: "Select events and dates to attend"
     },
-    { 
-      id: "emergency", 
-      title: "Emergency & Safety", 
-      icon: "🛡️", 
+    {
+      ref: emergencyRef,
+      lineCount: emergencyLines,
+      title: "Emergency & Safety",
+      icon: "mdi:shield-check",
       component: <EmergencySafety form={form} />,
       description: "Emergency contact and safety information"
     },
-    { 
-      id: "additional", 
-      title: "Additional Information", 
-      icon: "📋", 
+    {
+      ref: additionalRef,
+      lineCount: additionalLines,
+      title: "Additional Information",
+      icon: "mdi:information",
       component: <AdditionalInformation form={form} />,
       description: "Additional details and consent"
     }
@@ -196,34 +261,34 @@ export default function RegistrationPage() {
                   </div>
                 )}
 
-                {/* Timeline Layout */}
-                <div className="space-y-8">
-                  {sections.map((section, index) => (
-                    <div key={section.id} className="flex gap-6">
-                      
-                      {/* Timeline Icon and Line */}
-                      <div className="flex flex-col items-center flex-shrink-0">
-                        <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
-                          {section.icon}
-                        </div>
-                        {index < sections.length - 1 && (
-                          <div className="w-0.5 h-16 bg-blue-200 dark:bg-blue-800 mt-4"></div>
-                        )}
+                {/* Dynamic Timeline Layout (mirroring BEACON style) */}
+                <div className="space-y-2">
+                  {timelineItems.map((item, idx) => (
+                    <div
+                      key={item.title}
+                      ref={item.ref}
+                      className="min-h-24 flex flex-row lg:gap-4"
+                    >
+                      <div className="flex-none flex flex-col items-center justify-start space-y-1 pr-2 pb-1">
+                        <Icon
+                          icon={item.icon}
+                          className="rounded-full bg-blue-600/20 text-blue-700 dark:text-white dark:border-white border-2 border-blue-600 lg:p-2 p-1 lg:h-12 lg:w-12 h-8 w-8"
+                          width="24"
+                          height="24"
+                        />
+                        {Array.from({ length: item.lineCount }).map((_, i) => (
+                          <span
+                            key={i}
+                            className={`border-l-2 ${idx === timelineItems.length - 1 ? 'border-transparent' : 'border-blue-600'} h-2`}
+                          ></span>
+                        ))}
                       </div>
-
-                      {/* Content */}
-                      <div className="flex-1 pb-8">
-                        <div className="mb-4">
-                          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                            {section.title}
-                          </h2>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {section.description}
-                          </p>
-                        </div>
-                        
-                        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                          {section.component}
+                      <div className="flex-1 flex flex-col lg:mt-3">
+                        <h2 className="text-lg font-semibold">{item.title}</h2>
+                        <div className="lg:ml-4 py-4 h-fit">
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            {item.component}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -231,47 +296,38 @@ export default function RegistrationPage() {
                 </div>
 
                 {/* Submit Section */}
-                <div className="flex gap-6 mt-8">
-                  <div className="flex flex-col items-center flex-shrink-0">
-                    <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
-                      ✓
-                    </div>
+                {/* Submit Section - timeline style continuation */}
+                <div ref={submitRef} className="min-h-24 flex flex-row lg:gap-4 mt-4">
+                  <div className="flex-none flex flex-col items-center justify-start space-y-1 pr-2 pb-1 ">
+                    <Icon
+                      icon="line-md:downloading-loop"
+                      className="rounded-full bg-blue-600/20 text-blue-700 dark:text-white dark:border-white border-2 border-blue-600 lg:p-2 p-1 lg:h-12 lg:w-12 h-8 w-8"
+                      width="24"
+                      height="24"
+                    />
                   </div>
-                  
-                  <div className="flex-1">
-                    <div className="mb-4">
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                        Complete Registration
-                      </h2>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Submit your registration for BEACON 2025
-                      </p>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                      <Button
-                        type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6"
-                        size="lg"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            Submitting Registration...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="mr-2 h-5 w-5" />
-                            Complete Registration
-                          </>
-                        )}
-                      </Button>
-                      
-                      <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-                        You will receive a confirmation email after successful registration
-                      </p>
-                    </div>
+                  <div className="flex-1 space-y-4">
+                    <Button
+                      type="submit"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      size="lg"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting Registration...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Complete Registration
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                      You will receive a confirmation email after successful registration
+                    </p>
                   </div>
                 </div>
               </form>
