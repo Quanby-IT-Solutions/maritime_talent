@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
 import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import Image from "next/image"
 import { Icon } from "@iconify/react"
 import Link from "next/link"
+import { toast } from "sonner"
 
 // Import components
 import { PersonalInformation } from "./student/PersonalInformation"
@@ -20,35 +22,38 @@ import { AdditionalInformation } from "./student/AdditionalInformation"
 import { DraftManager } from "./student/DraftManager"
 
 const formSchema = z.object({
-  // Personal Information
+  // A. Student Information
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  age: z.string().min(1, "Age is required").refine((val) => {
-    const num = parseInt(val)
-    return num >= 16 && num <= 30
-  }, "Age must be between 16 and 30"),
+  age: z.string().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
-  ageBracket: z.string().min(1, "Age bracket is required"),
   school: z.string().min(2, "School name is required"),
   courseYear: z.string().min(1, "Course/Year Level is required"),
-  
-  // Contact Information
-  email: z.string().email("Valid email address is required"),
   contactNumber: z.string().min(10, "Valid contact number is required").regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
-  landline: z.string().optional(),
-  mailingAddress: z.string().optional(),
+  email: z.string().email("Valid email address is required"),
   
-  // Event Preferences
-  attendeeType: z.string().min(1, "Attendee type is required"),
+  // B. Performance Details
+  performanceType: z.string().min(1, "Type of performance is required"),
+  performanceOther: z.string().optional(),
+  performanceTitle: z.string().min(1, "Title of piece/performance is required"),
+  performanceDuration: z.string().min(1, "Performance duration is required"),
+  numberOfPerformers: z.string().min(1, "Number of performers is required"),
+  groupMembers: z.string().optional(),
   
-  // Emergency & Safety
-  emergencyContactPerson: z.string().min(2, "Emergency contact person is required"),
-  emergencyContactNumber: z.string().min(10, "Emergency contact number is required"),
-  specialAssistance: z.string().optional(),
+  // C. Requirements (file uploads)
+  schoolCertification: z.any().optional(),
+  schoolIdCopy: z.any().optional(),
   
-  // Additional Information
-  hearAboutEvent: z.string().min(1, "Please specify how you heard about the event"),
-  hearAboutOthers: z.string().optional(),
-  dataPrivacyConsent: z.boolean().refine((val) => val === true, "Data privacy consent is required"),
+  // D. Health & Fitness Declaration
+  healthDeclaration: z.boolean().refine((val) => val === true, "Health declaration is required"),
+  
+  // E. Consent & Agreement
+  informationConsent: z.boolean().refine((val) => val === true, "Information consent is required"),
+  rulesAgreement: z.boolean().refine((val) => val === true, "Rules agreement is required"),
+  publicityConsent: z.boolean().refine((val) => val === true, "Publicity consent is required"),
+  
+  // F. School Endorsement
+  schoolOfficialName: z.string().optional(),
+  schoolOfficialPosition: z.string().optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -63,20 +68,22 @@ export default function RegistrationPage() {
       fullName: "",
       age: "",
       gender: "",
-      ageBracket: "",
       school: "",
       courseYear: "",
-      email: "",
       contactNumber: "",
-      landline: "",
-      mailingAddress: "",
-      attendeeType: "",
-      emergencyContactPerson: "",
-      emergencyContactNumber: "",
-      specialAssistance: "",
-      hearAboutEvent: "",
-      hearAboutOthers: "",
-      dataPrivacyConsent: false,
+      email: "",
+      performanceType: "",
+      performanceOther: "",
+      performanceTitle: "",
+      performanceDuration: "",
+      numberOfPerformers: "1",
+      groupMembers: "",
+      healthDeclaration: false,
+      informationConsent: false,
+      rulesAgreement: false,
+      publicityConsent: false,
+      schoolOfficialName: "",
+      schoolOfficialPosition: "",
     },
     mode: 'onChange'
   })
@@ -138,12 +145,17 @@ export default function RegistrationPage() {
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
     try {
-      // TODO: Implement form submission logic here
+      // Simulated submission delay for UX feedback (static mode)
+      await new Promise(res => setTimeout(res, 800))
       console.log("Form submitted:", data)
-      alert("Application submitted successfully!")
+      toast.success("Application submitted", {
+        description: "Your student registration details have been captured.",
+      })
     } catch (error) {
       console.error("Submission error:", error)
-      alert("Error submitting application. Please try again.")
+      toast.error("Submission failed", {
+        description: "Something went wrong. Please try again." 
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -156,42 +168,42 @@ export default function RegistrationPage() {
     {
       ref: personalRef,
       lineCount: personalLines,
-      title: "Personal Information",
+      title: "Student Information",
       icon: "mdi:account",
       component: <PersonalInformation form={form} />,
-      description: "Basic personal details and identification"
+      description: "Basic student details and contact information"
     },
     {
       ref: contactRef,
       lineCount: contactLines,
-      title: "Contact Information",
-      icon: "mdi:email",
+      title: "Performance Details",
+      icon: "mdi:music",
       component: <ContactInformation form={form} />,
-      description: "Email, phone, and address information"
+      description: "Details about your talent performance"
     },
     {
       ref: eventsRef,
       lineCount: eventsLines,
-      title: "Event Preferences",
-      icon: "mdi:calendar-multiple",
+      title: "Requirements",
+      icon: "mdi:file-document",
       component: <EventPreferences form={form} />,
-      description: "Select events and dates to attend"
+      description: "Upload required documents"
     },
     {
       ref: emergencyRef,
       lineCount: emergencyLines,
-      title: "Emergency & Safety",
+      title: "Health & Fitness Declaration",
       icon: "mdi:shield-check",
       component: <EmergencySafety form={form} />,
-      description: "Emergency contact and safety information"
+      description: "Health declaration and fitness certification"
     },
     {
       ref: additionalRef,
       lineCount: additionalLines,
-      title: "Additional Information",
-      icon: "mdi:information",
+      title: "Consent & School Endorsement",
+      icon: "mdi:check-circle",
       component: <AdditionalInformation form={form} />,
-      description: "Additional details and consent"
+      description: "Consent agreements and school endorsement"
     }
   ]
 
@@ -199,11 +211,27 @@ export default function RegistrationPage() {
     <div className="min-h-screen flex flex-col bg-[#e8f3ff] dark:bg-slate-900">
       <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col gap-6">
         
-        {/* Header with Banner */}
-        <div className="relative w-full h-40 rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm flex items-center justify-center">
-          <div className="text-center px-4">
-            <h1 className="text-3xl font-semibold tracking-wide text-black mb-1">STUDENT REGISTRATION</h1>
-            <p className="text-sm text-black/70">Application Form</p>
+        {/* Header Banner Replaced with Provided Image */}
+        <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
+          <Image
+            src="https://register.thebeaconexpo.com/images/beacon-reg.png"
+            alt="Student Registration Banner"
+            width={1600}
+            height={400}
+            priority
+            className="w-full h-auto object-cover"
+          />
+          <div className="absolute inset-0 flex items-end justify-end p-2 gap-2">
+            <Link href="/">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/90 cursor-pointer hover:bg-white text-gray-800 border-gray-300"
+                title="Back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -211,12 +239,13 @@ export default function RegistrationPage() {
         <Card className="relative flex-1 flex flex-col p-6 shadow-lg border border-gray-200 bg-white">
           <CardHeader className="pb-6">
             <CardTitle className="text-2xl uppercase text-black dark:text-gray-100 tracking-wide">
-              Student Registration
+              Maritime Talent Quest 2025
             </CardTitle>
             <div className="w-24 h-[3px] bg-black dark:bg-gray-200 rounded-full"></div>
             <CardDescription className="text-base">
               <div className="text-black dark:text-gray-300 space-y-1">
-                <p className="font-semibold">Official Student Application Form</p>
+                <p className="font-semibold">Student Application Form</p>
+                <p className="text-sm">Event Date: October 23, 2025 | Organizer: Manila EGC Marine Supply Inc.</p>
                 <p className="text-sm">Please complete all required fields below.</p>
               </div>
             </CardDescription>

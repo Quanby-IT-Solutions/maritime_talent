@@ -9,171 +9,148 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Upload, FileText, X } from "lucide-react"
 
 interface EventPreferencesProps {
   form: UseFormReturn<any>
 }
 
 export function EventPreferences({ form }: EventPreferencesProps) {
-  const [selectedEvents, setSelectedEvents] = useState<string[]>([])
+  const [schoolCertFile, setSchoolCertFile] = useState<File | null>(null)
+  const [schoolIdFile, setSchoolIdFile] = useState<File | null>(null)
 
-  const events = [
-    { id: "networking", name: "NETWORKING & AWARDS NIGHT", color: "bg-purple-100 text-purple-800" },
-    { id: "expo", name: "EXPO", color: "bg-blue-100 text-blue-800" },
-    { id: "conference", name: "CONFERENCE", color: "bg-green-100 text-green-800" },
-    { id: "ship-show", name: "PHILIPPINE IN-WATER SHIP & BOAT SHOW", color: "bg-orange-100 text-orange-800" },
-    { id: "blue-runway", name: "BLUE RUNWAY", color: "bg-pink-100 text-pink-800" }
-  ]
+  const handleFileUpload = (file: File, type: 'schoolCertification' | 'schoolIdCopy') => {
+    if (type === 'schoolCertification') {
+      setSchoolCertFile(file)
+      form.setValue('schoolCertification', file)
+    } else {
+      setSchoolIdFile(file)
+      form.setValue('schoolIdCopy', file)
+    }
+  }
 
-  const attendeeTypes = [
-    "Student/Academic",
-    "Government Official",
-    "Industry Professional",
-    "Maritime Professional",
-    "General Public"
-  ]
-
-  const interestAreas = [
-    "Maritime Technology",
-    "Shipping & Logistics",
-    "Maritime Law",
-    "Marine Environment",
-    "Port Management",
-    "Marine Tourism",
-    "Ocean Engineering",
-    "Blue Economy",
-    "Naval Architecture"
-  ]
-
-  const handleEventToggle = (eventId: string) => {
-    setSelectedEvents(prev => 
-      prev.includes(eventId) 
-        ? prev.filter(id => id !== eventId)
-        : [...prev, eventId]
-    )
+  const removeFile = (type: 'schoolCertification' | 'schoolIdCopy') => {
+    if (type === 'schoolCertification') {
+      setSchoolCertFile(null)
+      form.setValue('schoolCertification', null)
+    } else {
+      setSchoolIdFile(null)
+      form.setValue('schoolIdCopy', null)
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* Select Events to Attend */}
-      <div>
-        <h4 className="font-medium mb-4">1. Select Events to Attend *</h4>
-        <p className="text-sm text-gray-600 mb-4">
-          Select one or more events and <strong>then select specific dates</strong> for each selected event.
-        </p>
-        
-        <div className="space-y-3">
-          {events.map((event) => (
-            <div key={event.id} className="border rounded-lg p-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">C. Requirements</h3>
+        <p className="text-sm text-gray-600">Please attach the following required documents upon submission:</p>
+      </div>
+
+      {/* School Certification */}
+      <div className="space-y-4">
+        <div>
+          <FormLabel className="text-base font-medium">1. Certification from school confirming enrollment *</FormLabel>
+          <p className="text-sm text-gray-500 mb-3">Upload an official certification from your school confirming your current enrollment status.</p>
+          
+          {!schoolCertFile ? (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-900">Upload School Certification</p>
+                <p className="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+              </div>
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFileUpload(file, 'schoolCertification')
+                }}
+                className="mt-3"
+              />
+            </div>
+          ) : (
+            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <Checkbox
-                    checked={selectedEvents.includes(event.id)}
-                    onCheckedChange={() => handleEventToggle(event.id)}
-                  />
+                  <FileText className="h-8 w-8 text-blue-600" />
                   <div>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${event.color} mr-2`}>
-                      SHOW
-                    </span>
-                    <span className="font-medium">{event.name}</span>
+                    <p className="text-sm font-medium text-gray-900">{schoolCertFile.name}</p>
+                    <p className="text-xs text-gray-500">{(schoolCertFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeFile('schoolCertification')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              
-              {selectedEvents.includes(event.id) && (
-                <div className="mt-3 ml-6 p-3 bg-gray-50 rounded">
-                  <p className="text-sm font-medium mb-2">Select dates for {event.name}:</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <label className="flex items-center space-x-2">
-                      <Checkbox />
-                      <span className="text-sm">Sep 29 (Day 1)</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <Checkbox />
-                      <span className="text-sm">Sep 30 (Day 2)</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <Checkbox />
-                      <span className="text-sm">Oct 1 (Day 3)</span>
-                    </label>
+            </div>
+          )}
+        </div>
+
+        {/* School ID Copy */}
+        <div>
+          <FormLabel className="text-base font-medium">2. Copy of valid School ID *</FormLabel>
+          <p className="text-sm text-gray-500 mb-3">Upload a clear copy of your current and valid school identification card.</p>
+          
+          {!schoolIdFile ? (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-900">Upload School ID Copy</p>
+                <p className="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+              </div>
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFileUpload(file, 'schoolIdCopy')
+                }}
+                className="mt-3"
+              />
+            </div>
+          ) : (
+            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <FileText className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{schoolIdFile.name}</p>
+                    <p className="text-xs text-gray-500">{(schoolIdFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
-              )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeFile('schoolIdCopy')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Attendee Type */}
-      <div>
-        <h4 className="font-medium mb-4">2. Attendee Type *</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {attendeeTypes.map((type) => (
-            <FormField
-              key={type}
-              control={form.control}
-              name="attendeeType"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value === type}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          field.onChange(type)
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="text-sm font-normal">
-                      {type}
-                    </FormLabel>
-                  </div>
-                </FormItem>
-              )}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Interest Areas */}
-      <div>
-        <h4 className="font-medium mb-4">3. Interest Areas *</h4>
-        <p className="text-sm text-gray-600 mb-4">Select all that apply</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {interestAreas.map((area) => (
-            <div key={area} className="flex items-center space-x-2">
-              <Checkbox />
-              <label className="text-sm">{area}</label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Communication Preferences */}
-      <div className="grid grid-cols-1 gap-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start space-x-3">
-          <Checkbox />
-          <div className="space-y-1 leading-none">
-            <label className="text-sm font-medium">
-              4. Do you want to receive event updates?
-            </label>
-            <p className="text-xs text-gray-500">
-              Get the latest news and updates about BEACON events
-            </p>
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
           </div>
-        </div>
-
-        <div className="flex items-start space-x-3">
-          <Checkbox />
-          <div className="space-y-1 leading-none">
-            <label className="text-sm font-medium">
-              5. Do you want to be invited to future events?
-            </label>
-            <p className="text-xs text-gray-500">
-              Be the first to know about upcoming maritime events and conferences
+          <div>
+            <h4 className="text-sm font-medium text-blue-900">Important Note</h4>
+            <p className="text-sm text-blue-700 mt-1">
+              Both documents are required for your application to be processed. Please ensure all documents are clear and legible.
             </p>
           </div>
         </div>
