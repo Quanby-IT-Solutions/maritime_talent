@@ -417,6 +417,9 @@ export const createColumns = (onUpdate?: (updatedGuest: GuestData) => void): Col
       </div>
     ),
     size: 80,
+    meta: {
+      className: "hidden sm:table-cell"
+    },
   },
   {
     accessorKey: "full_name",
@@ -462,6 +465,9 @@ export const createColumns = (onUpdate?: (updatedGuest: GuestData) => void): Col
       );
     },
     size: 250,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "age",
@@ -482,6 +488,9 @@ export const createColumns = (onUpdate?: (updatedGuest: GuestData) => void): Col
       return <div className="text-left px-2 py-1">{age || "N/A"}</div>;
     },
     size: 70,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     accessorKey: "gender",
@@ -518,6 +527,9 @@ export const createColumns = (onUpdate?: (updatedGuest: GuestData) => void): Col
       );
     },
     size: 140,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "organization",
@@ -548,6 +560,9 @@ export const createColumns = (onUpdate?: (updatedGuest: GuestData) => void): Col
       );
     },
     size: 200,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "address",
@@ -563,6 +578,9 @@ export const createColumns = (onUpdate?: (updatedGuest: GuestData) => void): Col
       );
     },
     size: 250,
+    meta: {
+      className: "hidden xl:table-cell"
+    },
   },
   {
     accessorKey: "registration_date",
@@ -587,6 +605,9 @@ export const createColumns = (onUpdate?: (updatedGuest: GuestData) => void): Col
       );
     },
     size: 100,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     id: "actions",

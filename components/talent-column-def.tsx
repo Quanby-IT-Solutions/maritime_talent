@@ -528,6 +528,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       </div>
     ),
     size: 80,
+    meta: {
+      className: "hidden sm:table-cell"
+    },
   },
   {
     accessorKey: "full_name",
@@ -568,6 +571,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       </div>
     ),
     size: 250,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "age",
@@ -588,6 +594,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       return <div className="text-center">{age || "N/A"}</div>;
     },
     size: 70,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     accessorKey: "gender",
@@ -601,6 +610,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       );
     },
     size: 100,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     accessorKey: "school",
@@ -622,6 +634,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       </div>
     ),
     size: 200,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "course_year",
@@ -632,6 +647,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       </div>
     ),
     size: 150,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "contact_number",
@@ -642,6 +660,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       </div>
     ),
     size: 140,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     id: "performances",
@@ -713,6 +734,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       );
     },
     size: 120,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     accessorKey: "created_at",
@@ -737,6 +761,9 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       );
     },
     size: 100,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     id: "actions",
