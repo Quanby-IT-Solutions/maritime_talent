@@ -11,7 +11,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 
 interface ContactInformationProps {
@@ -36,6 +35,11 @@ export function ContactInformation({ form }: ContactInformationProps) {
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">B. Performance Details</h3>
         <p className="text-sm text-gray-600">Please provide details about your talent performance for the Maritime Talent Quest 2025.</p>
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> After completing this section, additional forms will appear based on the number of performers you specify.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -119,21 +123,18 @@ export function ContactInformation({ form }: ContactInformationProps) {
           name="numberOfPerformers"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-medium">Number of Performers *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select number of performers" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} {num === 1 ? 'Performer' : 'Performers'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormLabel className="text-base font-medium">Number of Performers (1-10) *</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  min="1"
+                  max="10"
+                  placeholder="Enter number of performers (1-10)" 
+                  className="text-base" 
+                  {...field} 
+                />
+              </FormControl>
+              <p className="text-sm text-gray-500">Enter a number between 1 and 10</p>
               <FormMessage />
             </FormItem>
           )}

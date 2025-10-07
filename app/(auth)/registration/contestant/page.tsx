@@ -230,7 +230,7 @@ export default function RegistrationPage() {
                 )}
 
                 <div className="space-y-8">
-                  {/* Section B: Performance Details (Single Section) */}
+                  {/* Section B: Performance Details (Always Visible) */}
                   <Card className="border-2 border-blue-100 bg-blue-50/30">
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
@@ -244,56 +244,89 @@ export default function RegistrationPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Performer Sections (A, C, D, E for each performer) */}
-                  {Array.from({ length: numberOfPerformers }, (_, index) => (
-                    <div key={`performer-${index}`}>
-                      <PerformerSection 
-                        form={form} 
-                        performerIndex={index} 
-                        performerNumber={index + 1} 
-                      />
+                  {/* Performer Sections (A, C, D, E for each performer) - Only show if valid number of performers */}
+                  {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
+                    <>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <p className="text-sm font-medium text-green-900">
+                            Showing forms for {numberOfPerformers} performer{numberOfPerformers > 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <p className="text-sm text-green-700 mt-1">
+                          Please complete the information below for each performer.
+                        </p>
+                      </div>
+
+                      {Array.from({ length: numberOfPerformers }, (_, index) => (
+                        <div key={`performer-${index}`}>
+                          <PerformerSection 
+                            form={form} 
+                            performerIndex={index} 
+                            performerNumber={index + 1} 
+                          />
+                        </div>
+                      ))}
+
+                      {/* Section F: School Endorsement (Single Section) - Only show when performers are shown */}
+                      <Card className="border-2 border-purple-100 bg-purple-50/30">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg text-purple-900">
+                            <Icon icon="mdi:school" className="h-5 w-5" />
+                            F. For School Endorsement
+                          </CardTitle>
+                          <p className="text-sm text-purple-700">School official endorsement and certification</p>
+                        </CardHeader>
+                        <CardContent>
+                          <SchoolEndorsement form={form} />
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
+
+                  {/* Show message if invalid number of performers */}
+                  {(numberOfPerformers > 10 || (watchNumberOfPerformers && parseInt(watchNumberOfPerformers) > 10)) && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <p className="text-sm font-medium text-red-900">
+                          Maximum 10 performers allowed
+                        </p>
+                      </div>
+                      <p className="text-sm text-red-700 mt-1">
+                        Please enter a number between 1 and 10.
+                      </p>
                     </div>
-                  ))}
-
-                  {/* Section F: School Endorsement (Single Section) */}
-                  <Card className="border-2 border-purple-100 bg-purple-50/30">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-lg text-purple-900">
-                        <Icon icon="mdi:school" className="h-5 w-5" />
-                        F. For School Endorsement
-                      </CardTitle>
-                      <p className="text-sm text-purple-700">School official endorsement and certification</p>
-                    </CardHeader>
-                    <CardContent>
-                      <SchoolEndorsement form={form} />
-                    </CardContent>
-                  </Card>
+                  )}
                 </div>
 
-                {/* Submit Section */}
-                <div className="mt-8 space-y-4">
-                  <Button
-                    type="submit"
-                    className="w-full bg-black hover:bg-gray-900 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black"
-                    size="lg"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting Registration...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Complete Registration
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                    You will receive a confirmation email after successful registration
-                  </p>
-                </div>
+                {/* Submit Section - Only show when performer sections are visible */}
+                {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
+                  <div className="mt-8 space-y-4">
+                    <Button
+                      type="submit"
+                      className="w-full bg-black hover:bg-gray-900 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black"
+                      size="lg"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting Registration...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Complete Registration
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                      You will receive a confirmation email after successful registration
+                    </p>
+                  </div>
+                )}
               </form>
             </Form>
           </CardContent>
