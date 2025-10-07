@@ -1,0 +1,326 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { DataTable } from "@/components/talent-data-table";
+import { createColumns, GuestData, safeParseGuestData } from "@/components/guest-column-def";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  AlertTriangle,
+  Users,
+  CheckCircle,
+  RefreshCw,
+  Download,
+  UserPlus,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+
+export default function GuestListPage() {
+  const [guests, setGuests] = useState<GuestData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState<"all" | "Male" | "Female">("all");
+  const [stats, setStats] = useState({
+    total: 0,
+    male: 0,
+    female: 0,
+    withOrganization: 0,
+  });
+
+  useEffect(() => {
+    const fetchGuests = async () => {
+      setLoading(true);
+
+      try {
+        const supabase = createClient();
+
+        // Fetch guests from Supabase
+        const { data: guestsData, error } = await supabase
+          .from('guests')
+          .select('*')
+          .order('guest_id', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching guests:', error);
+          setValidationErrors([`Database error: ${error.message}`]);
+          return;
+        }
+
+        // If no data, use mock data for demonstration
+        const dataToUse = guestsData && guestsData.length > 0 ? guestsData : [
+          {
+            guest_id: 1,
+            full_name: "Dr. Maria Rodriguez",
+            age: 45,
+            gender: "Female",
+            contact_number: "+63 912 345 6789",
+            email: "maria.rodriguez@maritime.edu",
+            organization: "Maritime Academy of Asia and the Pacific",
+            address: "123 Maritime Street, Manila, Philippines",
+            registration_date: "2024-01-15T08:30:00Z",
+          },
+          {
+            guest_id: 2,
+            full_name: "Captain John Smith",
+            age: 52,
+            gender: "Male",
+            contact_number: "+63 917 654 3210",
+            email: "captain.smith@shipping.com",
+            organization: "International Shipping Corporation",
+            address: "456 Port Avenue, Cebu, Philippines",
+            registration_date: "2024-01-16T10:15:00Z",
+          },
+          {
+            guest_id: 3,
+            full_name: "Sarah Johnson",
+            age: 38,
+            gender: "Female",
+            contact_number: "+63 909 876 5432",
+            email: "sarah.johnson@email.com",
+            organization: null,
+            address: "789 Ocean Drive, Davao, Philippines",
+            registration_date: "2024-01-17T14:45:00Z",
+          },
+          {
+            guest_id: 4,
+            full_name: "Michael Chen",
+            age: 41,
+            gender: "Male",
+            contact_number: "+63 918 123 4567",
+            email: "michael.chen@maritime.gov",
+            organization: "Philippine Coast Guard",
+            address: "321 Harbor Road, Manila, Philippines",
+            registration_date: "2024-01-18T09:20:00Z",
+          },
+          {
+            guest_id: 5,
+            full_name: "Lisa Thompson",
+            age: 35,
+            gender: "Female",
+            contact_number: "+63 915 987 6543",
+            email: "lisa.thompson@email.com",
+            organization: "Maritime Safety Authority",
+            address: "654 Seaport Boulevard, Iloilo, Philippines",
+            registration_date: "2024-01-19T11:30:00Z",
+          },
+        ];
+
+        // Validate with Zod and collect errors
+        const validatedData: GuestData[] = [];
+        const errors: string[] = [];
+
+        dataToUse.forEach((item: unknown, index: number) => {
+          const result = safeParseGuestData(item);
+          if (result.success) {
+            validatedData.push(result.data);
+          } else {
+            errors.push(
+              `Guest ${index + 1}: ${result.error.issues
+                .map((i: { message: string }) => i.message)
+                .join(", ")}`
+            );
+          }
+        });
+
+        if (errors.length > 0) {
+          setValidationErrors(errors);
+        }
+
+        setGuests(validatedData);
+
+        // Calculate statistics
+        const total = validatedData.length;
+        const male = validatedData.filter(g => g.gender === "Male").length;
+        const female = validatedData.filter(g => g.gender === "Female").length;
+        const withOrganization = validatedData.filter(g => g.organization).length;
+
+        setStats({ total, male, female, withOrganization });
+      } catch (error) {
+        console.error("Error:", error);
+        setValidationErrors([`Unexpected error: ${error instanceof Error ? error.message : String(error)}`]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGuests();
+  }, []);
+
+  // Handle guest updates
+  const handleGuestUpdate = (updatedGuest: GuestData) => {
+    setGuests(prevGuests => {
+      const updatedGuests = prevGuests.map(guest =>
+        guest.guest_id === updatedGuest.guest_id ? updatedGuest : guest
+      );
+
+      // Recalculate statistics
+      const total = updatedGuests.length;
+      const male = updatedGuests.filter(g => g.gender === "Male").length;
+      const female = updatedGuests.filter(g => g.gender === "Female").length;
+      const withOrganization = updatedGuests.filter(g => g.organization).length;
+
+      setStats({ total, male, female, withOrganization });
+      return updatedGuests;
+    });
+  };
+
+  // Filter guests based on search and gender
+  const filteredGuests = guests.filter((guest) => {
+    const matchesSearch =
+      guest.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      guest.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      guest.organization?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      guest.contact_number?.includes(searchQuery);
+
+    const matchesGender = genderFilter === "all" || guest.gender === genderFilter;
+
+    return matchesSearch && matchesGender;
+  });
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Guest List</h1>
+          <p className="text-muted-foreground">
+            Maritime Talent Quest - Guest registrations and information
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.reload()}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      </div>
+
+      {/* Validation Errors Alert */}
+      {validationErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-1">
+              <p className="font-semibold">Validation Errors:</p>
+              {validationErrors.map((error, index) => (
+                <p key={index} className="text-sm">
+                  • {error}
+                </p>
+              ))}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Guests</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">
+              Registered guests
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Male</CardTitle>
+            <UserPlus className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.male}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Male guests
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Female</CardTitle>
+            <UserPlus className="h-4 w-4 text-pink-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-pink-600">
+              {stats.female}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Female guests
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">With Organization</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.withOrganization}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              From organizations
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Guest List with Search, Filter, and Pagination */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Guest Registrations</CardTitle>
+          <CardDescription>
+            {filteredGuests.length} of {stats.total} guests shown
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Loading guests...</span>
+              </div>
+            </div>
+          ) : (
+            <DataTable
+              columns={createColumns(handleGuestUpdate)}
+              data={filteredGuests}
+              searchPlaceholder="Search by name, email, organization, or phone..."
+              searchValue={searchQuery}
+              onSearchChange={setSearchQuery}
+              statusFilter={genderFilter}
+              onStatusFilterChange={(value) =>
+                setGenderFilter(value as "all" | "Male" | "Female")
+              }
+              showFilters={true}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

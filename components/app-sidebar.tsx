@@ -64,7 +64,7 @@ const data = {
     },
     {
       title: "Groups Performances",
-      url: "/admin/groups_performances",
+      url: "/admin/group_performances",
       icon: IconFolder,
     },
     {
@@ -112,8 +112,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <NavSecondary items={data.navSecondary} />
         <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
