@@ -17,12 +17,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { z } from "zod";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -150,12 +150,16 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
   };
 
   const handleCancel = () => {
-    setFormData({
-      performance_title: single.performance_title,
-      performance_description: single.performance_description || '',
-      student_id: single.student_id || '',
-    });
-    setIsEditing(false);
+    setOpen(false); // Close the dialog immediately
+    // Reset state after a short delay to avoid the flash
+    setTimeout(() => {
+      setFormData({
+        performance_title: single.performance_title,
+        performance_description: single.performance_description || '',
+        student_id: single.student_id || '',
+      });
+      setIsEditing(false);
+    }, 200);
   };
 
   return (
@@ -172,86 +176,89 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
         View details
       </DropdownMenuItem>
 
-      <Sheet open={open} onOpenChange={(newOpen) => {
+      <DropdownMenuItem
+        className="flex items-center gap-2"
+        onSelect={(e) => {
+          e.preventDefault();
+          setOpen(true);
+          setIsEditing(true);
+        }}
+      >
+        <Edit className="h-4 w-4" />
+        Edit Information
+      </DropdownMenuItem>
+
+      <Dialog open={open} onOpenChange={(newOpen) => {
         setOpen(newOpen);
         if (!newOpen) setIsEditing(false);
       }}>
-        <SheetContent className="w-full max-w-2xl p-0 flex flex-col h-full">
-          <div className="p-6 border-b bg-white">
-            <SheetHeader className="text-left">
-              <div className="flex items-start justify-between">
-                <div>
-                  <SheetTitle className="text-2xl font-bold tracking-tight mb-2">
-                    {isEditing ? "Edit Performance" : single.performance_title}
-                  </SheetTitle>
-                  <SheetDescription className="text-base">
-                    Performance ID: <span className="font-mono font-semibold text-slate-900">#{single.single_id}</span>
-                  </SheetDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isEditing ? (
-                    <>
-                      <Button size="sm" onClick={handleCancel} variant="outline">
-                        <X className="h-4 w-4 mr-1" />
-                        Cancel
-                      </Button>
-                      <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                        <Save className="h-4 w-4 mr-1" />
-                        {isSaving ? "Saving..." : "Save"}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Badge variant="secondary" className="text-xs">
-                        Single Performance
-                      </Badge>
-                      <Button size="sm" onClick={() => setIsEditing(true)} variant="outline">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                    </>
-                  )}
-                </div>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <DialogTitle className="text-2xl font-bold">
+                  {isEditing ? "Edit Performance Information" : single.performance_title}
+                </DialogTitle>
+                <DialogDescription className="text-sm mt-1">
+                  Performance ID: <span className="font-mono font-semibold text-slate-900">#{single.single_id}</span>
+                </DialogDescription>
               </div>
-            </SheetHeader>
-          </div>
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={handleCancel} variant="outline">
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                      <Save className="h-4 w-4 mr-1" />
+                      {isSaving ? "Saving..." : "Save"}
+                    </Button>
+                  </>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">
+                    Single Performance
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6 mt-4">
             {isEditing ? (
               <div className="space-y-6">
-                {/* Performance Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Performance Information</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 space-y-4">
-                    <div>
-                      <Label htmlFor="performance_title" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Performance Title</Label>
+                {/* Performance Information Card - Edit Mode */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Performance Information</h3>
+                  </div>
+                  <div className="p-4 bg-white space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="performance_title" className="text-xs font-medium text-slate-700">Performance Title</Label>
                       <Input
                         id="performance_title"
                         value={formData.performance_title}
                         onChange={(e) => setFormData({ ...formData, performance_title: e.target.value })}
-                        className="mt-1"
                         placeholder="Enter performance title"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="performance_description" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Description</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="performance_description" className="text-xs font-medium text-slate-700">Description</Label>
                       <Textarea
                         id="performance_description"
                         value={formData.performance_description}
                         onChange={(e) => setFormData({ ...formData, performance_description: e.target.value })}
-                        className="mt-1"
                         rows={4}
                         placeholder="Describe the performance..."
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="student_id" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Student ID</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="student_id" className="text-xs font-medium text-slate-700">Student ID</Label>
                       <Input
                         id="student_id"
                         type="number"
                         value={formData.student_id}
                         onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
-                        className="mt-1"
                         placeholder="Enter student ID (optional)"
                       />
                     </div>
@@ -259,109 +266,115 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
                 </div>
               </div>
             ) : (
-              <div className="space-y-8">
-                {/* Performance Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Performance Information</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Performance Title</p>
-                      <p className="text-sm font-semibold text-slate-900">{single.performance_title}</p>
+              <div className="space-y-6">
+                {/* Performance Information Card */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Performance Information</h3>
+                  </div>
+                  <div className="p-4 bg-white space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Performance Title</p>
+                      <p className="text-base font-medium text-slate-900">{single.performance_title}</p>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Description</p>
-                      <p className="text-sm font-semibold text-slate-900 leading-relaxed">
-                        {single.performance_description || "No description provided"}
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Description</p>
+                      <p className="text-base font-medium text-slate-900 leading-relaxed">
+                        {single.performance_description || <span className="text-slate-400">No description provided</span>}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Student Information */}
+                {/* Student Information Card */}
                 {single.student_id && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900 mb-4">Student Information</h3>
-                    <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Student ID</p>
-                        <p className="text-sm font-semibold text-slate-900">
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">Student Information</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Student ID</p>
+                        <p className="text-base font-medium text-slate-900">
                           #{single.student_id}
                         </p>
                       </div>
                       {loadingStudent ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-900"></div>
+                        <div className="flex items-center gap-2 py-4">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900"></div>
                           <span className="text-sm text-slate-500">Loading student details...</span>
                         </div>
                       ) : studentDetails ? (
                         <>
-                          <div>
-                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Student Name</p>
-                            <p className="text-sm font-semibold text-slate-900">
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Student Name</p>
+                            <p className="text-base font-medium text-slate-900">
                               {studentDetails.full_name || "Not provided"}
                             </p>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Age</p>
-                              <p className="text-sm font-semibold text-slate-900">
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Age</p>
+                              <p className="text-base font-medium text-slate-900">
                                 {studentDetails.age || "Not provided"}
                               </p>
                             </div>
-                            <div>
-                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Gender</p>
-                              <Badge variant="outline" className="text-xs">
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Gender</p>
+                              <Badge variant="outline" className="font-medium">
                                 {studentDetails.gender || "Not specified"}
                               </Badge>
                             </div>
                           </div>
-                          <div>
-                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Email</p>
-                            <p className="text-sm font-semibold text-slate-900 break-all">
-                              {studentDetails.email || "Not provided"}
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Email</p>
+                            <p className="text-base font-medium text-slate-900 break-all">
+                              {studentDetails.email || <span className="text-slate-400">Not provided</span>}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Contact Number</p>
-                            <p className="text-sm font-semibold text-slate-900 font-mono">
-                              {studentDetails.contact_number || "Not provided"}
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Contact Number</p>
+                            <p className="text-base font-medium text-slate-900 font-mono">
+                              {studentDetails.contact_number || <span className="text-slate-400">Not provided</span>}
                             </p>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">School</p>
-                              <p className="text-sm font-semibold text-slate-900">
-                                {studentDetails.school || "Not provided"}
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">School</p>
+                              <p className="text-base font-medium text-slate-900">
+                                {studentDetails.school || <span className="text-slate-400">Not provided</span>}
                               </p>
                             </div>
-                            <div>
-                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Course/Year</p>
-                              <p className="text-sm font-semibold text-slate-900">
-                                {studentDetails.course_year || "Not provided"}
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Course/Year</p>
+                              <p className="text-base font-medium text-slate-900">
+                                {studentDetails.course_year || <span className="text-slate-400">Not provided</span>}
                               </p>
                             </div>
                           </div>
                         </>
                       ) : (
-                        <p className="text-sm text-slate-500">Student details not found</p>
+                        <p className="text-sm text-slate-400 italic">Student details not found</p>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* Registration Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Registration Information</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Performance ID</p>
-                      <p className="text-sm font-semibold text-slate-900 font-mono">
+                {/* Registration Information Card */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Registration Information</h3>
+                  </div>
+                  <div className="p-4 bg-white space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Performance ID</p>
+                      <p className="text-base font-medium text-slate-900 font-mono">
                         #{single.single_id}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Created Date</p>
-                      <p className="text-sm font-semibold text-slate-900">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Created Date</p>
+                      <p className="text-base font-medium text-slate-900">
                         {single.created_at
                           ? new Date(single.created_at).toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -374,9 +387,9 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
                         }
                       </p>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Performance Type</p>
-                      <Badge variant="secondary" className="text-xs">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Performance Type</p>
+                      <Badge variant="secondary" className="font-medium">
                         {single.performance_title?.includes('Sing') ? 'Singing' :
                           single.performance_title?.includes('Danc') ? 'Dancing' :
                             single.performance_title?.includes('Instrument') ? 'Musical Instrument' :
@@ -390,8 +403,8 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
               </div>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -423,8 +436,6 @@ export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): C
     header: "Name",
     cell: ({ row }) => {
       const studentName = row.getValue("student_name") as string;
-      const single = row.original;
-      console.log('Row data:', single, 'Student name:', studentName);
       return (
         <div className="text-sm text-left px-2 py-1">
           {studentName || "Not assigned"}
@@ -470,8 +481,6 @@ export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): C
     header: "School",
     cell: ({ row }) => {
       const school = row.getValue("student_school") as string;
-      const single = row.original;
-      console.log('School data:', single, 'School:', school);
       return (
         <div className="text-sm text-left px-2 py-1">
           {school || "Not assigned"}
