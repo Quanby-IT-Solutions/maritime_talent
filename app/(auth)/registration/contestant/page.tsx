@@ -12,6 +12,7 @@ import Image from "next/image"
 import { Icon } from "@iconify/react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 // Import components
 
@@ -27,6 +28,11 @@ import { DraftManager } from "@/components/registration/student/DraftManager"
 // Schema for individual performer
 const performerSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  lastName: z.string().optional(),
+  middleName: z.string().optional(),
+  suffix: z.string().optional(),
+  preferredName: z.string().optional(),
+  nationality: z.string().min(1, "Nationality is required"),
   age: z.string().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
   school: z.string().min(2, "School name is required"),
@@ -88,6 +94,11 @@ export default function RegistrationPage() {
       performers: [
         {
           fullName: "",
+          lastName: "",
+          middleName: "",
+          suffix: "",
+          preferredName: "",
+          nationality: "",
           age: "",
           gender: "",
           school: "",
@@ -125,6 +136,11 @@ export default function RegistrationPage() {
       }
       return {
         fullName: "",
+        lastName: "",
+        middleName: "",
+        suffix: "",
+        preferredName: "",
+        nationality: "",
         age: "",
         gender: "",
         school: "",
@@ -166,26 +182,27 @@ export default function RegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8f3ff] dark:bg-slate-900">
-      <div className="container mx-auto p-4 max-w-6xl flex-1 flex flex-col gap-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto p-6 max-w-5xl">
         
-        {/* Header Banner Replaced with Provided Image */}
-        <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
+        {/* Header Banner */}
+        <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-800 mb-6">
           <Image
             src="https://register.thebeaconexpo.com/images/beacon-reg.png"
-            alt="Student Registration Banner"
+            alt="Maritime Talent Quest 2025 Registration"
             width={1600}
-            height={400}
+            height={300}
             priority
             className="w-full h-auto object-cover"
           />
-          <div className="absolute inset-0 flex items-end justify-end p-2 gap-2">
+          <div className="absolute inset-0 flex items-end justify-end p-3 gap-2">
+            <ThemeToggle />
             <Link href="/">
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-white/90 cursor-pointer hover:bg-white text-gray-800 border-gray-300"
-                title="Back"
+                className="bg-white/95 backdrop-blur-sm cursor-pointer hover:bg-white text-gray-700 border-gray-300 shadow-sm hover:shadow-md transition-all dark:bg-gray-800/95 dark:hover:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
+                title="Back to Home"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -193,25 +210,26 @@ export default function RegistrationPage() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <Card className="relative flex-1 flex flex-col p-6 shadow-lg border border-gray-200 bg-white">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-2xl uppercase text-black dark:text-gray-100 tracking-wide">
-              Maritime Talent Quest 2025
+        {/* Main Registration Card */}
+        <Card className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          {/* Header Section */}
+          <div className="p-8 border-b border-gray-200 dark:border-gray-700">
+            <CardTitle className="text-2xl font-bold tracking-wide mb-2 text-gray-900 dark:text-white">
+              MARITIME TALENT QUEST 2025 REGISTRATION
             </CardTitle>
-            <div className="w-24 h-[3px] bg-black dark:bg-gray-200 rounded-full"></div>
-            <CardDescription className="text-base">
-              <div className="text-black dark:text-gray-300 space-y-1">
-                <p className="font-semibold">Student Application Form</p>
-                <p className="text-sm">Event Date: October 23, 2025 | Organizer: Manila EGC Marine Supply Inc.</p>
+            <CardDescription className="text-gray-600 dark:text-gray-400">
+              <div className="space-y-1">
+                <p className="font-medium">Official Registration Form - Conference | Performance Competition</p>
+                <p className="text-sm">October 23, 2025 | Manila EGC Marine Supply Inc.</p>
                 <p className="text-sm">Please complete all required fields below.</p>
               </div>
             </CardDescription>
-          </CardHeader>
+          </div>
 
-          <CardContent className="flex-1 p-0">
-            {/* Draft Manager */}
-            <div className="mb-6">
+          {/* Content Section */}
+          <CardContent className="p-8">
+            {/* Info Card */}
+            <div className="mb-10">
               <DraftManager />
             </div>
 
@@ -229,34 +247,42 @@ export default function RegistrationPage() {
                   </div>
                 )}
 
-                <div className="space-y-8">
-                  {/* Section B: Performance Details (Always Visible) */}
-                  <Card className="border-2 border-blue-100 bg-blue-50/30">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
-                        <Icon icon="mdi:music" className="h-5 w-5" />
-                        B. Performance Details
-                      </CardTitle>
-                      <p className="text-sm text-blue-700">Details about your talent performance</p>
-                    </CardHeader>
-                    <CardContent>
+                <div className="space-y-10">
+                  {/* Section 1: Performance Details */}
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">1</span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Performance Details</h3>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm">Tell us about your talent performance</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-8">
                       <ContactInformation form={form} />
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
 
-                  {/* Performer Sections (A, C, D, E for each performer) - Only show if valid number of performers */}
+                  {/* Performer Sections Status */}
                   {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
                     <>
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <p className="text-sm font-medium text-green-900">
-                            Showing forms for {numberOfPerformers} performer{numberOfPerformers > 1 ? 's' : ''}
-                          </p>
+                      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-200 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                            <Icon icon="mdi:check" className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              Showing forms for {numberOfPerformers} performer{numberOfPerformers > 1 ? 's' : ''}
+                            </p>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                              Please complete the information below for each performer.
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-green-700 mt-1">
-                          Please complete the information below for each performer.
-                        </p>
                       </div>
 
                       {Array.from({ length: numberOfPerformers }, (_, index) => (
@@ -269,60 +295,64 @@ export default function RegistrationPage() {
                         </div>
                       ))}
 
-                      {/* Section F: School Endorsement (Single Section) - Only show when performers are shown */}
-                      <Card className="border-2 border-purple-100 bg-purple-50/30">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="flex items-center gap-2 text-lg text-purple-900">
-                            <Icon icon="mdi:school" className="h-5 w-5" />
-                            F. For School Endorsement
-                          </CardTitle>
-                          <p className="text-sm text-purple-700">School official endorsement and certification</p>
-                        </CardHeader>
-                        <CardContent>
+                      {/* Section 6: School Endorsement */}
+                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                              <span className="text-sm font-bold text-gray-700 dark:text-gray-300">6</span>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">School Endorsement</h3>
+                              <p className="text-gray-600 dark:text-gray-400 text-sm">Official school certification and endorsement</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-8">
                           <SchoolEndorsement form={form} />
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     </>
                   )}
 
-                  {/* Show message if invalid number of performers */}
+                  {/* Error Message */}
                   {(numberOfPerformers > 10 || (watchNumberOfPerformers && parseInt(watchNumberOfPerformers) > 10)) && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <p className="text-sm font-medium text-red-900">
-                          Maximum 10 performers allowed
-                        </p>
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-red-100 dark:bg-red-800 rounded-full w-8 h-8 flex items-center justify-center">
+                          <Icon icon="mdi:alert" className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-red-800 dark:text-red-200">Maximum 10 performers allowed</p>
+                          <p className="text-red-600 dark:text-red-400 text-sm">Please enter a number between 1 and 10.</p>
+                        </div>
                       </div>
-                      <p className="text-sm text-red-700 mt-1">
-                        Please enter a number between 1 and 10.
-                      </p>
                     </div>
                   )}
                 </div>
 
-                {/* Submit Section - Only show when performer sections are visible */}
+                {/* Submit Section */}
                 {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
-                  <div className="mt-8 space-y-4">
+                  <div className="mt-12 text-center">
                     <Button
                       type="submit"
-                      className="w-full bg-black hover:bg-gray-900 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black"
+                      className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       size="lg"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           Submitting Registration...
                         </>
                       ) : (
                         <>
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          <CheckCircle2 className="mr-2 h-5 w-5" />
                           Complete Registration
                         </>
                       )}
                     </Button>
-                    <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-center text-sm text-gray-600 dark:text-gray-300 mt-3">
                       You will receive a confirmation email after successful registration
                     </p>
                   </div>

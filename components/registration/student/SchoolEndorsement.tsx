@@ -18,15 +18,15 @@ interface SchoolEndorsementProps {
 
 export function SchoolEndorsement({ form }: SchoolEndorsementProps) {
   return (
-    <Card className="border-2 border-purple-100 bg-purple-50/30">
+    <Card className="border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg text-purple-900">
+        <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-white">
           <School className="h-5 w-5" />
           F. For School Endorsement
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="bg-white rounded-lg p-4 border border-purple-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-700 mb-4">
             <strong>For School Officials:</strong> We hereby certify that the above student(s) is/are currently enrolled in our institution and is/are endorsed to participate in the Maritime Talent Quest 2025.
           </p>
@@ -70,7 +70,7 @@ export function SchoolEndorsement({ form }: SchoolEndorsementProps) {
           </div>
         </div>
 
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <div className="flex items-start space-x-3">
             <FileText className="h-5 w-5 text-purple-600 mt-0.5" />
             <div>

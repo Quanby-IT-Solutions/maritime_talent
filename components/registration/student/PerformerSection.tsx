@@ -23,82 +23,77 @@ export function PerformerSection({ form, performerIndex, performerNumber }: Perf
   const performerSections = [
     {
       id: `A${performerNumber}`,
-      title: `A${performerNumber}. Student Information (Performer ${performerNumber})`,
+      title: `Student Information`,
+      stepNumber: 2,
       icon: "mdi:account",
-      borderColor: "border-blue-100",
-      bgColor: "bg-blue-50/30",
-      titleColor: "text-blue-900",
-      descColor: "text-blue-700",
       component: <PersonalInformation form={form} performerIndex={performerIndex} />,
       description: "Basic student details and contact information"
     },
     {
       id: `C${performerNumber}`,
-      title: `C${performerNumber}. Requirements (Performer ${performerNumber})`,
+      title: `Requirements`,
+      stepNumber: 3,
       icon: "mdi:file-document",
-      borderColor: "border-green-100",
-      bgColor: "bg-green-50/30",
-      titleColor: "text-green-900",
-      descColor: "text-green-700",
       component: <EventPreferences form={form} performerIndex={performerIndex} />,
       description: "Upload required documents"
     },
     {
       id: `D${performerNumber}`,
-      title: `D${performerNumber}. Health & Fitness Declaration (Performer ${performerNumber})`,
+      title: `Health & Fitness Declaration`,
+      stepNumber: 4,
       icon: "mdi:shield-check",
-      borderColor: "border-amber-100",
-      bgColor: "bg-amber-50/30",
-      titleColor: "text-amber-900",
-      descColor: "text-amber-700",
       component: <EmergencySafety form={form} performerIndex={performerIndex} />,
       description: "Health declaration and fitness certification"
     },
     {
       id: `E${performerNumber}`,
-      title: `E${performerNumber}. Consent & Agreement (Performer ${performerNumber})`,
+      title: `Consent & Agreement`,
+      stepNumber: 5,
       icon: "mdi:check-circle",
-      borderColor: "border-purple-100",
-      bgColor: "bg-purple-50/30",
-      titleColor: "text-purple-900",
-      descColor: "text-purple-700",
       component: <AdditionalInformation form={form} performerIndex={performerIndex} needsParentSignature={needsParentSignature} />,
       description: "Consent agreements and signatures"
     }
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Performer Header */}
-      <Card className={`border-2 border-slate-200 bg-slate-50/30`}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-xl text-slate-900">
-            <User className="h-6 w-6" />
-            Performer {performerNumber}
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-gray-200 dark:bg-gray-700 rounded-full w-10 h-10 flex items-center justify-center">
+            <User className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Performer {performerNumber}</h2>
             {needsParentSignature && (
-              <span className="text-sm bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
-                Minor - Parent/Guardian signature required
+              <span className="inline-flex items-center gap-1 text-sm bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-full font-medium mt-1">
+                <Icon icon="mdi:alert" className="h-4 w-4" />
+                Parent/Guardian signature required (Minor)
               </span>
             )}
-          </CardTitle>
-        </CardHeader>
-      </Card>
+          </div>
+        </div>
+      </div>
 
       {/* Performer Sections */}
       {performerSections.map((section, idx) => (
-        <div key={section.id} className="space-y-4">
-          <Card className={`border-2 ${section.borderColor} ${section.bgColor}`}>
-            <CardHeader className="pb-3">
-              <CardTitle className={`flex items-center gap-2 text-lg ${section.titleColor}`}>
-                <Icon icon={section.icon} className="h-5 w-5" />
-                {section.title}
-              </CardTitle>
-              <p className={`text-sm ${section.descColor}`}>{section.description}</p>
-            </CardHeader>
-            <CardContent>
-              {section.component}
-            </CardContent>
-          </Card>
+        <div key={section.id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{section.stepNumber}</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {section.title} (Performer {performerNumber})
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">{section.description}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            {section.component}
+          </div>
         </div>
       ))}
     </div>

@@ -49,8 +49,8 @@ export function EventPreferences({ form, performerIndex }: EventPreferencesProps
   return (
     <div className="space-y-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">C. Requirements</h3>
-        <p className="text-sm text-gray-600">Please attach the following required documents upon submission:</p>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">C. Requirements</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Please attach the following required documents upon submission:</p>
       </div>
 
       {/* School Certification */}
@@ -77,13 +77,13 @@ export function EventPreferences({ form, performerIndex }: EventPreferencesProps
               />
             </div>
           ) : (
-            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+            <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <FileText className="h-8 w-8 text-blue-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{schoolCertFile.name}</p>
-                    <p className="text-xs text-gray-500">{(schoolCertFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{schoolCertFile.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{(schoolCertFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
                 <Button
@@ -122,13 +122,13 @@ export function EventPreferences({ form, performerIndex }: EventPreferencesProps
               />
             </div>
           ) : (
-            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+            <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <FileText className="h-8 w-8 text-blue-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{schoolIdFile.name}</p>
-                    <p className="text-xs text-gray-500">{(schoolIdFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{schoolIdFile.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{(schoolIdFile.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
                 <Button
@@ -145,7 +145,7 @@ export function EventPreferences({ form, performerIndex }: EventPreferencesProps
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
             <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">

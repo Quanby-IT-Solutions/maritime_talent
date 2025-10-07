@@ -24,19 +24,19 @@ export function EmergencySafety({ form, performerIndex }: EmergencySafetyProps) 
   return (
     <div className="space-y-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">D. Health & Fitness Declaration</h3>
-        <p className="text-sm text-gray-600">Please confirm your health and fitness status for participation in the Maritime Talent Quest 2025.</p>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">D. Health & Fitness Declaration</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Please confirm your health and fitness status for participation in the Maritime Talent Quest 2025.</p>
       </div>
 
-      <Card className="border-2 border-blue-100 bg-blue-50/30">
+      <Card className="border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
+          <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-white">
             <Heart className="h-5 w-5" />
             Health Declaration
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-white rounded-lg p-4 border border-blue-200">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <div className="space-y-3">
               <p className="text-sm font-medium text-gray-900">
                 By checking the box below, I certify that:
@@ -84,7 +84,7 @@ export function EmergencySafety({ form, performerIndex }: EmergencySafetyProps) 
         </CardContent>
       </Card>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div className="flex items-start space-x-3">
           <Shield className="h-5 w-5 text-amber-600 mt-0.5" />
           <div>
@@ -98,7 +98,7 @@ export function EmergencySafety({ form, performerIndex }: EmergencySafetyProps) 
         </div>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
         <h4 className="text-sm font-medium text-gray-900 mb-2">Signature Requirements</h4>
         <div className="text-sm text-gray-600 space-y-1">
           <p>• <strong>Student Signature:</strong> Required upon form submission</p>

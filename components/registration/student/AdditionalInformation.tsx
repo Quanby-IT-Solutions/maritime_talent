@@ -26,30 +26,30 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
   return (
     <div className="space-y-8">
       {/* Section E: Consent & Agreement */}
-      <Card className="border-2 border-green-100 bg-green-50/30">
+      <Card className="border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg text-green-900">
+          <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-white">
             <CheckCircle className="h-5 w-5" />
             E. Consent & Agreement
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-white rounded-lg p-4 border border-green-200">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 By checking the boxes below, I hereby declare that:
               </p>
-              <ul className="text-sm text-gray-700 space-y-2 ml-4">
+              <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2 ml-4">
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-green-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                   The information provided above is true and correct.
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-green-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                   I agree to abide by the rules and regulations of the Maritime Talent Quest 2025.
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-green-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                   I consent to the use of my name, school, photographs, and videos for event documentation and publicity purposes.
                 </li>
               </ul>
@@ -124,15 +124,15 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
       </Card>
 
       {/* Signature Section */}
-      <Card className="border-2 border-green-100 bg-green-50/30">
+      <Card className="border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg text-green-900">
+          <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-white">
             <CheckCircle className="h-5 w-5" />
             Signatures
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-white rounded-lg p-4 border border-green-200">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -172,10 +172,10 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
             </div>
 
             {needsParentSignature && (
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
                     <p className="text-sm font-medium text-amber-900">
                       Parent/Guardian Signature Required (Participant under 18)
                     </p>
@@ -207,16 +207,16 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
 
       {/* School Endorsement - Only show if this is not a multi-performer context or performerIndex is undefined */}
       {performerIndex === undefined && (
-        <Card className="border-2 border-purple-100 bg-purple-50/30">
+        <Card className="border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg text-purple-900">
+            <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-white">
               <School className="h-5 w-5" />
               F. For School Endorsement
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
-              <p className="text-sm text-gray-700 mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
                 <strong>For School Officials:</strong> We hereby certify that the above student(s) is/are currently enrolled in our institution and is/are endorsed to participate in the Maritime Talent Quest 2025.
               </p>
               
@@ -259,7 +259,7 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
               </div>
             </div>
 
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <div className="flex items-start space-x-3">
                 <FileText className="h-5 w-5 text-purple-600 mt-0.5" />
                 <div>
@@ -279,7 +279,7 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
         </Card>
       )}
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
             <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
