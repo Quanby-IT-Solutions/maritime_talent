@@ -47,16 +47,21 @@ export const logout = async () => {
 // Get session function
 export const getSession = async () => {
   try {
+    console.log('[API Service] Fetching session...');
     const res = await fetch('/api/auth/session');
     
+    console.log('[API Service] Session response status:', res.status);
+    
     if (!res.ok) {
+      console.log('[API Service] Session response not OK');
       return { user: null };
     }
     
     const data = await res.json();
+    console.log('[API Service] Session data:', data);
     return data;
   } catch (error) {
-    console.error('Session API service error:', error);
+    console.error('[API Service] Session error:', error);
     return { user: null };
   }
 };

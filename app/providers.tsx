@@ -7,15 +7,21 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "@/components/ui/sonner";
 import { SupabaseRealtimeProvider } from "../provider/SupabaseRealtimeProvider";
 
-// Create a query client instance
+// Create a query client instance with optimized settings for auth
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh
+      gcTime: 1000 * 60 * 10, // 10 minutes - cache garbage collection
       retry: 1,
+      refetchOnWindowFocus: true, // Refetch on window focus for auth state
+      refetchOnReconnect: true, // Refetch on reconnect
     },
     mutations: {
       retry: 1,
+      onError: (error) => {
+        console.error('Mutation error:', error);
+      },
     },
   },
 });
@@ -45,7 +51,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
+          storageKey="maritime-quest-theme"
         >
           {children}
           <Toaster position="bottom-right" richColors />
