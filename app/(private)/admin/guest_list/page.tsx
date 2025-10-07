@@ -54,70 +54,21 @@ export default function GuestListPage() {
           return;
         }
 
-        // If no data, use mock data for demonstration
-        const dataToUse = guestsData && guestsData.length > 0 ? guestsData : [
-          {
-            guest_id: 1,
-            full_name: "Dr. Maria Rodriguez",
-            age: 45,
-            gender: "Female",
-            contact_number: "+63 912 345 6789",
-            email: "maria.rodriguez@maritime.edu",
-            organization: "Maritime Academy of Asia and the Pacific",
-            address: "123 Maritime Street, Manila, Philippines",
-            registration_date: "2024-01-15T08:30:00Z",
-          },
-          {
-            guest_id: 2,
-            full_name: "Captain John Smith",
-            age: 52,
-            gender: "Male",
-            contact_number: "+63 917 654 3210",
-            email: "captain.smith@shipping.com",
-            organization: "International Shipping Corporation",
-            address: "456 Port Avenue, Cebu, Philippines",
-            registration_date: "2024-01-16T10:15:00Z",
-          },
-          {
-            guest_id: 3,
-            full_name: "Sarah Johnson",
-            age: 38,
-            gender: "Female",
-            contact_number: "+63 909 876 5432",
-            email: "sarah.johnson@email.com",
-            organization: null,
-            address: "789 Ocean Drive, Davao, Philippines",
-            registration_date: "2024-01-17T14:45:00Z",
-          },
-          {
-            guest_id: 4,
-            full_name: "Michael Chen",
-            age: 41,
-            gender: "Male",
-            contact_number: "+63 918 123 4567",
-            email: "michael.chen@maritime.gov",
-            organization: "Philippine Coast Guard",
-            address: "321 Harbor Road, Manila, Philippines",
-            registration_date: "2024-01-18T09:20:00Z",
-          },
-          {
-            guest_id: 5,
-            full_name: "Lisa Thompson",
-            age: 35,
-            gender: "Female",
-            contact_number: "+63 915 987 6543",
-            email: "lisa.thompson@email.com",
-            organization: "Maritime Safety Authority",
-            address: "654 Seaport Boulevard, Iloilo, Philippines",
-            registration_date: "2024-01-19T11:30:00Z",
-          },
-        ];
+        console.log('Fetched guests from database:', guestsData);
+
+        // Check if we have data
+        if (!guestsData || guestsData.length === 0) {
+          console.log('No guests found in database');
+          setGuests([]);
+          setStats({ total: 0, male: 0, female: 0, withOrganization: 0 });
+          return;
+        }
 
         // Validate with Zod and collect errors
         const validatedData: GuestData[] = [];
         const errors: string[] = [];
 
-        dataToUse.forEach((item: unknown, index: number) => {
+        guestsData.forEach((item: unknown, index: number) => {
           const result = safeParseGuestData(item);
           if (result.success) {
             validatedData.push(result.data);
