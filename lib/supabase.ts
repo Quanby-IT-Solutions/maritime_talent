@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { Database } from '@/schema/schema'
 
 // Create a supabase client for the browser
 export const createBrowserClient = () => {
@@ -9,7 +10,7 @@ export const createBrowserClient = () => {
     throw new Error('Missing Supabase environment variables')
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey)
+  return createClient<Database>(supabaseUrl, supabaseAnonKey)
 }
 
 // Create a supabase client for server-side operations
@@ -21,7 +22,7 @@ export const createServerClient = () => {
     throw new Error('Missing Supabase environment variables')
   }
 
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       persistSession: false, // Don't persist session on the server
     },
@@ -31,3 +32,6 @@ export const createServerClient = () => {
 // Default export for convenience (browser client)
 const supabase = createBrowserClient()
 export default supabase
+
+// Export types for convenience
+export type { Database }

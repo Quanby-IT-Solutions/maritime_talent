@@ -2,24 +2,16 @@
 
 import * as React from "react"
 import {
-  IconCamera,
   IconChartBar,
   IconDashboard,
-  IconDatabase,
-  IconFileAi,
   IconFileDescription,
-  IconFileWord,
   IconFolder,
-  IconHelp,
   IconInnerShadowTop,
   IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
   IconUsers,
+  IconCamera,
 } from "@tabler/icons-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -32,14 +24,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useAuth } from "@/hooks/use-auth"
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
+const navMain = [
     {
       title: "Dashboard",
       url: "/admin",
@@ -55,8 +42,6 @@ const data = {
       url: "/admin/talents_details",
       icon: IconUsers,
     },
-  ],
-  navSecondary: [
     {
       title: "Guest List",
       url: "/admin/guest_list",
@@ -64,7 +49,7 @@ const data = {
     },
     {
       title: "Groups Performances",
-      url: "/admin/groups_performances",
+      url: "/admin/group_performances",
       icon: IconFolder,
     },
     {
@@ -72,27 +57,29 @@ const data = {
       url: "/admin/singles_performances",
       icon: IconFileDescription,
     },
-  ],
-  documents: [
-    // {
-    //   name: "Data Library",
-    //   url: "#",
-    //   icon: IconDatabase,
-    // },
-    // {
-    //   name: "Reports",
-    //   url: "#",
-    //   icon: IconReport,
-    // },
-    // {
-    //   name: "Word Assistant",
-    //   url: "#",
-    //   icon: IconFileWord,
-    // },
-  ],
-}
+    {
+      title: "Qr-code Management",
+      url: "/admin/qr_code_management",
+      icon: IconCamera,
+    }
+  ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, loading } = useAuth()
+
+  // Debug: Log user data
+  React.useEffect(() => {
+    console.log('AppSidebar - User:', user)
+    console.log('AppSidebar - Loading:', loading)
+  }, [user, loading])
+
+  // Create user data with placeholder avatar
+  const userData = {
+    name: user?.full_name || "Guest",
+    email: user?.email || "",
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || "Guest")}&background=0D8ABC&color=fff`,
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -104,19 +91,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">Maritime Talent Quest</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {!loading && <NavUser user={userData} />}
       </SidebarFooter>
     </Sidebar>
   )

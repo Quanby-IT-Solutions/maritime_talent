@@ -5,9 +5,18 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'register.thebeaconexpo.com',
+        hostname: 'register.themaritimetalentquest.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'example.com',
       },
     ],
+    domains: ['localhost'],
   },
 };
 
