@@ -14,12 +14,12 @@ import Link from "next/link"
 import { toast } from "sonner"
 
 // Import components
-import { PersonalInformation } from "./student/PersonalInformation"
-import { ContactInformation } from "./student/ContactInformation"
-import { EventPreferences } from "./student/EventPreferences"
-import { EmergencySafety } from "./student/EmergencySafety"
-import { AdditionalInformation } from "./student/AdditionalInformation"
-import { DraftManager } from "./student/DraftManager"
+import { PersonalInformation } from "../../../components/registration/student/PersonalInformation"
+import { ContactInformation } from "../../../components/registration/student/ContactInformation"
+import { EventPreferences } from "../../../components/registration/student/EventPreferences"
+import { EmergencySafety } from "../../../components/registration/student/EmergencySafety"
+import { AdditionalInformation } from "../../../components/registration/student/AdditionalInformation"
+import { DraftManager } from "../../../components/registration/student/DraftManager"
 
 const formSchema = z.object({
   // A. Student Information
