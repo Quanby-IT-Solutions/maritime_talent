@@ -57,21 +57,21 @@ const data = {
     },
   ],
   navSecondary: [
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: IconSettings,
-    // },
-    // {
-    //   title: "Get Help",
-    //   url: "#",
-    //   icon: IconHelp,
-    // },
-    // {
-    //   title: "Search",
-    //   url: "#",
-    //   icon: IconSearch,
-    // },
+    {
+      title: "Guest List",
+      url: "/admin/guest_list",
+      icon: IconListDetails,
+    },
+    {
+      title: "Groups Performances",
+      url: "/admin/groups_performances",
+      icon: IconFolder,
+    },
+    {
+      title: "Singles Performances",
+      url: "/admin/singles_performances",
+      icon: IconFileDescription,
+    },
   ],
   documents: [
     // {
