@@ -13,13 +13,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface PersonalInformationProps {
   form: UseFormReturn<any>
+  performerIndex?: number
 }
 
-export function PersonalInformation({ form }: PersonalInformationProps) {
+export function PersonalInformation({ form, performerIndex }: PersonalInformationProps) {
   const genderOptions = [
     "Male",
     "Female"
   ]
+
+  // Field name prefix for multi-performer support
+  const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
+  const getFieldName = (field: string) => performerIndex !== undefined ? `${fieldPrefix}.${field}` : field
 
   return (
     <div className="space-y-6">
@@ -31,7 +36,7 @@ export function PersonalInformation({ form }: PersonalInformationProps) {
       <div className="grid grid-cols-1 gap-6">
         <FormField
           control={form.control}
-          name="fullName"
+          name={getFieldName("fullName")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-base font-medium">Full Name *</FormLabel>
@@ -47,7 +52,7 @@ export function PersonalInformation({ form }: PersonalInformationProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
-          name="age"
+          name={getFieldName("age")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-base font-medium">Age *</FormLabel>
@@ -61,7 +66,7 @@ export function PersonalInformation({ form }: PersonalInformationProps) {
         
         <FormField
           control={form.control}
-          name="gender"
+          name={getFieldName("gender")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-base font-medium">Gender *</FormLabel>
@@ -88,7 +93,7 @@ export function PersonalInformation({ form }: PersonalInformationProps) {
       <div className="grid grid-cols-1 gap-6">
         <FormField
           control={form.control}
-          name="school"
+          name={getFieldName("school")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-base font-medium">School *</FormLabel>
@@ -104,7 +109,7 @@ export function PersonalInformation({ form }: PersonalInformationProps) {
       <div className="grid grid-cols-1 gap-6">
         <FormField
           control={form.control}
-          name="courseYear"
+          name={getFieldName("courseYear")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-base font-medium">Course/Year Level *</FormLabel>
@@ -120,7 +125,7 @@ export function PersonalInformation({ form }: PersonalInformationProps) {
       <div className="grid grid-cols-1 gap-6">
         <FormField
           control={form.control}
-          name="contactNumber"
+          name={getFieldName("contactNumber")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-base font-medium">Contact Number *</FormLabel>
@@ -136,7 +141,7 @@ export function PersonalInformation({ form }: PersonalInformationProps) {
       <div className="grid grid-cols-1 gap-6">
         <FormField
           control={form.control}
-          name="email"
+          name={getFieldName("email")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-base font-medium">Email Address *</FormLabel>

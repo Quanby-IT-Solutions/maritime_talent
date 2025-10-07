@@ -15,29 +15,34 @@ import { Upload, FileText, X } from "lucide-react"
 
 interface EventPreferencesProps {
   form: UseFormReturn<any>
+  performerIndex?: number
 }
 
-export function EventPreferences({ form }: EventPreferencesProps) {
+export function EventPreferences({ form, performerIndex }: EventPreferencesProps) {
   const [schoolCertFile, setSchoolCertFile] = useState<File | null>(null)
   const [schoolIdFile, setSchoolIdFile] = useState<File | null>(null)
+
+  // Field name prefix for multi-performer support
+  const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
+  const getFieldName = (field: string) => performerIndex !== undefined ? `${fieldPrefix}.${field}` : field
 
   const handleFileUpload = (file: File, type: 'schoolCertification' | 'schoolIdCopy') => {
     if (type === 'schoolCertification') {
       setSchoolCertFile(file)
-      form.setValue('schoolCertification', file)
+      form.setValue(getFieldName('schoolCertification'), file)
     } else {
       setSchoolIdFile(file)
-      form.setValue('schoolIdCopy', file)
+      form.setValue(getFieldName('schoolIdCopy'), file)
     }
   }
 
   const removeFile = (type: 'schoolCertification' | 'schoolIdCopy') => {
     if (type === 'schoolCertification') {
       setSchoolCertFile(null)
-      form.setValue('schoolCertification', null)
+      form.setValue(getFieldName('schoolCertification'), null)
     } else {
       setSchoolIdFile(null)
-      form.setValue('schoolIdCopy', null)
+      form.setValue(getFieldName('schoolIdCopy'), null)
     }
   }
 

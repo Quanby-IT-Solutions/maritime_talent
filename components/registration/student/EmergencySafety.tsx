@@ -14,9 +14,13 @@ import { Shield, Heart } from "lucide-react"
 
 interface EmergencySafetyProps {
   form: UseFormReturn<any>
+  performerIndex?: number
 }
 
-export function EmergencySafety({ form }: EmergencySafetyProps) {
+export function EmergencySafety({ form, performerIndex }: EmergencySafetyProps) {
+  // Field name prefix for multi-performer support
+  const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
+  const getFieldName = (field: string) => performerIndex !== undefined ? `${fieldPrefix}.${field}` : field
   return (
     <div className="space-y-6">
       <div className="mb-4">
@@ -56,7 +60,7 @@ export function EmergencySafety({ form }: EmergencySafetyProps) {
 
           <FormField
             control={form.control}
-            name="healthDeclaration"
+            name={getFieldName("healthDeclaration")}
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl>

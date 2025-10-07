@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 
 interface ContactInformationProps {
@@ -118,16 +119,21 @@ export function ContactInformation({ form }: ContactInformationProps) {
           name="numberOfPerformers"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-base font-medium">Number of Performers (if group) *</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  min="1"
-                  placeholder="1" 
-                  className="text-base" 
-                  {...field} 
-                />
-              </FormControl>
+              <FormLabel className="text-base font-medium">Number of Performers *</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select number of performers" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num} {num === 1 ? 'Performer' : 'Performers'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
