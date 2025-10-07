@@ -8,25 +8,33 @@ export default function LoginPage() {
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
-    // Show the form after 2 seconds to let the balls drop
+    // Show the form after a short delay for smooth animation
     const timer = setTimeout(() => {
       setShowForm(true)
-    }, 2000)
+    }, 300)
 
     return () => clearTimeout(timer)
   }, [])
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Ballpit Background */}
-      <div className="absolute inset-0" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', width: '100%' }}>
+    <div className="min-h-screen flex">
+      {/* Left Side - Login Form */}
+      <div className="flex-1 flex items-center justify-center bg-white p-8 lg:p-12 shadow-lg border-r border-slate-200">
+        <div className={`w-full max-w-md transition-all duration-1000 ease-out ${showForm ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
+          }`}>
+          <LoginForm />
+        </div>
+      </div>
+
+      {/* Right Side - Ballpit Animation */}
+      <div className="flex-1 relative overflow-hidden bg-slate-900 shadow-lg">
         <Ballpit
           count={115}
           gravity={0}
           friction={0.978}
           wallBounce={0.95}
           followCursor={false}
-          colors={[0x2C2C54, 0x474787, 0xAAABB8, 0xECECEC]}
+          colors={[0x2C2C54, 0x474787, 0xAAABB8, 0xECECEC, 0xFFD700]}
           ambientColor={0xffffff}
           ambientIntensity={0.8}
           lightIntensity={100}
@@ -44,18 +52,12 @@ export default function LoginPage() {
           maxY={8}
           maxZ={4}
         />
-      </div>
 
-      {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-white/10" />
+        {/* Message Overlay */}
 
-      {/* Centered Login Form with Fade-in Animation */}
-      <div className={`absolute inset-0 z-20 flex items-center justify-center p-6 transition-all duration-1000 ease-out ${showForm ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}>
-        {/* Login Form */}
-        <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-xl p-8">
-          <LoginForm />
-        </div>
+
+        {/* Overlay for better visual separation */}
+        <div className="absolute inset-0 bg-gradient-to-l from-slate-900/20 to-transparent" />
       </div>
     </div>
   )
