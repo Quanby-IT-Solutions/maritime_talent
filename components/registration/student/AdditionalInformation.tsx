@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { UseFormReturn } from "react-hook-form"
 import {
   FormControl,
@@ -9,9 +10,11 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, School, CheckCircle } from "lucide-react"
+import { FileText, School, CheckCircle, PenTool, X } from "lucide-react"
+import ESignModal from "@/components/reusable/esign-modal"
 
 interface AdditionalInformationProps {
   form: UseFormReturn<any>
@@ -20,9 +23,16 @@ interface AdditionalInformationProps {
 }
 
 export function AdditionalInformation({ form, performerIndex, needsParentSignature = false }: AdditionalInformationProps) {
+  const [studentSignatureModal, setStudentSignatureModal] = useState(false)
+  const [parentSignatureModal, setParentSignatureModal] = useState(false)
+  
   // Field name prefix for multi-performer support
   const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
   const getFieldName = (field: string) => performerIndex !== undefined ? `${fieldPrefix}.${field}` : field
+  
+  // Get current signature values
+  const studentSignature = form.watch(getFieldName("studentSignature"))
+  const parentGuardianSignature = form.watch(getFieldName("parentGuardianSignature"))
   return (
     <div className="space-y-8">
       {/* Section E: Consent & Agreement */}
@@ -134,6 +144,7 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
         <CardContent className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Student Signature */}
               <FormField
                 control={form.control}
                 name={getFieldName("studentSignature")}
@@ -141,11 +152,57 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Student Signature *</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Type full name as signature"
-                        className="text-sm"
-                        {...field} 
-                      />
+                      <div className="space-y-2">
+                        {studentSignature ? (
+                          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <PenTool className="h-4 w-4 text-green-600" />
+                                <span className="text-sm text-gray-900 dark:text-white">Signature captured</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setStudentSignatureModal(true)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    form.setValue(getFieldName("studentSignature"), "")
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            {studentSignature && (
+                              <div className="mt-2">
+                                <img 
+                                  src={studentSignature} 
+                                  alt="Student signature" 
+                                  className="max-h-16 border border-gray-200 dark:border-gray-600 rounded"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full h-12 border-dashed border-2 hover:border-gray-400"
+                            onClick={() => setStudentSignatureModal(true)}
+                          >
+                            <PenTool className="h-4 w-4 mr-2" />
+                            Click to Sign
+                          </Button>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -176,7 +233,7 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
-                    <p className="text-sm font-medium text-amber-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       Parent/Guardian Signature Required (Participant under 18)
                     </p>
                   </div>
@@ -188,11 +245,57 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                       <FormItem>
                         <FormLabel className="text-sm font-medium">Parent/Guardian Signature *</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Parent/Guardian: Type full name as signature"
-                            className="text-sm"
-                            {...field} 
-                          />
+                          <div className="space-y-2">
+                            {parentGuardianSignature ? (
+                              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <PenTool className="h-4 w-4 text-green-600" />
+                                    <span className="text-sm text-gray-900 dark:text-white">Parent/Guardian signature captured</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setParentSignatureModal(true)}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        form.setValue(getFieldName("parentGuardianSignature"), "")
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                {parentGuardianSignature && (
+                                  <div className="mt-2">
+                                    <img 
+                                      src={parentGuardianSignature} 
+                                      alt="Parent/Guardian signature" 
+                                      className="max-h-16 border border-gray-200 dark:border-gray-600 rounded"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full h-12 border-dashed border-2 hover:border-gray-400"
+                                onClick={() => setParentSignatureModal(true)}
+                              >
+                                <PenTool className="h-4 w-4 mr-2" />
+                                Parent/Guardian Click to Sign
+                              </Button>
+                            )}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -287,13 +390,37 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
             </svg>
           </div>
           <div>
-            <h4 className="text-sm font-medium text-blue-900">Final Submission Note</h4>
-            <p className="text-sm text-blue-700 mt-1">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white">Final Submission Note</h4>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
               Upon submission of this digital form, you will receive further instructions for completing the physical signature requirements and document submission for the Maritime Talent Quest 2025.
             </p>
           </div>
         </div>
       </div>
+
+      {/* Student Signature Modal */}
+      <ESignModal
+        open={studentSignatureModal}
+        onOpenChange={setStudentSignatureModal}
+        onSignatureSave={(signature) => {
+          form.setValue(getFieldName("studentSignature"), signature)
+          setStudentSignatureModal(false)
+        }}
+        title="Student Electronic Signature"
+        description="Please draw your signature in the canvas below. This will serve as your electronic signature for the Maritime Talent Quest 2025 registration."
+      />
+
+      {/* Parent/Guardian Signature Modal */}
+      <ESignModal
+        open={parentSignatureModal}
+        onOpenChange={setParentSignatureModal}
+        onSignatureSave={(signature) => {
+          form.setValue(getFieldName("parentGuardianSignature"), signature)
+          setParentSignatureModal(false)
+        }}
+        title="Parent/Guardian Electronic Signature"
+        description="Parent/Guardian: Please draw your signature in the canvas below. This signature confirms your consent for your minor child to participate in the Maritime Talent Quest 2025."
+      />
     </div>
   )
 }
