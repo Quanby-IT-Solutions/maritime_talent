@@ -7,7 +7,7 @@ export default function Donate() {
   const [organization, setOrganization] = useState("");
 
   return (
-    <section className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 bg-white">
+    <section className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 ">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Donate Header */}
         <div className="bg-cyan-400 rounded-full py-4 px-8 text-center shadow-lg">
@@ -18,8 +18,10 @@ export default function Donate() {
 
         {/* Donation Form */}
         <div className="border-4 border-black rounded-lg p-6 sm:p-8 md:p-10 bg-white">
-          <h3 className="text-lg sm:text-xl font-semibold mb-6">Donation form</h3>
-          
+          <h3 className="text-lg sm:text-xl font-semibold mb-6">
+            Donation form
+          </h3>
+
           <div className="space-y-4 mb-8">
             {/* Name Input */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">

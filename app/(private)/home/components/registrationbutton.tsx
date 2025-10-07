@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function RegistrationButton() {
   return (
-    <section className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 bg-white">
+    <section className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center items-center">
           {/* Register As Guest Button */}

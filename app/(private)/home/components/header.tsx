@@ -1,3 +1,5 @@
+import SponsorMarquee from "./sponsor-marquee";
+
 export default function Header() {
   const organizations = [
     { id: 1, name: "Organization 1" },
@@ -9,25 +11,22 @@ export default function Header() {
   ];
 
   return (
-    <header className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 bg-white">
-      <div className="max-w-7xl mx-auto">
+    <header className="w-full py-8 sm:py-12 lg:py-16">
+      {/* Title Section - Constrained */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-6 sm:mb-8 lg:mb-10">
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary">
             &lt;ORGANIZATIONS&gt;
           </h2>
-          <p className="text-xs sm:text-sm md:text-base text-gray-600">in collaboration with:</p>
+          <p className="text-xs sm:text-sm md:text-base text-secondary-foreground">
+            in collaboration with:
+          </p>
         </div>
+      </div>
 
-        <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 lg:gap-8">
-          {organizations.map((org) => (
-            <div
-              key={org.id}
-              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-full bg-cyan-400 flex items-center justify-center hover:bg-cyan-500 transition-colors duration-200 shadow-md hover:shadow-lg"
-            >
-              <span className="text-black font-semibold text-xs sm:text-sm md:text-base">LOGO</span>
-            </div>
-          ))}
-        </div>
+      {/* Marquee Section - Full Width */}
+      <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+        <SponsorMarquee />
       </div>
     </header>
   );

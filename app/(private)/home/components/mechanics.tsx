@@ -1,6 +1,6 @@
 export default function Mechanics() {
   return (
-    <section className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8 bg-white">
+    <section className="w-full py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Contestant Registration Header */}
         <div className="bg-cyan-400 rounded-full py-4 px-8 text-center shadow-lg">
