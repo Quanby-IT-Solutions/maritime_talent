@@ -14,12 +14,14 @@ export type Database = {
           status: string | null
         }
         Insert: {
+          attendance_id?: number
           qr_id: number
           scan_time?: string | null
           scanned_by?: string | null
           status?: string | null
         }
         Update: {
+          attendance_id?: number
           qr_id?: number
           scan_time?: string | null
           scanned_by?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           consent_date: string | null
         }
         Insert: {
+          consent_id?: number
           student_id?: number | null
           info_correct?: boolean | null
           agree_to_rules?: boolean | null
@@ -47,6 +50,7 @@ export type Database = {
           consent_date?: string | null
         }
         Update: {
+          consent_id?: number
           student_id?: number | null
           info_correct?: boolean | null
           agree_to_rules?: boolean | null
@@ -66,6 +70,7 @@ export type Database = {
           endorsement_date: string | null
         }
         Insert: {
+          endorsement_id?: number
           student_id?: number | null
           school_official_name?: string | null
           position?: string | null
@@ -73,6 +78,7 @@ export type Database = {
           endorsement_date?: string | null
         }
         Update: {
+          endorsement_id?: number
           student_id?: number | null
           school_official_name?: string | null
           position?: string | null
@@ -90,6 +96,7 @@ export type Database = {
           created_at: string | null
         }
         Insert: {
+          group_id?: number
           group_name: string
           leader_id?: number | null
           performance_title?: string | null
@@ -97,6 +104,7 @@ export type Database = {
           created_at?: string | null
         }
         Update: {
+          group_id?: number
           group_name?: string
           leader_id?: number | null
           performance_title?: string | null
@@ -117,6 +125,7 @@ export type Database = {
           registration_date: string | null
         }
         Insert: {
+          guest_id?: number
           full_name: string
           age?: number | null
           gender?: string | null
@@ -127,6 +136,7 @@ export type Database = {
           registration_date?: string | null
         }
         Update: {
+          guest_id?: number
           full_name?: string
           age?: number | null
           gender?: string | null
@@ -148,6 +158,7 @@ export type Database = {
           declaration_date: string | null
         }
         Insert: {
+          declaration_id?: number
           student_id?: number | null
           is_physically_fit?: boolean | null
           medical_conditions?: string | null
@@ -156,6 +167,7 @@ export type Database = {
           declaration_date?: string | null
         }
         Update: {
+          declaration_id?: number
           student_id?: number | null
           is_physically_fit?: boolean | null
           medical_conditions?: string | null
@@ -176,6 +188,7 @@ export type Database = {
           created_at: string | null
         }
         Insert: {
+          performance_id?: number
           student_id?: number | null
           performance_type: PerformanceType
           title?: string | null
@@ -185,6 +198,7 @@ export type Database = {
           created_at?: string | null
         }
         Update: {
+          performance_id?: number
           student_id?: number | null
           performance_type?: PerformanceType
           title?: string | null
@@ -204,6 +218,7 @@ export type Database = {
           created_at: string | null
         }
         Insert: {
+          qr_id?: number
           qr_code_url: string
           group_id?: number | null
           single_id?: number | null
@@ -211,6 +226,7 @@ export type Database = {
           created_at?: string | null
         }
         Update: {
+          qr_id?: number
           qr_code_url?: string
           group_id?: number | null
           single_id?: number | null
@@ -227,12 +243,14 @@ export type Database = {
           uploaded_at: string | null
         }
         Insert: {
+          requirement_id?: number
           student_id?: number | null
           certification_url?: string | null
           school_id_url?: string | null
           uploaded_at?: string | null
         }
         Update: {
+          requirement_id?: number
           student_id?: number | null
           certification_url?: string | null
           school_id_url?: string | null
@@ -248,12 +266,14 @@ export type Database = {
           student_id: number | null
         }
         Insert: {
+          single_id?: number
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
           student_id?: number | null
         }
         Update: {
+          single_id?: number
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
@@ -274,6 +294,7 @@ export type Database = {
           sid: number | null
         }
         Insert: {
+          student_id?: number
           full_name: string
           age?: number | null
           gender?: string | null
@@ -285,6 +306,7 @@ export type Database = {
           sid?: number | null
         }
         Update: {
+          student_id?: number
           full_name?: string
           age?: number | null
           gender?: string | null
@@ -306,6 +328,7 @@ export type Database = {
           created_at: string | null
         }
         Insert: {
+          user_id?: number
           email: string
           password_hash: string
           full_name: string
@@ -313,6 +336,7 @@ export type Database = {
           created_at?: string | null
         }
         Update: {
+          user_id?: number
           email?: string
           password_hash?: string
           full_name?: string

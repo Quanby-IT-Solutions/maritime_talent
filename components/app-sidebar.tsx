@@ -65,6 +65,11 @@ const navMain = [
       url: "/admin/singles_performances",
       icon: IconFileDescription,
     },
+    {
+      title: "Qr-code Management",
+      url: "/admin/qr_code_management",
+      icon: IconCamera,
+    }
   ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
