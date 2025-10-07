@@ -430,6 +430,9 @@ export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): C
       </div>
     ),
     size: 80,
+    meta: {
+      className: "hidden sm:table-cell"
+    },
   },
   {
     accessorKey: "student_name",
@@ -443,6 +446,9 @@ export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): C
       );
     },
     size: 150,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     accessorKey: "performance_title",
@@ -475,6 +481,9 @@ export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): C
       );
     },
     size: 250,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "student_school",
@@ -488,6 +497,9 @@ export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): C
       );
     },
     size: 150,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     id: "actions",

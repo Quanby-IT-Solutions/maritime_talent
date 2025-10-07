@@ -374,6 +374,9 @@ export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): Col
       </div>
     ),
     size: 80,
+    meta: {
+      className: "hidden sm:table-cell"
+    },
   },
   {
     accessorKey: "group_name",
@@ -416,6 +419,9 @@ export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): Col
       );
     },
     size: 100,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     accessorKey: "performance_date",
@@ -440,6 +446,9 @@ export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): Col
       );
     },
     size: 150,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "venue",
@@ -453,6 +462,9 @@ export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): Col
       );
     },
     size: 200,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
   },
   {
     accessorKey: "group_members",
@@ -467,6 +479,9 @@ export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): Col
       );
     },
     size: 100,
+    meta: {
+      className: "hidden md:table-cell"
+    },
   },
   {
     id: "actions",

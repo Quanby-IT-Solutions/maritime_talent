@@ -1,38 +1,62 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
-
 export function DraftManager() {
   return (
-    <Card className="mb-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-      <CardContent className="pt-6">
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-blue-600 dark:text-blue-300 text-xs font-bold">i</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="font-semibold text-blue-900 dark:text-blue-100">
+    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div className="flex items-start gap-3">
+        <div className="bg-gray-200 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span className="text-gray-600 dark:text-gray-400 text-sm font-bold">ℹ</span>
+        </div>
+        <div className="flex flex-col gap-3">
+          <div>
+            <span className="font-semibold text-gray-900 dark:text-white block mb-2">
               BEACON 2025 Attendance Info:
             </span>
-            <ul className="list-disc ml-4 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-              <li>Sept 29 (Day 1)</li>
-              <li>Sept 30 (Day 2)</li> 
-              <li>Oct 1 (Day 3)</li>
+            <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                Sept 29 (Day 1)
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                Sept 30 (Day 2)
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                Oct 1 (Day 3)
+              </li>
             </ul>
+          </div>
 
-            <span className="mt-4 font-semibold text-blue-900 dark:text-blue-100">
+          <div>
+            <span className="font-semibold text-gray-900 dark:text-white block mb-2">
               BEACON 2025 events:
             </span>
-            <ul className="list-disc ml-4 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-              <li>EXPO</li>
-              <li>CONFERENCE</li>
-              <li>PHILIPPINE IN-WATER SHIP & BOAT SHOW</li>
-              <li>BLUE RUNWAY</li>
-              <li>NETWORKING & AWARDS NIGHT</li>
+            <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                EXPO
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                CONFERENCE
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                PHILIPPINE IN-WATER SHIP & BOAT SHOW
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                BLUE RUNWAY
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-500 rounded-full"></div>
+                NETWORKING & AWARDS NIGHT
+              </li>
             </ul>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

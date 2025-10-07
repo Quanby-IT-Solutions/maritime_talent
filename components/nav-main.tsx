@@ -22,6 +22,8 @@ export function NavMain({
 }) {
   const pathname = usePathname()
 
+  const pathname = usePathname()
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
