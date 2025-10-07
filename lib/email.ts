@@ -94,7 +94,7 @@ export async function sendEmail({ to, subject, html, from, userId }: EmailData):
     const msg: any = {
       to,
       from: {
-        email: from || 'noreply@maritimetalentquest.com',
+        email: from || 'noreplymarintimetalentquest@gmail.com',
         name: 'MARITIME TALENT QUEST 2025 Team'
       },
       replyTo: 'dummyemail@gmail.com',
