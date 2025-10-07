@@ -97,8 +97,8 @@ export function PerformerSection({ form, performerIndex, performerNumber }: Perf
         </div>
 
         {/* Expandable Content */}
-        <div className={`overflow-hidden transition-all duration-400 ease-in-out ${
-          isExpanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'
+        <div className={`transition-all duration-400 ease-in-out ${
+          isExpanded ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
         }`}>
           <div className="border-t border-gray-200 dark:border-gray-700">
             <div className="p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900/50" onClick={(e) => e.stopPropagation()}>
