@@ -10,12 +10,16 @@ export async function GET(request: NextRequest) {
   try {
     const sessionToken = request.cookies.get('session')?.value;
 
+    console.log('[Session API] Session token exists:', !!sessionToken);
+
     if (!sessionToken) {
+      console.log('[Session API] No session token found');
       return NextResponse.json({ user: null });
     }
 
     // Verify JWT token
     const { payload } = await jwtVerify(sessionToken, JWT_SECRET);
+    console.log('[Session API] JWT payload:', payload);
 
     // Get user from database
     const supabase = createClient(
@@ -26,23 +30,29 @@ export async function GET(request: NextRequest) {
     const { data: dbUser, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', payload.userId)
+      .eq('user_id', payload.userId)
       .single();
 
+    console.log('[Session API] Database user:', dbUser);
+    console.log('[Session API] Database error:', error);
+
     if (error || !dbUser) {
+      console.log('[Session API] User not found in database');
       return NextResponse.json({ user: null });
     }
 
-    return NextResponse.json({ 
-      user: {
-        id: dbUser.id,
-        email: dbUser.email,
-        full_name: dbUser.full_name,
-        role: dbUser.role
-      }
-    });
+    const userData = {
+      id: dbUser.user_id,
+      email: dbUser.email,
+      full_name: dbUser.full_name,
+      role: dbUser.role
+    };
+
+    console.log('[Session API] Returning user data:', userData);
+
+    return NextResponse.json({ user: userData });
   } catch (error) {
-    console.error('Session error:', error);
+    console.error('[Session API] Error:', error);
     return NextResponse.json({ user: null });
   }
 }

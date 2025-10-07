@@ -21,12 +21,12 @@ export default function LoginPage() {
       {/* Ballpit Background */}
       <div className="absolute inset-0" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', width: '100%' }}>
         <Ballpit
-          count={100}
+          count={115}
           gravity={0}
           friction={0.978}
           wallBounce={0.95}
           followCursor={false}
-          colors={[0x2c3e50, 0x34495e, 0x2c2c54, 0x40407a, 0x706fd3, 0x5f27cd, 0x341f97]}
+          colors={[0x2C2C54, 0x474787, 0xAAABB8, 0xECECEC]}
           ambientColor={0xffffff}
           ambientIntensity={0.8}
           lightIntensity={100}
@@ -49,7 +49,7 @@ export default function LoginPage() {
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-white/10" />
 
-      {/* Centered Login Form with Fade-in Animation - Floating on top */}
+      {/* Centered Login Form with Fade-in Animation */}
       <div className={`absolute inset-0 z-20 flex items-center justify-center p-6 transition-all duration-1000 ease-out ${showForm ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
         <div className="w-full max-w-md">

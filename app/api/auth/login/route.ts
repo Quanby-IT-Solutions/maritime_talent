@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Create JWT token for session
     const token = await new SignJWT({ 
-      userId: dbUser.id,
+      userId: dbUser.user_id,
       email: dbUser.email,
       role: dbUser.role
     })
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Return user data and set session cookie
     const response = NextResponse.json({ 
       user: {
-        id: dbUser.id,
+        id: dbUser.user_id,
         email: dbUser.email,
         full_name: dbUser.full_name,
         role: dbUser.role
