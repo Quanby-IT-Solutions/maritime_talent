@@ -1,0 +1,360 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Form } from "@/components/ui/form"
+import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import Image from "next/image"
+import { Icon } from "@iconify/react"
+import Link from "next/link"
+import { toast } from "sonner"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
+
+// Import components
+
+import { PersonalInformation } from "@/components/registration/student/PersonalInformation"
+import { ContactInformation } from "@/components/registration/student/ContactInformation"
+import { EventPreferences } from "@/components/registration/student/EventPreferences"
+import { EmergencySafety } from "@/components/registration/student/EmergencySafety"
+import { AdditionalInformation } from "@/components/registration/student/AdditionalInformation"
+import { SchoolEndorsement } from "@/components/registration/student/SchoolEndorsement"
+import { PerformerSection } from "@/components/registration/student/PerformerSection"
+import { DraftManager } from "@/components/registration/student/DraftManager"
+
+// Schema for individual performer
+const performerSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  lastName: z.string().optional(),
+  middleName: z.string().optional(),
+  suffix: z.string().optional(),
+  preferredName: z.string().optional(),
+  nationality: z.string().min(1, "Nationality is required"),
+  age: z.string().min(1, "Age is required"),
+  gender: z.string().min(1, "Gender is required"),
+  school: z.string().min(2, "School name is required"),
+  courseYear: z.string().min(1, "Course/Year Level is required"),
+  contactNumber: z.string().min(10, "Valid contact number is required").regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+  email: z.string().email("Valid email address is required"),
+  
+  // C. Requirements (file uploads)
+  schoolCertification: z.any().optional(),
+  schoolIdCopy: z.any().optional(),
+  
+  // D. Health & Fitness Declaration
+  healthDeclaration: z.boolean().refine((val) => val === true, "Health declaration is required"),
+  
+  // E. Consent & Agreement
+  informationConsent: z.boolean().refine((val) => val === true, "Information consent is required"),
+  rulesAgreement: z.boolean().refine((val) => val === true, "Rules agreement is required"),
+  publicityConsent: z.boolean().refine((val) => val === true, "Publicity consent is required"),
+  
+  // Signature fields
+  studentSignature: z.string().optional(),
+  signatureDate: z.string().optional(),
+  parentGuardianSignature: z.string().optional(), // Conditional based on age
+})
+
+const formSchema = z.object({
+  // B. Performance Details (single section)
+  performanceType: z.string().min(1, "Type of performance is required"),
+  performanceOther: z.string().optional(),
+  performanceTitle: z.string().min(1, "Title of piece/performance is required"),
+  performanceDuration: z.string().min(1, "Performance duration is required"),
+  numberOfPerformers: z.string().min(1, "Number of performers is required"),
+  groupMembers: z.string().optional(),
+  
+  // Performers (up to 10)
+  performers: z.array(performerSchema).min(1, "At least one performer is required").max(10, "Maximum 10 performers allowed"),
+  
+  // F. School Endorsement (single section)
+  schoolOfficialName: z.string().optional(),
+  schoolOfficialPosition: z.string().optional(),
+})
+
+type FormData = z.infer<typeof formSchema>
+
+export default function RegistrationPage() {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [numberOfPerformers, setNumberOfPerformers] = useState(0)
+
+  // Initialize form before any watchers
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      performanceType: "",
+      performanceOther: "",
+      performanceTitle: "",
+      performanceDuration: "",
+      numberOfPerformers: "",
+      groupMembers: "",
+      performers: [],
+      schoolOfficialName: "",
+      schoolOfficialPosition: "",
+    },
+    mode: 'onChange'
+  })
+
+  // Watch for changes in numberOfPerformers and update performers array
+  const watchNumberOfPerformers = form.watch('numberOfPerformers')
+  
+  useEffect(() => {
+    const count = parseInt(watchNumberOfPerformers) || 0
+    setNumberOfPerformers(count)
+    
+    // Update performers array to match the selected count
+    if (count > 0) {
+      const currentPerformers = form.getValues('performers') || []
+      const newPerformers = Array.from({ length: count }, (_, index) => {
+        // Keep existing performer data if available, otherwise create new
+        if (currentPerformers[index]) {
+          return currentPerformers[index]
+        }
+        return {
+          fullName: "",
+          lastName: "",
+          middleName: "",
+          suffix: "",
+          preferredName: "",
+          nationality: "",
+          age: "",
+          gender: "",
+          school: "",
+          courseYear: "",
+          contactNumber: "",
+          email: "",
+          healthDeclaration: false,
+          informationConsent: false,
+          rulesAgreement: false,
+          publicityConsent: false,
+          studentSignature: "",
+          signatureDate: "",
+          parentGuardianSignature: "",
+        }
+      })
+      
+      form.setValue('performers', newPerformers)
+    } else {
+      // Clear performers array when count is 0
+      form.setValue('performers', [])
+    }
+  }, [watchNumberOfPerformers, form])
+
+  // (form already initialized above)
+
+  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true)
+    try {
+      // Simulated submission delay for UX feedback (static mode)
+      await new Promise(res => setTimeout(res, 800))
+      console.log("Form submitted:", data)
+      toast.success("Application submitted", {
+        description: "Your registration details have been captured.",
+      })
+    } catch (error) {
+      console.error("Submission error:", error)
+      toast.error("Submission failed", {
+        description: "Something went wrong. Please try again." 
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto p-6 max-w-5xl">
+        
+        {/* Header Banner */}
+        <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-800 mb-6">
+          <Image
+            src="https://register.thebeaconexpo.com/images/beacon-reg.png"
+            alt="Maritime Talent Quest 2025 Registration"
+            width={1600}
+            height={300}
+            priority
+            className="w-full h-auto object-cover"
+          />
+          <div className="absolute inset-0 flex items-end justify-end p-3 gap-2">
+            <ThemeToggle />
+            <Link href="/">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/95 backdrop-blur-sm cursor-pointer hover:bg-white text-gray-700 border-gray-300 shadow-sm hover:shadow-md transition-all dark:bg-gray-800/95 dark:hover:bg-gray-800 dark:text-gray-200 dark:border-gray-600"
+                title="Back to Home"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Main Registration Card */}
+        <Card className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          {/* Header Section */}
+          <div className="p-8 border-b border-gray-200 dark:border-gray-700">
+            <CardTitle className="text-2xl font-bold tracking-wide mb-2 text-gray-900 dark:text-white">
+              MARITIME TALENT QUEST 2025 REGISTRATION
+            </CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">
+              <div className="space-y-1">
+                <p className="font-medium">Official Registration Form - Conference | Performance Competition</p>
+                <p className="text-sm">October 23, 2025 | Manila EGC Marine Supply Inc.</p>
+                <p className="text-sm">Please complete all required fields below.</p>
+              </div>
+            </CardDescription>
+          </div>
+
+          {/* Content Section */}
+          <CardContent className="p-8">
+            {/* Info Card */}
+            <div className="mb-10">
+              <DraftManager />
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="relative">
+                
+                {/* Loading Overlay */}
+                {isSubmitting && (
+                  <div className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40 flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                      <p className="text-sm font-medium">Submitting Registration...</p>
+                      <p className="text-xs text-muted-foreground">Please do not close this window</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-10">
+                  {/* Section 1: Performance Details */}
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">1</span>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Performance Details</h3>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm">Tell us about your talent performance</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-8">
+                      <ContactInformation form={form} />
+                    </div>
+                  </div>
+
+                  {/* Performer Sections Status */}
+                  {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
+                    <>
+                      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 animate-fade-in-scale">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-200 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                            <Icon icon="mdi:account-group" className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              {numberOfPerformers} Performer{numberOfPerformers > 1 ? 's' : ''} Ready
+                            </p>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">
+                              All cards are collapsed by default. Click on any performer card to expand and complete their information.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Performer Cards Container */}
+                      <div className="space-y-6">
+                        {Array.from({ length: numberOfPerformers }, (_, index) => (
+                          <div 
+                            key={`performer-${index}`}
+                            className="opacity-0 animate-slide-in-bottom"
+                            style={{
+                              animationDelay: `${(index * 150) + 200}ms`,
+                              animationFillMode: 'forwards'
+                            }}
+                          >
+                            <PerformerSection 
+                              form={form} 
+                              performerIndex={index} 
+                              performerNumber={index + 1} 
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Section 6: School Endorsement */}
+                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
+                              <span className="text-sm font-bold text-gray-700 dark:text-gray-300">6</span>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">School Endorsement</h3>
+                              <p className="text-gray-600 dark:text-gray-400 text-sm">Official school certification and endorsement</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-8">
+                          <SchoolEndorsement form={form} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Error Message */}
+                  {(numberOfPerformers > 10 || (watchNumberOfPerformers && parseInt(watchNumberOfPerformers) > 10)) && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-red-100 dark:bg-red-800 rounded-full w-8 h-8 flex items-center justify-center">
+                          <Icon icon="mdi:alert" className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-red-800 dark:text-red-200">Maximum 10 performers allowed</p>
+                          <p className="text-red-600 dark:text-red-400 text-sm">Please enter a number between 1 and 10.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit Section */}
+                {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
+                  <div className="mt-12 text-center">
+                    <Button
+                      type="submit"
+                      className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      size="lg"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Submitting Registration...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-5 w-5" />
+                          Complete Registration
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-center text-sm text-gray-600 dark:text-gray-300 mt-3">
+                      You will receive a confirmation email after successful registration
+                    </p>
+                  </div>
+                )}
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

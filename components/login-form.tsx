@@ -25,14 +25,10 @@ export function LoginForm() {
         description: 'Welcome back! Redirecting to dashboard...'
       });
 
-      console.log('Login successful, checking cookies...');
-      console.log('Document cookies:', document.cookie);
-
-      // Force a full page reload to ensure cookies are properly set
+      // Redirect to admin dashboard
       setTimeout(() => {
-        console.log('Redirecting to /admin');
         window.location.href = '/admin';
-      }, 1500);
+      }, 1000);
     } else {
       toast.error('Login failed', {
         description: result.error || 'Invalid credentials'

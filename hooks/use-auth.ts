@@ -1,104 +1,61 @@
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { login as apiLogin, logout as apiLogout, getSession } from '@/lib/api-service';
+// Optimized auth hook using TanStack Query
+import { useSession, useLogin, useLogout, useRegister } from '@/lib/auth-queries';
 
 export const useAuth = () => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  // Use TanStack Query hooks for data fetching and mutations
+  const { data: user, isLoading: sessionLoading, error: sessionError } = useSession();
+  const loginMutation = useLogin();
+  const logoutMutation = useLogout();
+  const registerMutation = useRegister();
 
-  // Get current user from session
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { user } = await getSession();
-        setUser(user);
-      } catch (err) {
-        console.error('Error fetching user:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
+  // Login handler
   const handleLogin = async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
-    
     try {
-      // Use custom database authentication (not Supabase Auth)
-      const data = await apiLogin(email, password);
-      setUser(data.user);
-      
-      // Store user in localStorage for session persistence
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
+      await loginMutation.mutateAsync({ email, password });
       return { success: true, error: null };
     } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
+      return { success: false, error: err.message || 'Login failed' };
     }
   };
 
+  // Logout handler
   const handleLogout = async () => {
-    setLoading(true);
-    setError(null);
-    
     try {
-      await apiLogout();
-      setUser(null);
-      localStorage.removeItem('user');
-      router.push('/login');
-      router.refresh();
+      await logoutMutation.mutateAsync();
       return { success: true, error: null };
     } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
+      return { success: false, error: err.message || 'Logout failed' };
     }
   };
 
-  const register = async (email: string, password: string, name?: string) => {
-    setLoading(true);
-    setError(null);
-    
+  // Register handler
+  const handleRegister = async (email: string, password: string, name?: string) => {
     try {
-      // TODO: Implement custom registration API
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
-
-      router.push('/login');
+      await registerMutation.mutateAsync({ email, password, name });
       return { success: true, error: null };
     } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
+      return { success: false, error: err.message || 'Registration failed' };
     }
   };
 
   return {
     user,
-    loading,
-    error,
+    loading: sessionLoading || loginMutation.isPending || logoutMutation.isPending || registerMutation.isPending,
+    error: sessionError?.message || loginMutation.error?.message || logoutMutation.error?.message || registerMutation.error?.message || null,
     login: handleLogin,
     logout: handleLogout,
-    register,
-    isAuthenticated: !!user
+    register: handleRegister,
+    isAuthenticated: !!user,
+    // Expose mutation states for granular control
+    loginState: {
+      isPending: loginMutation.isPending,
+      isError: loginMutation.isError,
+      error: loginMutation.error,
+    },
+    logoutState: {
+      isPending: logoutMutation.isPending,
+      isError: logoutMutation.isError,
+      error: logoutMutation.error,
+    },
   };
 };

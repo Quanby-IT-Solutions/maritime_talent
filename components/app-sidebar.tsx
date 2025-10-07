@@ -23,14 +23,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useAuth } from "@/hooks/use-auth"
 
-const data = {
-  user: {
-    name: "Admin",
-    email: "admin@maritime.edu",
-    avatar: "",
-  },
-  navMain: [
+const navMain = [
     {
       title: "Dashboard",
       url: "/admin",
@@ -46,8 +41,6 @@ const data = {
       url: "/admin/talents_details",
       icon: IconUsers,
     },
-  ],
-  navSecondary: [
     {
       title: "Guest List",
       url: "/admin/guest_list",
@@ -63,10 +56,24 @@ const data = {
       url: "/admin/singles_performances",
       icon: IconFileDescription,
     },
-  ],
-}
+  ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, loading } = useAuth()
+
+  // Debug: Log user data
+  React.useEffect(() => {
+    console.log('AppSidebar - User:', user)
+    console.log('AppSidebar - Loading:', loading)
+  }, [user, loading])
+
+  // Create user data with placeholder avatar
+  const userData = {
+    name: user?.full_name || "Guest",
+    email: user?.email || "",
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || "Guest")}&background=0D8ABC&color=fff`,
+  }
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -78,18 +85,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">Maritime Talent Quest</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        {!loading && <NavUser user={userData} />}
       </SidebarFooter>
     </Sidebar>
   )
