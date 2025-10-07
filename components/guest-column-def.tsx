@@ -18,12 +18,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { z } from "zod";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -128,16 +128,20 @@ const GuestDetailsSheet = ({ guest, onUpdate }: { guest: GuestData; onUpdate?: (
   };
 
   const handleCancel = () => {
-    setFormData({
-      full_name: guest.full_name,
-      age: guest.age || '',
-      gender: guest.gender || '',
-      email: guest.email || '',
-      contact_number: guest.contact_number || '',
-      address: guest.address || '',
-      organization: guest.organization || '',
-    });
-    setIsEditing(false);
+    setOpen(false); // Close the dialog immediately
+    // Reset state after a short delay to avoid the flash
+    setTimeout(() => {
+      setFormData({
+        full_name: guest.full_name,
+        age: guest.age || '',
+        gender: guest.gender || '',
+        email: guest.email || '',
+        contact_number: guest.contact_number || '',
+        address: guest.address || '',
+        organization: guest.organization || '',
+      });
+      setIsEditing(false);
+    }, 200);
   };
 
   return (
@@ -154,82 +158,88 @@ const GuestDetailsSheet = ({ guest, onUpdate }: { guest: GuestData; onUpdate?: (
         View details
       </DropdownMenuItem>
 
-      <Sheet open={open} onOpenChange={(newOpen) => {
+      <DropdownMenuItem
+        className="flex items-center gap-2"
+        onSelect={(e) => {
+          e.preventDefault();
+          setOpen(true);
+          setIsEditing(true);
+        }}
+      >
+        <Edit className="h-4 w-4" />
+        Edit Information
+      </DropdownMenuItem>
+
+      <Dialog open={open} onOpenChange={(newOpen) => {
         setOpen(newOpen);
         if (!newOpen) setIsEditing(false);
       }}>
-        <SheetContent className="w-full max-w-2xl p-0 flex flex-col h-full">
-          <div className="p-6 border-b bg-white">
-            <SheetHeader className="text-left">
-              <div className="flex items-start justify-between">
-                <div>
-                  <SheetTitle className="text-2xl font-bold tracking-tight mb-2">
-                    {isEditing ? "Edit Guest" : guest.full_name}
-                  </SheetTitle>
-                  <SheetDescription className="text-base">
-                    Guest ID: <span className="font-mono font-semibold text-slate-900">#{guest.guest_id}</span>
-                  </SheetDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isEditing ? (
-                    <>
-                      <Button size="sm" onClick={handleCancel} variant="outline">
-                        <X className="h-4 w-4 mr-1" />
-                        Cancel
-                      </Button>
-                      <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                        <Save className="h-4 w-4 mr-1" />
-                        {isSaving ? "Saving..." : "Save"}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Badge variant="secondary" className="text-xs">
-                        {guest.gender || "Guest"}
-                      </Badge>
-                      <Button size="sm" onClick={() => setIsEditing(true)} variant="outline">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                    </>
-                  )}
-                </div>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <DialogTitle className="text-2xl font-bold">
+                  {isEditing ? "Edit Guest Information" : guest.full_name}
+                </DialogTitle>
+                <DialogDescription className="text-sm mt-1">
+                  Guest ID: <span className="font-mono font-semibold text-slate-900">#{guest.guest_id}</span>
+                </DialogDescription>
               </div>
-            </SheetHeader>
-          </div>
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={handleCancel} variant="outline">
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                      <Save className="h-4 w-4 mr-1" />
+                      {isSaving ? "Saving..." : "Save"}
+                    </Button>
+                  </>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">
+                    {guest.gender || "Guest"}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="space-y-6 mt-4">
             {isEditing ? (
               <div className="space-y-6">
-                {/* Personal Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Personal Information</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 space-y-4">
+                {/* Personal Information Card - Edit Mode */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Personal Information</h3>
+                  </div>
+                  <div className="p-4 bg-white space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="full_name" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Full Name</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="full_name" className="text-xs font-medium text-slate-700">Full Name</Label>
                         <Input
                           id="full_name"
                           value={formData.full_name}
                           onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                          className="mt-1"
+                          placeholder="Enter full name"
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="age" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Age</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="age" className="text-xs font-medium text-slate-700">Age</Label>
                         <Input
                           id="age"
                           type="number"
                           value={formData.age}
                           onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                          className="mt-1"
+                          placeholder="Enter age"
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="gender" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Gender</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="gender" className="text-xs font-medium text-slate-700">Gender</Label>
                       <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger>
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
@@ -242,136 +252,146 @@ const GuestDetailsSheet = ({ guest, onUpdate }: { guest: GuestData; onUpdate?: (
                   </div>
                 </div>
 
-                {/* Contact Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Contact Information</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 space-y-4">
-                    <div>
-                      <Label htmlFor="email" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Email</Label>
+                {/* Contact Information Card - Edit Mode */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Contact Information</h3>
+                  </div>
+                  <div className="p-4 bg-white space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-xs font-medium text-slate-700">Email Address</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="mt-1"
+                        placeholder="Enter email address"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="contact_number" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Phone</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact_number" className="text-xs font-medium text-slate-700">Phone Number</Label>
                       <Input
                         id="contact_number"
                         value={formData.contact_number}
                         onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
-                        className="mt-1"
+                        placeholder="Enter phone number"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="address" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Address</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="address" className="text-xs font-medium text-slate-700">Address</Label>
                       <Textarea
                         id="address"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="mt-1"
                         rows={3}
+                        placeholder="Enter full address"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Organization */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Organization</h3>
-                  <div className="bg-slate-50 rounded-lg p-4">
-                    <Label htmlFor="organization" className="text-xs font-medium text-slate-500 uppercase tracking-wide">Affiliation</Label>
-                    <Input
-                      id="organization"
-                      value={formData.organization}
-                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                      className="mt-1"
-                      placeholder="Organization name or 'Individual'"
-                    />
+                {/* Organization Card - Edit Mode */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Organization</h3>
+                  </div>
+                  <div className="p-4 bg-white">
+                    <div className="space-y-2">
+                      <Label htmlFor="organization" className="text-xs font-medium text-slate-700">Affiliation</Label>
+                      <Input
+                        id="organization"
+                        value={formData.organization}
+                        onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                        placeholder="Organization name or 'Individual'"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="space-y-8">
-                {/* Personal Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Personal Information</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Age</p>
-                        <p className="text-sm font-semibold text-slate-900">{guest.age || "Not provided"}</p>
+              <div className="space-y-6">
+                {/* Personal Information Card */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Personal Information</h3>
+                  </div>
+                  <div className="p-4 bg-white">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Age</p>
+                        <p className="text-base font-medium text-slate-900">{guest.age || "Not provided"}</p>
                       </div>
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Gender</p>
-                        <Badge variant="outline" className="text-xs">
-                          {guest.gender || "Not specified"}
-                        </Badge>
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Gender</p>
+                        <div>
+                          <Badge variant="outline" className="font-medium">
+                            {guest.gender || "Not specified"}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Contact Information */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Contact Information</h3>
-                  <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Email</p>
-                      <p className="text-sm font-semibold text-slate-900 break-all">
-                        {guest.email || "Not provided"}
+                {/* Contact Information Card */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Contact Information</h3>
+                  </div>
+                  <div className="p-4 bg-white space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Email Address</p>
+                      <p className="text-base font-medium text-slate-900 break-all">
+                        {guest.email || <span className="text-slate-400">Not provided</span>}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Phone</p>
-                      <p className="text-sm font-semibold text-slate-900 font-mono">
-                        {guest.contact_number || "Not provided"}
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Phone Number</p>
+                      <p className="text-base font-medium text-slate-900 font-mono">
+                        {guest.contact_number || <span className="text-slate-400">Not provided</span>}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Address</p>
-                      <p className="text-sm font-semibold text-slate-900 leading-relaxed">
-                        {guest.address || "Not provided"}
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Address</p>
+                      <p className="text-base font-medium text-slate-900 leading-relaxed">
+                        {guest.address || <span className="text-slate-400">Not provided</span>}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Organization */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Organization</h3>
-                  <div className="bg-slate-50 rounded-lg p-4">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Affiliation</p>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {guest.organization || "Individual"}
-                    </p>
+                {/* Organization & Registration Card */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-sm font-semibold text-slate-900">Additional Information</h3>
                   </div>
-                </div>
-
-                {/* Registration */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Registration</h3>
-                  <div className="bg-slate-50 rounded-lg p-4">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">Registration Date</p>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {guest.registration_date
-                        ? new Date(guest.registration_date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })
-                        : "Not available"
-                      }
-                    </p>
+                  <div className="p-4 bg-white space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Organization</p>
+                      <p className="text-base font-medium text-slate-900">
+                        {guest.organization || "Individual"}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Registration Date</p>
+                      <p className="text-base font-medium text-slate-900">
+                        {guest.registration_date
+                          ? new Date(guest.registration_date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })
+                          : "Not available"
+                        }
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

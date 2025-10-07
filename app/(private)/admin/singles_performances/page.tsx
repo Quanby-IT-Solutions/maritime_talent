@@ -82,8 +82,6 @@ export default function SinglesPerformancesPage() {
           const singleId = single.single_id as number;
           const studentData = studentMap.get(singleId);
 
-          console.log('Single ID:', singleId, 'Student Data:', studentData);
-
           return {
             id: singleId, // Add id property for DataTable
             single_id: singleId,
@@ -95,8 +93,6 @@ export default function SinglesPerformancesPage() {
             student_school: studentData?.school as string || null,
           };
         });
-
-        console.log('Transformed data:', transformedData);
 
         // Validate with Zod and collect errors
         const validatedData: SingleData[] = [];

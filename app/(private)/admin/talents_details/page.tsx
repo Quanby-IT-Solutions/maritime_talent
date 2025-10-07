@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { DataTable } from "@/components/talent-data-table";
 import {
-  columns,
+  createColumns,
   TalentData,
   safeParseTalentData,
 } from "@/components/talent-column-def";
@@ -208,6 +208,36 @@ export default function TalentsDetailsPage() {
     fetchTalents();
   }, []);
 
+  // Handle talent updates
+  const handleTalentUpdate = (updatedTalent: TalentData) => {
+    setTalents(prevTalents => {
+      const updatedTalents = prevTalents.map(talent =>
+        talent.student_id === updatedTalent.student_id ? updatedTalent : talent
+      );
+
+      // Recalculate statistics
+      const total = updatedTalents.length;
+      let complete = 0, partial = 0, incomplete = 0;
+
+      updatedTalents.forEach((talent) => {
+        const sections = [
+          !!talent.requirements,
+          !!talent.health_fitness,
+          !!talent.consents,
+          !!talent.endorsements,
+        ];
+        const completedCount = sections.filter(Boolean).length;
+
+        if (completedCount === 4) complete++;
+        else if (completedCount > 1) partial++;
+        else incomplete++;
+      });
+
+      setStats({ total, complete, partial, incomplete });
+      return updatedTalents;
+    });
+  };
+
   // Filter talents based on search and status
   const filteredTalents = talents.filter((talent) => {
     const matchesSearch =
@@ -356,7 +386,7 @@ export default function TalentsDetailsPage() {
             </div>
           ) : (
             <DataTable
-              columns={columns}
+              columns={createColumns(handleTalentUpdate)}
               data={filteredTalents}
               searchPlaceholder="Search by name, email, or school..."
               searchValue={searchQuery}

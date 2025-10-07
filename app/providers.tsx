@@ -49,7 +49,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <SupabaseRealtimeProvider>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           storageKey="maritime-quest-theme"
         >
