@@ -79,7 +79,7 @@ type FormData = z.infer<typeof formSchema>
 
 export default function RegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [numberOfPerformers, setNumberOfPerformers] = useState(1)
+  const [numberOfPerformers, setNumberOfPerformers] = useState(0)
 
   // Initialize form before any watchers
   const form = useForm<FormData>({
@@ -89,10 +89,31 @@ export default function RegistrationPage() {
       performanceOther: "",
       performanceTitle: "",
       performanceDuration: "",
-      numberOfPerformers: "1",
+      numberOfPerformers: "",
       groupMembers: "",
-      performers: [
-        {
+      performers: [],
+      schoolOfficialName: "",
+      schoolOfficialPosition: "",
+    },
+    mode: 'onChange'
+  })
+
+  // Watch for changes in numberOfPerformers and update performers array
+  const watchNumberOfPerformers = form.watch('numberOfPerformers')
+  
+  useEffect(() => {
+    const count = parseInt(watchNumberOfPerformers) || 0
+    setNumberOfPerformers(count)
+    
+    // Update performers array to match the selected count
+    if (count > 0) {
+      const currentPerformers = form.getValues('performers') || []
+      const newPerformers = Array.from({ length: count }, (_, index) => {
+        // Keep existing performer data if available, otherwise create new
+        if (currentPerformers[index]) {
+          return currentPerformers[index]
+        }
+        return {
           fullName: "",
           lastName: "",
           middleName: "",
@@ -113,51 +134,13 @@ export default function RegistrationPage() {
           signatureDate: "",
           parentGuardianSignature: "",
         }
-      ],
-      schoolOfficialName: "",
-      schoolOfficialPosition: "",
-    },
-    mode: 'onChange'
-  })
-
-  // Watch for changes in numberOfPerformers and update performers array
-  const watchNumberOfPerformers = form.watch('numberOfPerformers')
-  
-  useEffect(() => {
-    const count = parseInt(watchNumberOfPerformers) || 1
-    setNumberOfPerformers(count)
-    
-    // Update performers array to match the selected count
-    const currentPerformers = form.getValues('performers') || []
-    const newPerformers = Array.from({ length: count }, (_, index) => {
-      // Keep existing performer data if available, otherwise create new
-      if (currentPerformers[index]) {
-        return currentPerformers[index]
-      }
-      return {
-        fullName: "",
-        lastName: "",
-        middleName: "",
-        suffix: "",
-        preferredName: "",
-        nationality: "",
-        age: "",
-        gender: "",
-        school: "",
-        courseYear: "",
-        contactNumber: "",
-        email: "",
-        healthDeclaration: false,
-        informationConsent: false,
-        rulesAgreement: false,
-        publicityConsent: false,
-        studentSignature: "",
-        signatureDate: "",
-        parentGuardianSignature: "",
-      }
-    })
-    
-    form.setValue('performers', newPerformers)
+      })
+      
+      form.setValue('performers', newPerformers)
+    } else {
+      // Clear performers array when count is 0
+      form.setValue('performers', [])
+    }
   }, [watchNumberOfPerformers, form])
 
   // (form already initialized above)
@@ -269,31 +252,41 @@ export default function RegistrationPage() {
                   {/* Performer Sections Status */}
                   {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
                     <>
-                      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 animate-fade-in-scale">
                         <div className="flex items-center gap-3">
                           <div className="bg-gray-200 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
-                            <Icon icon="mdi:check" className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                            <Icon icon="mdi:account-group" className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                           </div>
                           <div>
                             <p className="font-semibold text-gray-900 dark:text-white">
-                              Showing forms for {numberOfPerformers} performer{numberOfPerformers > 1 ? 's' : ''}
+                              {numberOfPerformers} Performer{numberOfPerformers > 1 ? 's' : ''} Ready
                             </p>
                             <p className="text-gray-600 dark:text-gray-400 text-sm">
-                              Please complete the information below for each performer.
+                              All cards are collapsed by default. Click on any performer card to expand and complete their information.
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      {Array.from({ length: numberOfPerformers }, (_, index) => (
-                        <div key={`performer-${index}`}>
-                          <PerformerSection 
-                            form={form} 
-                            performerIndex={index} 
-                            performerNumber={index + 1} 
-                          />
-                        </div>
-                      ))}
+                      {/* Performer Cards Container */}
+                      <div className="space-y-6">
+                        {Array.from({ length: numberOfPerformers }, (_, index) => (
+                          <div 
+                            key={`performer-${index}`}
+                            className="opacity-0 animate-slide-in-bottom"
+                            style={{
+                              animationDelay: `${(index * 150) + 200}ms`,
+                              animationFillMode: 'forwards'
+                            }}
+                          >
+                            <PerformerSection 
+                              form={form} 
+                              performerIndex={index} 
+                              performerNumber={index + 1} 
+                            />
+                          </div>
+                        ))}
+                      </div>
 
                       {/* Section 6: School Endorsement */}
                       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
