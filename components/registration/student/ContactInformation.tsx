@@ -149,7 +149,20 @@ export function ContactInformation({ form }: ContactInformationProps) {
                   max="10"
                   placeholder="Enter number of performers (1-10)" 
                   className="text-base" 
-                  {...field} 
+                  onKeyPress={(e) => {
+                    // Prevent non-numeric characters
+                    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numbers 1-10
+                    if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 10)) {
+                      field.onChange(value);
+                    }
+                  }}
+                  value={field.value}
                 />
               </FormControl>
               <FormMessage />
@@ -157,29 +170,6 @@ export function ContactInformation({ form }: ContactInformationProps) {
           )}
         />
       </div>
-
-      {watchNumberOfPerformers && parseInt(watchNumberOfPerformers) > 1 && (
-        <div className="grid grid-cols-1 gap-6">
-          <FormField
-            control={form.control}
-            name="groupMembers"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-base font-medium">Names of Group Members</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Please list the full names of all group members, one per line"
-                    className="text-base min-h-[100px]"
-                    {...field} 
-                  />
-                </FormControl>
-                <p className="text-sm text-gray-500">List each member's full name on a separate line</p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      )}
     </div>
   )
 }
