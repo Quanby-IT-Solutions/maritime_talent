@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DataTable } from "@/components/talent-data-table";
+import { DataTable } from "@/components/talent-datatables/talent-data-table";
 import { createColumns, GuestData, safeParseGuestData } from "@/components/guest-column-def";
 import {
   Card,

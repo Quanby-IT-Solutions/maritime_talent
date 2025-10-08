@@ -1,0 +1,1165 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ArrowUpDown, Eye, Edit, MoreHorizontal, Loader2, Save, X, User, FileText, Heart, Shield, Award, Music, Trash2, Upload } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { z } from "zod";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@radix-ui/react-select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+
+// Zod schema for single performance validation
+export const SingleSchema = z.object({
+  id: z.number(), // Required for DataTable
+  single_id: z.number(),
+  performance_title: z.string().min(1, "Performance title is required"),
+  student_id: z.number().nullable(),
+  created_at: z.string().nullable(),
+  student_name: z.string().nullable(),
+  student_school: z.string().nullable(),
+  performance_type: z.enum(['Singing', 'Dancing', 'Musical Instrument', 'Spoken Word/Poetry', 'Theatrical/Drama', 'Other']).nullable(),
+  duration: z.string().nullable(),
+});
+
+// Type for single performance data
+export type SingleData = z.infer<typeof SingleSchema>;
+
+// Validation function
+export const validateSingleData = (data: unknown): SingleData => {
+  return SingleSchema.parse(data);
+};
+
+// Safe validation function that returns errors
+export const safeParseSingleData = (data: unknown) => {
+  return SingleSchema.safeParse(data);
+};
+
+// Interface for full performance data
+interface SinglePerformanceData {
+  single: {
+    single_id: number;
+    student_id: number;
+    performance_title: string;
+    performance_type: string;
+    created_at: string;
+  };
+  student: {
+    student_id: number;
+    full_name: string;
+    age: number;
+    gender: string;
+    school: string;
+    course_year: string;
+    contact_number: string;
+    email: string;
+  };
+  performance: {
+    performance_id: number;
+    performance_type: string;
+    title: string;
+    duration: string;
+    num_performers: number;
+  } | null;
+  requirements: {
+    requirement_id: number;
+    certification_url: string;
+    school_id_url: string;
+    uploaded_at: string;
+  } | null;
+  health: {
+    declaration_id: number;
+    is_physically_fit: boolean;
+    medical_conditions: string;
+    student_signature_url: string;
+    parent_guardian_signature_url: string;
+    declaration_date: string;
+  } | null;
+  consents: {
+    consent_id: number;
+    info_correct: boolean;
+    agree_to_rules: boolean;
+    consent_to_publicity: boolean;
+    student_signature_url: string;
+    parent_guardian_signature_url: string;
+    consent_date: string;
+  } | null;
+  endorsement: {
+    endorsement_id: number;
+    school_official_name: string;
+    position: string;
+    signature_url: string;
+    endorsement_date: string;
+  } | null;
+}
+
+// Single Details Component - Modal dialogs
+const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate?: () => void }) => {
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [data, setData] = useState<SinglePerformanceData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form state for editing
+  const [formData, setFormData] = useState({
+    performance_title: "",
+    performance_type: "",
+    full_name: "",
+    age: 0,
+    gender: "",
+    school: "",
+    course_year: "",
+    contact_number: "",
+    email: "",
+    duration: "",
+  });
+
+  // File upload states
+  const [files, setFiles] = useState({
+    certification: null as File | null,
+    school_id: null as File | null,
+    health_student_signature: null as File | null,
+    health_parent_signature: null as File | null,
+    consent_student_signature: null as File | null,
+    consent_parent_signature: null as File | null,
+    endorsement_signature: null as File | null,
+  });
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/single_performance/${single.single_id}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        setError(result.error || "Failed to fetch data");
+        return;
+      }
+
+      setData(result.data);
+      
+      // Populate form data for edit mode
+      setFormData({
+        performance_title: result.data.single.performance_title || "",
+        performance_type: result.data.single.performance_type || "",
+        full_name: result.data.student.full_name || "",
+        age: result.data.student.age || 0,
+        gender: result.data.student.gender || "",
+        school: result.data.student.school || "",
+        course_year: result.data.student.course_year || "",
+        contact_number: result.data.student.contact_number || "",
+        email: result.data.student.email || "",
+        duration: result.data.performance?.duration || "",
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/single_performance/${single.single_id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          single: {
+            performance_title: formData.performance_title,
+            performance_type: formData.performance_type,
+          },
+          student: {
+            full_name: formData.full_name,
+            age: formData.age,
+            gender: formData.gender,
+            school: formData.school,
+            course_year: formData.course_year,
+            contact_number: formData.contact_number,
+            email: formData.email,
+          },
+          performance: {
+            duration: formData.duration,
+            performance_type: formData.performance_type,
+          },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        alert(`Error: ${result.error || "Failed to update performance"}`);
+        return;
+      }
+
+      alert("Performance updated successfully!");
+      setEditOpen(false);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : "An error occurred"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete "${single.performance_title}"? This will delete all related data and files permanently.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/single_performance/${single.single_id}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        alert(`Error: ${result.error || "Failed to delete performance"}`);
+        return;
+      }
+
+      alert("Performance deleted successfully!");
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : "An error occurred"}`);
+    }
+  };
+
+  return (
+    <>
+      <DropdownMenuItem
+        className="flex items-center gap-2"
+        onSelect={(e) => {
+          e.preventDefault();
+          setViewOpen(true);
+          fetchData();
+        }}
+      >
+        <Eye className="h-4 w-4" />
+        View details
+      </DropdownMenuItem>
+
+      <DropdownMenuItem
+        className="flex items-center gap-2"
+        onSelect={(e) => {
+          e.preventDefault();
+          setEditOpen(true);
+          fetchData();
+        }}
+      >
+        <Edit className="h-4 w-4" />
+        Edit Information
+      </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+
+      <DropdownMenuItem
+        className="flex items-center gap-2 text-red-600"
+        onSelect={(e) => {
+          e.preventDefault();
+          handleDelete();
+        }}
+      >
+        <Trash2 className="h-4 w-4" />
+        Delete
+      </DropdownMenuItem>
+
+      {/* View Modal */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="min-w-[55%] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">
+              {data?.single.performance_title || "Performance Details"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : error || !data ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error || "No data found"}</AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid gap-6 mt-4">
+              {/* Performance Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Music className="h-5 w-5" />
+                    Performance Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Performance Title</p>
+                      <p className="text-base font-semibold">{data.single.performance_title}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Performance Type</p>
+                      <Badge variant="secondary">{data.single.performance_type || "Not specified"}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Created Date</p>
+                      <p className="text-base">
+                        {new Date(data.single.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    {data.performance && (
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Duration</p>
+                        <p className="text-base">{data.performance.duration || "Not specified"}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Student Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Student Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Student ID</p>
+                      <p className="text-base font-mono">#{data.student.student_id}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Full Name</p>
+                      <p className="text-base font-semibold">{data.student.full_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Age</p>
+                      <p className="text-base">{data.student.age}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Gender</p>
+                      <Badge variant="outline">{data.student.gender}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Email</p>
+                      <p className="text-base break-all">{data.student.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Contact Number</p>
+                      <p className="text-base font-mono">{data.student.contact_number}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">School</p>
+                      <p className="text-base">{data.student.school}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Course/Year</p>
+                      <p className="text-base">{data.student.course_year}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Requirements */}
+              {data.requirements && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Requirements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Certification</p>
+                        {data.requirements.certification_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.requirements.certification_url} 
+                              alt="Certification" 
+                              className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.requirements?.certification_url, '_blank')}
+                            />
+                            <a href={data.requirements.certification_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              Open in new tab
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not uploaded</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">School ID</p>
+                        {data.requirements.school_id_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.requirements.school_id_url} 
+                              alt="School ID" 
+                              className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.requirements?.school_id_url, '_blank')}
+                            />
+                            <a href={data.requirements.school_id_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              Open in new tab
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not uploaded</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Health & Fitness */}
+              {data.health && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Heart className="h-5 w-5" />
+                      Health & Fitness Declaration
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Physically Fit</p>
+                        <Badge variant={data.health.is_physically_fit ? "default" : "destructive"}>
+                          {data.health.is_physically_fit ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      {data.health.medical_conditions && (
+                        <div className="col-span-2">
+                          <p className="text-sm font-medium text-muted-foreground">Medical Conditions</p>
+                          <p className="text-base">{data.health.medical_conditions}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                        {data.health.student_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.health.student_signature_url} 
+                              alt="Student Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.health?.student_signature_url, '_blank')}
+                            />
+                            <a href={data.health.student_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                        {data.health.parent_guardian_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.health.parent_guardian_signature_url} 
+                              alt="Parent/Guardian Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.health?.parent_guardian_signature_url, '_blank')}
+                            />
+                            <a href={data.health.parent_guardian_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Consents */}
+              {data.consents && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Consents & Agreements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Information Correct</p>
+                        <Badge variant={data.consents.info_correct ? "default" : "destructive"}>
+                          {data.consents.info_correct ? "Confirmed" : "Not Confirmed"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Agree to Rules</p>
+                        <Badge variant={data.consents.agree_to_rules ? "default" : "destructive"}>
+                          {data.consents.agree_to_rules ? "Agreed" : "Not Agreed"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Consent to Publicity</p>
+                        <Badge variant={data.consents.consent_to_publicity ? "default" : "destructive"}>
+                          {data.consents.consent_to_publicity ? "Consented" : "Not Consented"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                        {data.consents.student_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.consents.student_signature_url} 
+                              alt="Student Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.consents?.student_signature_url, '_blank')}
+                            />
+                            <a href={data.consents.student_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                        {data.consents.parent_guardian_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.consents.parent_guardian_signature_url} 
+                              alt="Parent/Guardian Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.consents?.parent_guardian_signature_url, '_blank')}
+                            />
+                            <a href={data.consents.parent_guardian_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Endorsement */}
+              {data.endorsement && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5" />
+                      School Endorsement
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
+                        <p className="text-base font-semibold">{data.endorsement.school_official_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Position</p>
+                        <p className="text-base">{data.endorsement.position}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Official Signature</p>
+                        {data.endorsement.signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.endorsement.signature_url} 
+                              alt="Official Signature" 
+                              className="w-full max-w-md h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.endorsement?.signature_url, '_blank')}
+                            />
+                            <a href={data.endorsement.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="min-w-[55%] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-bold">Edit Performance</DialogTitle>
+              <div className="flex gap-2">
+                <Button onClick={() => setEditOpen(false)} variant="outline" size="sm">
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={saving} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : error || !data ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error || "No data found"}</AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid gap-6 mt-4">
+              {/* Performance Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Music className="h-5 w-5" />
+                    Performance Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="performance_title">Performance Title</Label>
+                      <Input
+                        id="performance_title"
+                        value={formData.performance_title}
+                        onChange={(e) => setFormData({ ...formData, performance_title: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="performance_type">Performance Type</Label>
+                      <Select
+                        value={formData.performance_type}
+                        onValueChange={(value) => setFormData({ ...formData, performance_type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Singing">Singing</SelectItem>
+                          <SelectItem value="Dancing">Dancing</SelectItem>
+                          <SelectItem value="Musical Instrument">Musical Instrument</SelectItem>
+                          <SelectItem value="Spoken Word/Poetry">Spoken Word/Poetry</SelectItem>
+                          <SelectItem value="Theatrical/Drama">Theatrical/Drama</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="duration">Duration</Label>
+                      <Input
+                        id="duration"
+                        value={formData.duration}
+                        onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                        placeholder="e.g., 3-5 minutes"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Student Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Student Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Full Name</Label>
+                      <Input
+                        id="full_name"
+                        value={formData.full_name}
+                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="age">Age</Label>
+                      <Input
+                        id="age"
+                        type="number"
+                        value={formData.age}
+                        onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gender">Gender</Label>
+                      <Select
+                        value={formData.gender}
+                        onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact_number">Contact Number</Label>
+                      <Input
+                        id="contact_number"
+                        value={formData.contact_number}
+                        onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="school">School</Label>
+                      <Input
+                        id="school"
+                        value={formData.school}
+                        onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="course_year">Course/Year</Label>
+                      <Input
+                        id="course_year"
+                        value={formData.course_year}
+                        onChange={(e) => setFormData({ ...formData, course_year: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Requirements (Editable) */}
+              {data.requirements && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Requirements
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="certification">Certification</Label>
+                        {data.requirements.certification_url && !files.certification && (
+                          <div className="space-y-2 mb-2">
+                            <img 
+                              src={data.requirements.certification_url} 
+                              alt="Current Certification" 
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                            />
+                            <p className="text-xs text-muted-foreground">Current file</p>
+                          </div>
+                        )}
+                        <Input
+                          id="certification"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setFiles({ ...files, certification: e.target.files?.[0] || null })}
+                        />
+                        {files.certification && (
+                          <p className="text-xs text-green-600">New file selected: {files.certification.name}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="school_id">School ID</Label>
+                        {data.requirements.school_id_url && !files.school_id && (
+                          <div className="space-y-2 mb-2">
+                            <img 
+                              src={data.requirements.school_id_url} 
+                              alt="Current School ID" 
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                            />
+                            <p className="text-xs text-muted-foreground">Current file</p>
+                          </div>
+                        )}
+                        <Input
+                          id="school_id"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setFiles({ ...files, school_id: e.target.files?.[0] || null })}
+                        />
+                        {files.school_id && (
+                          <p className="text-xs text-green-600">New file selected: {files.school_id.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Health & Fitness (Read-only) */}
+              {data.health && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Heart className="h-5 w-5" />
+                      Health & Fitness Declaration
+                      <Badge variant="secondary" className="ml-2">View Only</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Physically Fit</p>
+                        <Badge variant={data.health.is_physically_fit ? "default" : "destructive"}>
+                          {data.health.is_physically_fit ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      {data.health.medical_conditions && (
+                        <div className="col-span-2">
+                          <p className="text-sm font-medium text-muted-foreground">Medical Conditions</p>
+                          <p className="text-base">{data.health.medical_conditions}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                        {data.health.student_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.health.student_signature_url} 
+                              alt="Student Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.health?.student_signature_url, '_blank')}
+                            />
+                            <a href={data.health.student_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                        {data.health.parent_guardian_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.health.parent_guardian_signature_url} 
+                              alt="Parent/Guardian Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.health?.parent_guardian_signature_url, '_blank')}
+                            />
+                            <a href={data.health.parent_guardian_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Consents (Read-only) */}
+              {data.consents && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Consents & Agreements
+                      <Badge variant="secondary" className="ml-2">View Only</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Information Correct</p>
+                        <Badge variant={data.consents.info_correct ? "default" : "destructive"}>
+                          {data.consents.info_correct ? "Confirmed" : "Not Confirmed"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Agree to Rules</p>
+                        <Badge variant={data.consents.agree_to_rules ? "default" : "destructive"}>
+                          {data.consents.agree_to_rules ? "Agreed" : "Not Agreed"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Consent to Publicity</p>
+                        <Badge variant={data.consents.consent_to_publicity ? "default" : "destructive"}>
+                          {data.consents.consent_to_publicity ? "Consented" : "Not Consented"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                        {data.consents.student_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.consents.student_signature_url} 
+                              alt="Student Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.consents?.student_signature_url, '_blank')}
+                            />
+                            <a href={data.consents.student_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                        {data.consents.parent_guardian_signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.consents.parent_guardian_signature_url} 
+                              alt="Parent/Guardian Signature" 
+                              className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.consents?.parent_guardian_signature_url, '_blank')}
+                            />
+                            <a href={data.consents.parent_guardian_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Endorsement (Read-only) */}
+              {data.endorsement && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5" />
+                      School Endorsement
+                      <Badge variant="secondary" className="ml-2">View Only</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
+                        <p className="text-base font-semibold">{data.endorsement.school_official_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Position</p>
+                        <p className="text-base">{data.endorsement.position}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Official Signature</p>
+                        {data.endorsement.signature_url ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={data.endorsement.signature_url} 
+                              alt="Official Signature" 
+                              className="w-full max-w-md h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(data.endorsement?.signature_url, '_blank')}
+                            />
+                            <a href={data.endorsement.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              View full size
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not provided</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): ColumnDef<SingleData>[] => [
+  {
+    accessorKey: "student_name",
+    header: "Name",
+    cell: ({ row }) => {
+      const studentName = row.getValue("student_name") as string;
+      return (
+        <div className="text-sm text-left px-2 py-1">
+          {studentName || "Not assigned"}
+        </div>
+      );
+    },
+    size: 150,
+    meta: {
+      className: "hidden md:table-cell"
+    },
+  },
+  {
+    accessorKey: "performance_title",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 px-2"
+        >
+          Performance Title
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="font-medium text-left">{row.getValue("performance_title")}</div>
+    ),
+    size: 250,
+  },
+  {
+    accessorKey: "performance_type",
+    header: "Performance Type",
+    cell: ({ row }) => {
+      const type = row.getValue("performance_type") as string || 'Other';
+      
+      const colorClass = 
+        type === 'Singing' ? 'bg-blue-100 text-blue-800' :
+        type === 'Dancing' ? 'bg-pink-100 text-pink-800' :
+        type === 'Musical Instrument' ? 'bg-purple-100 text-purple-800' :
+        type === 'Spoken Word/Poetry' ? 'bg-green-100 text-green-800' :
+        type === 'Theatrical/Drama' ? 'bg-orange-100 text-orange-800' :
+        'bg-gray-100 text-gray-800';
+      
+      return (
+        <Badge className={`${colorClass} font-medium`} variant="secondary">
+          {type}
+        </Badge>
+      );
+    },
+    size: 180,
+    meta: {
+      className: "hidden md:table-cell"
+    },
+  },
+  {
+    accessorKey: "duration",
+    header: "Duration",
+    cell: ({ row }) => {
+      const duration = row.getValue("duration") as string;
+      return (
+        <div className="text-sm text-left px-2 py-1">
+          {duration || "N/A"}
+        </div>
+      );
+    },
+    size: 100,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
+  },
+  {
+    accessorKey: "student_school",
+    header: "School",
+    cell: ({ row }) => {
+      const school = row.getValue("student_school") as string;
+      return (
+        <div className="text-sm text-left px-2 py-1">
+          {school || "Not assigned"}
+        </div>
+      );
+    },
+    size: 150,
+    meta: {
+      className: "hidden lg:table-cell"
+    },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const single = row.original;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() =>
+                navigator.clipboard.writeText(single.single_id.toString())
+              }
+            >
+              Copy performance ID
+            </DropdownMenuItem>
+            {single.student_id && (
+              <DropdownMenuItem
+                onClick={() =>
+                  navigator.clipboard.writeText(single.student_id!.toString())
+                }
+              >
+                Copy student ID
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <SingleDetailsSheet single={single} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+    size: 120,
+  },
+];
+
+// Default export for backward compatibility
+export const columns = createColumns();

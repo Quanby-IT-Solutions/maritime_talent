@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { SingleDataTable } from "@/components/single-data-table";
-import { createColumns, SingleData, safeParseSingleData } from "@/components/single-column-def";
+import { useState, useMemo, useEffect } from "react";
+import { SingleDataTable } from "@/components/single-performance/single-data-table";
+import { createColumns, SingleData } from "@/components/single-performance/single-column-def";
 import {
   Card,
   CardContent,
@@ -20,150 +20,48 @@ import {
   Download,
   UserPlus,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useSinglePerformances } from "@/hooks/use-single-performances";
+import { useRealtimeSingles } from "@/provider/SupabaseRealtimeProvider";
 
 export default function SinglesPerformancesPage() {
-  const [singles, setSingles] = useState<SingleData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const { singles, loading, error, refetch, updateSingle } = useSinglePerformances();
+  const { data: realtimeSingles } = useRealtimeSingles();
   const [searchQuery, setSearchQuery] = useState("");
   const [performanceTypeFilter, setPerformanceTypeFilter] = useState<"all" | "Singing" | "Dancing" | "Musical Instrument" | "Spoken Word/Poetry" | "Theatrical/Drama" | "Other">("all");
-  const [stats, setStats] = useState({
-    total: 0,
-    singing: 0,
-    dancing: 0,
-    musicalInstrument: 0,
-    spokenWord: 0,
-    theatrical: 0,
-    other: 0,
-  });
+  const [prevRealtimeLength, setPrevRealtimeLength] = useState(0);
 
+  // Refetch when realtime detects changes in singles table
   useEffect(() => {
-    const fetchSingles = async () => {
-      setLoading(true);
+    // Only refetch if the length actually changed (not on initial mount)
+    if (prevRealtimeLength > 0 && realtimeSingles.length !== prevRealtimeLength) {
+      refetch();
+    }
+    setPrevRealtimeLength(realtimeSingles.length);
+  }, [realtimeSingles.length]);
 
-      try {
-        const supabase = createClient();
+  // Calculate statistics using useMemo
+  const stats = useMemo(() => {
+    const total = singles.length;
+    const singing = singles.filter(s => s.performance_type === 'Singing').length;
+    const dancing = singles.filter(s => s.performance_type === 'Dancing').length;
+    const musicalInstrument = singles.filter(s => s.performance_type === 'Musical Instrument').length;
+    const spokenWord = singles.filter(s => s.performance_type === 'Spoken Word/Poetry').length;
+    const theatrical = singles.filter(s => s.performance_type === 'Theatrical/Drama').length;
+    const other = singles.filter(s => s.performance_type === 'Other' || !s.performance_type).length;
 
-        // Fetch singles from Supabase
-        const { data: singlesData, error: singlesError } = await supabase
-          .from('singles')
-          .select('*')
-          .order('single_id', { ascending: false });
+    return { total, singing, dancing, musicalInstrument, spokenWord, theatrical, other };
+  }, [singles]);
 
-        if (singlesError) {
-          console.error('Error fetching singles:', singlesError);
-          setValidationErrors([`Database error: ${singlesError.message}`]);
-          return;
-        }
-
-        // Fetch students separately and match by sid (single_id)
-        const { data: studentsData, error: studentsError } = await supabase
-          .from('students')
-          .select('student_id, full_name, school, sid')
-          .not('sid', 'is', null);
-
-        if (studentsError) {
-          console.error('Error fetching students:', studentsError);
-          setValidationErrors([`Database error: ${studentsError.message}`]);
-          return;
-        }
-
-        // Create a map of single_id to student data
-        const studentMap = new Map();
-        (studentsData || []).forEach((student: Record<string, unknown>) => {
-          if (student.sid) {
-            studentMap.set(student.sid, student);
-          }
-        });
-
-        // Transform database data to match our expected structure
-        const transformedData: SingleData[] = (singlesData || []).map((single: Record<string, unknown>) => {
-          const singleId = single.single_id as number;
-          const studentData = studentMap.get(singleId);
-
-          return {
-            id: singleId, // Add id property for DataTable
-            single_id: singleId,
-            performance_title: single.performance_title as string || "Untitled Performance",
-            performance_description: single.performance_description as string || null,
-            student_id: single.student_id as number || null,
-            created_at: single.created_at as string || null,
-            student_name: studentData?.full_name as string || null,
-            student_school: studentData?.school as string || null,
-          };
-        });
-
-        // Validate with Zod and collect errors
-        const validatedData: SingleData[] = [];
-        const errors: string[] = [];
-
-        transformedData.forEach((item: unknown, index: number) => {
-          const result = safeParseSingleData(item);
-          if (result.success) {
-            validatedData.push(result.data);
-          } else {
-            errors.push(
-              `Single ${index + 1}: ${result.error.issues
-                .map((i: { message: string }) => i.message)
-                .join(", ")}`
-            );
-          }
-        });
-
-        if (errors.length > 0) {
-          setValidationErrors(errors);
-        }
-
-        setSingles(validatedData);
-
-        // Calculate statistics
-        const total = validatedData.length;
-        const singing = validatedData.filter(s => s.performance_title?.toLowerCase().includes('sing')).length;
-        const dancing = validatedData.filter(s => s.performance_title?.toLowerCase().includes('danc')).length;
-        const musicalInstrument = validatedData.filter(s => s.performance_title?.toLowerCase().includes('instrument')).length;
-        const spokenWord = validatedData.filter(s => s.performance_title?.toLowerCase().includes('spoken') || s.performance_title?.toLowerCase().includes('poetry')).length;
-        const theatrical = validatedData.filter(s => s.performance_title?.toLowerCase().includes('theatrical') || s.performance_title?.toLowerCase().includes('drama')).length;
-        const other = total - singing - dancing - musicalInstrument - spokenWord - theatrical;
-
-        setStats({ total, singing, dancing, musicalInstrument, spokenWord, theatrical, other });
-      } catch (error) {
-        console.error("Error:", error);
-        setValidationErrors([`Unexpected error: ${error instanceof Error ? error.message : String(error)}`]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSingles();
-  }, []);
-
-  // Handle single updates
-  const handleSingleUpdate = (updatedSingle: SingleData) => {
-    setSingles(prevSingles => {
-      const updatedSingles = prevSingles.map(single =>
-        single.id === updatedSingle.id ? updatedSingle : single
-      );
-
-      // Recalculate statistics
-      const total = updatedSingles.length;
-      const singing = updatedSingles.filter(s => s.performance_title?.toLowerCase().includes('sing')).length;
-      const dancing = updatedSingles.filter(s => s.performance_title?.toLowerCase().includes('danc')).length;
-      const musicalInstrument = updatedSingles.filter(s => s.performance_title?.toLowerCase().includes('instrument')).length;
-      const spokenWord = updatedSingles.filter(s => s.performance_title?.toLowerCase().includes('spoken') || s.performance_title?.toLowerCase().includes('poetry')).length;
-      const theatrical = updatedSingles.filter(s => s.performance_title?.toLowerCase().includes('theatrical') || s.performance_title?.toLowerCase().includes('drama')).length;
-      const other = total - singing - dancing - musicalInstrument - spokenWord - theatrical;
-
-      setStats({ total, singing, dancing, musicalInstrument, spokenWord, theatrical, other });
-      return updatedSingles;
-    });
+  // Handle single updates - just refetch the data
+  const handleSingleUpdate = () => {
+    refetch();
   };
 
   // Filter singles based on search
   const filteredSingles = singles.filter((single) => {
     const matchesSearch =
       single.performance_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      single.performance_description?.toLowerCase().includes(searchQuery.toLowerCase());
+      single.student_name?.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesSearch;
   });
@@ -182,7 +80,7 @@ export default function SinglesPerformancesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.location.reload()}
+            onClick={refetch}
             className="w-full sm:w-auto"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -195,18 +93,14 @@ export default function SinglesPerformancesPage() {
         </div>
       </div>
 
-      {/* Validation Errors Alert */}
-      {validationErrors.length > 0 && (
+      {/* Error Alert */}
+      {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-1">
-              <p className="font-semibold">Validation Errors:</p>
-              {validationErrors.map((error, index) => (
-                <p key={index} className="text-sm">
-                  • {error}
-                </p>
-              ))}
+              <p className="font-semibold">Error:</p>
+              <p className="text-sm">• {error}</p>
             </div>
           </AlertDescription>
         </Alert>
@@ -293,7 +187,7 @@ export default function SinglesPerformancesPage() {
             <SingleDataTable
               columns={createColumns(handleSingleUpdate)}
               data={filteredSingles}
-              searchPlaceholder="Search by performance title or description..."
+              searchPlaceholder="Search by performance title or student name..."
               searchValue={searchQuery}
               onSearchChange={setSearchQuery}
               showFilters={false}

@@ -155,11 +155,44 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     
     // Extract performance details
-    const performanceType = formData.get('performanceType') as string;
+    const rawPerformanceType = formData.get('performanceType') as string;
     const performanceTitle = formData.get('performanceTitle') as string;
     const performanceDuration = formData.get('performanceDuration') as string;
     const numberOfPerformers = parseInt(formData.get('numberOfPerformers') as string);
     const groupMembers = formData.get('groupMembers') as string || null;
+
+    // Validate required fields
+    if (!rawPerformanceType || rawPerformanceType.trim() === '') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Performance type is required. Please select a performance type.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!performanceTitle || performanceTitle.trim() === '') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Performance title is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Normalize performance type to match database enum values
+    const performanceTypeMap: Record<string, string> = {
+      'singing': 'Singing',
+      'dancing': 'Dancing',
+      'musical instrument': 'Musical Instrument',
+      'spoken word/poetry': 'Spoken Word/Poetry',
+      'theatrical/drama': 'Theatrical/Drama',
+      'other': 'Other',
+    };
+
+    const performanceType = performanceTypeMap[rawPerformanceType.toLowerCase()] || rawPerformanceType;
     
     // Extract school endorsement
     const schoolOfficialName = formData.get('schoolOfficialName') as string || null;
@@ -206,6 +239,7 @@ export async function POST(req: NextRequest) {
           group_name: `${performanceTitle} Group`,
           performance_title: performanceTitle,
           performance_description: groupMembers,
+          performance_type: performanceType,
         } as any)
         .select()
         .single();
@@ -280,6 +314,16 @@ export async function POST(req: NextRequest) {
         if (studentError) throw new Error(`Failed to create student: ${studentError.message}`);
 
         const studentId = (studentData as any).student_id;
+
+        // Insert performance record for each group member
+        await supabase.from('performances').insert({
+          student_id: studentId,
+          performance_type: performanceType,
+          title: performanceTitle,
+          duration: performanceDuration,
+          num_performers: numberOfPerformers,
+          group_members: groupMembers,
+        } as any);
 
         // Add student to group_members table
         const isLeader = i === 0;
@@ -373,7 +417,7 @@ export async function POST(req: NextRequest) {
         .from('singles')
         .insert({
           performance_title: performanceTitle,
-          performance_description: groupMembers,
+          performance_type: performanceType,
         } as any)
         .select()
         .single();
@@ -443,6 +487,16 @@ export async function POST(req: NextRequest) {
       if (studentError) throw new Error(`Failed to create student: ${studentError.message}`);
 
       const studentId = (studentData as any).student_id;
+
+      // Insert performance record
+      await supabase.from('performances').insert({
+        student_id: studentId,
+        performance_type: performanceType,
+        title: performanceTitle,
+        duration: performanceDuration,
+        num_performers: numberOfPerformers,
+        group_members: groupMembers,
+      } as any);
 
       // Update single entry with student_id
       const { error: updateError } = await (supabase as any)

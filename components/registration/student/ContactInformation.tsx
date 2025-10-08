@@ -12,19 +12,18 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-
 interface ContactInformationProps {
   form: UseFormReturn<any>
 }
 
 export function ContactInformation({ form }: ContactInformationProps) {
   const performanceTypes = [
-    { value: "singing", label: "Singing" },
-    { value: "dancing", label: "Dancing" },
-    { value: "musical-instrument", label: "Musical Instrument" },
-    { value: "spoken-word", label: "Spoken Word/Poetry" },
-    { value: "theatrical", label: "Theatrical/Drama" },
-    { value: "other", label: "Other" }
+    { value: "Singing", label: "Singing" },
+    { value: "Dancing", label: "Dancing" },
+    { value: "Musical Instrument", label: "Musical Instrument" },
+    { value: "Spoken Word/Poetry", label: "Spoken Word/Poetry" },
+    { value: "Theatrical/Drama", label: "Theatrical/Drama" },
+    { value: "Other", label: "Other" }
   ]
 
   const watchPerformanceType = form.watch("performanceType")
@@ -68,7 +67,7 @@ export function ContactInformation({ form }: ContactInformationProps) {
           )}
         />
 
-        {watchPerformanceType === "other" && (
+        {watchPerformanceType === "Other" && (
           <FormField
             control={form.control}
             name="performanceOther"

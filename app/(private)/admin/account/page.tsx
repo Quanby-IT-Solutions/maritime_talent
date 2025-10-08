@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PasswordChangeForm } from '@/components/password-change-form';
+import { PasswordChangeForm } from '@/components/auth/password-change-form';
 import { useSession } from '@/lib/auth-queries';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
