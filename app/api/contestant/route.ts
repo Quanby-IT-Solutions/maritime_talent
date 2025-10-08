@@ -233,6 +233,7 @@ export async function POST(req: NextRequest) {
 
     if (isGroup) {
       // Create group entry
+      const performersNamesList = performers.map(p => p.fullName).join(', ');
       const { data: groupData, error: groupError } = await supabase
         .from('groups')
         .insert({
@@ -373,7 +374,7 @@ export async function POST(req: NextRequest) {
           title: performanceTitle,
           duration: performanceDuration,
           num_performers: numberOfPerformers,
-          group_members: groupMembers,
+          group_members: null,
         } as any);
       }
 
@@ -543,7 +544,7 @@ export async function POST(req: NextRequest) {
         title: performanceTitle,
         duration: performanceDuration,
         num_performers: numberOfPerformers,
-        group_members: groupMembers,
+        group_members: null,
       } as any);
 
       // Insert school endorsement if provided

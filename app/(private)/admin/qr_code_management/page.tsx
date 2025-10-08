@@ -35,7 +35,7 @@ export default function QrCodeManagementPage() {
   const [users, setUsers] = useState<UserQR[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [generating, setGenerating] = useState(false)
   const [sending, setSending] = useState(false)
 
@@ -69,20 +69,23 @@ export default function QrCodeManagementPage() {
     fetchUsers(searchQuery)
   }
 
+  // Helper to create composite key
+  const createUserKey = (user: UserQR) => `${user.type}-${user.id}`
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(users.map((u) => u.id)))
+      setSelectedIds(new Set(users.map(createUserKey)))
     } else {
       setSelectedIds(new Set())
     }
   }
 
-  const handleSelectOne = (id: number, checked: boolean) => {
+  const handleSelectOne = (userKey: string, checked: boolean) => {
     const newSet = new Set(selectedIds)
     if (checked) {
-      newSet.add(id)
+      newSet.add(userKey)
     } else {
-      newSet.delete(id)
+      newSet.delete(userKey)
     }
     setSelectedIds(newSet)
   }
@@ -95,11 +98,25 @@ export default function QrCodeManagementPage() {
 
     try {
       setGenerating(true)
-      // Build items with type so API knows which foreign key to set
-      const items = Array.from(selectedIds).map((id) => {
-        const u = users.find((x) => x.id === id)
-        return { id, type: (u?.type || "guest") as UserQR["type"] }
+      // Build items with type, name, and manual flag
+      const items = Array.from(selectedIds).map((userKey) => {
+        const u = users.find((x) => createUserKey(x) === userKey)
+        console.log('Processing user for bulk QR generation:', {
+          userKey,
+          user: u,
+          id: u?.id,
+          type: u?.type,
+          name: u?.name
+        })
+        return {
+          id: u?.id || 0,
+          type: (u?.type || "guest") as UserQR["type"],
+          name: u?.name,
+          manual: true
+        }
       })
+
+      console.log('Bulk QR generation items:', items)
 
       const res = await fetch("/api/qr-code-management/generate", {
         method: "POST",
@@ -128,7 +145,7 @@ export default function QrCodeManagementPage() {
       return
     }
 
-    const usersWithQR = users.filter((u) => selectedIds.has(u.id) && u.qr)
+    const usersWithQR = users.filter((u) => selectedIds.has(createUserKey(u)) && u.qr)
     if (usersWithQR.length === 0) {
       toast.error("Selected users do not have QR codes. Generate QR codes first.")
       return
@@ -164,6 +181,67 @@ export default function QrCodeManagementPage() {
       console.error(err)
     } finally {
       setSending(false)
+    }
+  }
+
+  // Generate QR for a single user
+  const handleGenerateSingleQR = async (user: UserQR) => {
+    try {
+      const res = await fetch("/api/qr-code-management/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [{
+            id: user.id,
+            type: user.type,
+            name: user.name,
+            manual: true
+          }]
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(`Generated QR code for ${user.name}`)
+        fetchUsers(searchQuery)
+      } else {
+        toast.error("Failed to generate QR code")
+      }
+    } catch (err) {
+      toast.error("Error generating QR code")
+      console.error(err)
+    }
+  }
+
+  // Send email to a single user
+  const handleSendSingleEmail = async (user: UserQR) => {
+    if (!user.qr) {
+      toast.error("Generate QR code first")
+      return
+    }
+    try {
+      const res = await fetch("/api/send-qr-emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipients: [{
+            email: user.email,
+            name: user.name,
+            userId: user.id.toString(),
+            userType: user.type,
+            qrCodeUrl: user.qr,
+          }],
+          subject: "Your MARITIME TALENT QUEST 2025 Guest Pass",
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(`Sent email to ${user.name}`)
+      } else {
+        toast.error("Failed to send email")
+      }
+    } catch (err) {
+      toast.error("Error sending email")
+      console.error(err)
     }
   }
 
@@ -290,9 +368,9 @@ export default function QrCodeManagementPage() {
                 <TableRow key={`${user.type}-${user.id}`}>
                   <TableCell>
                     <Checkbox
-                      checked={selectedIds.has(user.id)}
+                      checked={selectedIds.has(createUserKey(user))}
                       onCheckedChange={(checked) =>
-                        handleSelectOne(user.id, checked as boolean)
+                        handleSelectOne(createUserKey(user), checked as boolean)
                       }
                     />
                   </TableCell>
@@ -325,9 +403,17 @@ export default function QrCodeManagementPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Regenerate QR</DropdownMenuItem>
-                        <DropdownMenuItem>Send Email</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleGenerateSingleQR(user)}>
+                          <IconQrcode className="size-4 mr-2" />
+                          {user.qr ? 'Regenerate QR' : 'Generate QR'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleSendSingleEmail(user)}
+                          disabled={!user.qr}
+                        >
+                          <IconMail className="size-4 mr-2" />
+                          Send Email
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

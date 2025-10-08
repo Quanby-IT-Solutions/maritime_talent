@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { UseFormReturn } from "react-hook-form"
 import {
   FormControl,
@@ -21,12 +21,30 @@ interface EventPreferencesProps {
 export function EventPreferences({ form, performerIndex }: EventPreferencesProps) {
   const [schoolCertFile, setSchoolCertFile] = useState<File | null>(null)
   const [schoolIdFile, setSchoolIdFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState({ cert: false, id: false })
+  
+  const schoolCertRef = useRef<HTMLInputElement>(null)
+  const schoolIdRef = useRef<HTMLInputElement>(null)
 
   // Field name prefix for multi-performer support
   const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
   const getFieldName = (field: string) => performerIndex !== undefined ? `${fieldPrefix}.${field}` : field
 
   const handleFileUpload = (file: File, type: 'schoolCertification' | 'schoolIdCopy') => {
+    // Validate file type and size
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload only PDF, JPG, or PNG files.')
+      return
+    }
+    
+    if (file.size > maxSize) {
+      alert('File size must be less than 10MB.')
+      return
+    }
+
     if (type === 'schoolCertification') {
       setSchoolCertFile(file)
       form.setValue(getFieldName('schoolCertification'), file)
@@ -40,9 +58,40 @@ export function EventPreferences({ form, performerIndex }: EventPreferencesProps
     if (type === 'schoolCertification') {
       setSchoolCertFile(null)
       form.setValue(getFieldName('schoolCertification'), null)
+      if (schoolCertRef.current) schoolCertRef.current.value = ''
     } else {
       setSchoolIdFile(null)
       form.setValue(getFieldName('schoolIdCopy'), null)
+      if (schoolIdRef.current) schoolIdRef.current.value = ''
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent, type: 'cert' | 'id') => {
+    e.preventDefault()
+    setIsDragging(prev => ({ ...prev, [type]: true }))
+  }
+
+  const handleDragLeave = (e: React.DragEvent, type: 'cert' | 'id') => {
+    e.preventDefault()
+    setIsDragging(prev => ({ ...prev, [type]: false }))
+  }
+
+  const handleDrop = (e: React.DragEvent, type: 'schoolCertification' | 'schoolIdCopy') => {
+    e.preventDefault()
+    const dragType = type === 'schoolCertification' ? 'cert' : 'id'
+    setIsDragging(prev => ({ ...prev, [dragType]: false }))
+    
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      handleFileUpload(files[0], type)
+    }
+  }
+
+  const triggerFileInput = (type: 'schoolCertification' | 'schoolIdCopy') => {
+    if (type === 'schoolCertification' && schoolCertRef.current) {
+      schoolCertRef.current.click()
+    } else if (type === 'schoolIdCopy' && schoolIdRef.current) {
+      schoolIdRef.current.click()
     }
   }
 
@@ -60,20 +109,33 @@ export function EventPreferences({ form, performerIndex }: EventPreferencesProps
           <p className="text-sm text-gray-500 mb-3">Upload an official certification from your school confirming your current enrollment status.</p>
           
           {!schoolCertFile ? (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+                isDragging.cert 
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/20' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
+              onClick={() => triggerFileInput('schoolCertification')}
+              onDragOver={(e) => handleDragOver(e, 'cert')}
+              onDragLeave={(e) => handleDragLeave(e, 'cert')}
+              onDrop={(e) => handleDrop(e, 'schoolCertification')}
+            >
               <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-900">Upload School Certification</p>
-                <p className="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {isDragging.cert ? 'Drop file here' : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">PDF, JPG, PNG up to 10MB</p>
               </div>
               <Input
+                ref={schoolCertRef}
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   if (file) handleFileUpload(file, 'schoolCertification')
                 }}
-                className="mt-3"
+                className="hidden"
               />
             </div>
           ) : (
@@ -105,20 +167,33 @@ export function EventPreferences({ form, performerIndex }: EventPreferencesProps
           <p className="text-sm text-gray-500 mb-3">Upload a clear copy of your current and valid school identification card.</p>
           
           {!schoolIdFile ? (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+                isDragging.id 
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/20' 
+                  : 'border-gray-300 dark:border-gray-600'
+              }`}
+              onClick={() => triggerFileInput('schoolIdCopy')}
+              onDragOver={(e) => handleDragOver(e, 'id')}
+              onDragLeave={(e) => handleDragLeave(e, 'id')}
+              onDrop={(e) => handleDrop(e, 'schoolIdCopy')}
+            >
               <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-900">Upload School ID Copy</p>
-                <p className="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {isDragging.id ? 'Drop file here' : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">PDF, JPG, PNG up to 10MB</p>
               </div>
               <Input
+                ref={schoolIdRef}
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   if (file) handleFileUpload(file, 'schoolIdCopy')
                 }}
-                className="mt-3"
+                className="hidden"
               />
             </div>
           ) : (
