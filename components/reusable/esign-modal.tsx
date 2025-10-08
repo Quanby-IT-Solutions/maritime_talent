@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { SignatureCanvas } from 'react-signature-canvas';
+import SignatureCanvas from 'react-signature-canvas';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog, 
@@ -31,7 +31,7 @@ const ESignModal = ({
   title = 'Electronic Signature',
   description = 'Draw your signature in the field below'
 }: ESignModalProps) => {
-  const sigCanvasRef = useRef<SignatureCanvas>(null);
+  const sigCanvasRef = useRef<any>(null);
   const [isSigned, setIsSigned] = useState(false);
 
   const clearSignature = useCallback(() => {
