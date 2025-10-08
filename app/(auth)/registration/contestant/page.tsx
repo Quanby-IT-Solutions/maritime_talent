@@ -35,7 +35,7 @@ const performerSchema = z.object({
   contactNumber: z.string().min(10, "Valid contact number is required").regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
   email: z.string().email("Valid email address is required"),
   
-  // C. Requirements (file uploads)
+  // C. Requirements (file uploads) - These will be validated on the form submission
   schoolCertification: z.any().optional(),
   schoolIdCopy: z.any().optional(),
   
@@ -44,6 +44,9 @@ const performerSchema = z.object({
   
   // E. Consent & Agreement
   termsAgreement: z.boolean().refine((val) => val === true, "You must agree to the terms and conditions to proceed"),
+  informationConsent: z.boolean().refine((val) => val === true, "You must consent to information usage"),
+  rulesAgreement: z.boolean().refine((val) => val === true, "You must agree to the event rules"),
+  publicityConsent: z.boolean().refine((val) => val === true, "You must consent to publicity"),
   
   // Signature fields
   studentSignature: z.string().min(1, "Student signature is required"),
@@ -116,6 +119,9 @@ export default function RegistrationPage() {
           email: "",
           healthDeclaration: false,
           termsAgreement: false,
+          informationConsent: false,
+          rulesAgreement: false,
+          publicityConsent: false,
           studentSignature: "",
           signatureDate: "",
           parentGuardianSignature: "",
@@ -158,11 +164,6 @@ export default function RegistrationPage() {
       // Add performers data
       data.performers.forEach((performer, index) => {
         formData.append(`performers[${index}].fullName`, performer.fullName)
-        formData.append(`performers[${index}].lastName`, performer.lastName || '')
-        formData.append(`performers[${index}].middleName`, performer.middleName || '')
-        formData.append(`performers[${index}].suffix`, performer.suffix || '')
-        formData.append(`performers[${index}].preferredName`, performer.preferredName || '')
-        formData.append(`performers[${index}].nationality`, performer.nationality)
         formData.append(`performers[${index}].age`, performer.age)
         formData.append(`performers[${index}].gender`, performer.gender)
         formData.append(`performers[${index}].school`, performer.school)
@@ -395,7 +396,7 @@ export default function RegistrationPage() {
                       type="submit"
                       className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       size="lg"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !form.formState.isValid}
                     >
                       {isSubmitting ? (
                         <>
@@ -409,6 +410,34 @@ export default function RegistrationPage() {
                         </>
                       )}
                     </Button>
+                    {!form.formState.isValid && (
+                      <div className="text-center text-sm text-red-600 dark:text-red-400 mt-3 space-y-2">
+                        <p className="font-medium">Please complete all required fields</p>
+                        <details open className="mt-2 text-xs bg-red-50 dark:bg-red-900/20 p-3 rounded">
+                          <summary className="cursor-pointer font-semibold mb-2">
+                            Validation Status (Errors: {Object.keys(form.formState.errors).length})
+                          </summary>
+                          <div className="space-y-2 text-left">
+                            <div>
+                              <p className="font-medium">Form Values:</p>
+                              <pre className="mt-1 bg-white dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-32">
+                                {JSON.stringify(form.getValues(), null, 2)}
+                              </pre>
+                            </div>
+                            <div>
+                              <p className="font-medium">Validation Errors:</p>
+                              <pre className="mt-1 bg-white dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-32">
+                                {JSON.stringify(form.formState.errors, null, 2)}
+                              </pre>
+                            </div>
+                            <div>
+                              <p className="font-medium">Is Valid: {form.formState.isValid ? 'Yes' : 'No'}</p>
+                              <p className="font-medium">Is Dirty: {form.formState.isDirty ? 'Yes' : 'No'}</p>
+                            </div>
+                          </div>
+                        </details>
+                      </div>
+                    )}
                     <p className="text-center text-sm text-gray-600 dark:text-gray-300 mt-3">
                       You will receive a confirmation email after successful registration
                     </p>
