@@ -53,9 +53,9 @@ const performerSchema = z.object({
   publicityConsent: z.boolean().refine((val) => val === true, "Publicity consent is required"),
   
   // Signature fields
-  studentSignature: z.string().optional(),
-  signatureDate: z.string().optional(),
-  parentGuardianSignature: z.string().optional(), // Conditional based on age
+  studentSignature: z.string().min(1, "Student signature is required"),
+  signatureDate: z.string().min(1, "Signature date is required"),
+  parentGuardianSignature: z.string().optional(),
 })
 
 const formSchema = z.object({
@@ -143,21 +143,99 @@ export default function RegistrationPage() {
     }
   }, [watchNumberOfPerformers, form])
 
-  // (form already initialized above)
-
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
     try {
-      // Simulated submission delay for UX feedback (static mode)
-      await new Promise(res => setTimeout(res, 800))
-      console.log("Form submitted:", data)
-      toast.success("Application submitted", {
-        description: "Your registration details have been captured.",
+      // Create FormData object for file uploads
+      const formData = new FormData()
+      
+      // Add performance details
+      formData.append('performanceType', data.performanceType)
+      if (data.performanceOther) {
+        formData.append('performanceOther', data.performanceOther)
+      }
+      formData.append('performanceTitle', data.performanceTitle)
+      formData.append('performanceDuration', data.performanceDuration)
+      formData.append('numberOfPerformers', data.numberOfPerformers)
+      if (data.groupMembers) {
+        formData.append('groupMembers', data.groupMembers)
+      }
+      
+      // Add school endorsement
+      if (data.schoolOfficialName) {
+        formData.append('schoolOfficialName', data.schoolOfficialName)
+      }
+      if (data.schoolOfficialPosition) {
+        formData.append('schoolOfficialPosition', data.schoolOfficialPosition)
+      }
+      
+      // Add performers data
+      data.performers.forEach((performer, index) => {
+        formData.append(`performers[${index}].fullName`, performer.fullName)
+        formData.append(`performers[${index}].lastName`, performer.lastName || '')
+        formData.append(`performers[${index}].middleName`, performer.middleName || '')
+        formData.append(`performers[${index}].suffix`, performer.suffix || '')
+        formData.append(`performers[${index}].preferredName`, performer.preferredName || '')
+        formData.append(`performers[${index}].nationality`, performer.nationality)
+        formData.append(`performers[${index}].age`, performer.age)
+        formData.append(`performers[${index}].gender`, performer.gender)
+        formData.append(`performers[${index}].school`, performer.school)
+        formData.append(`performers[${index}].courseYear`, performer.courseYear)
+        formData.append(`performers[${index}].contactNumber`, performer.contactNumber)
+        formData.append(`performers[${index}].email`, performer.email)
+        
+        // Add files
+        if (performer.schoolCertification) {
+          formData.append(`performers[${index}].schoolCertification`, performer.schoolCertification)
+        }
+        if (performer.schoolIdCopy) {
+          formData.append(`performers[${index}].schoolIdCopy`, performer.schoolIdCopy)
+        }
+        
+        // Add consents
+        formData.append(`performers[${index}].healthDeclaration`, String(performer.healthDeclaration))
+        formData.append(`performers[${index}].informationConsent`, String(performer.informationConsent))
+        formData.append(`performers[${index}].rulesAgreement`, String(performer.rulesAgreement))
+        formData.append(`performers[${index}].publicityConsent`, String(performer.publicityConsent))
+        
+        // Add signatures
+        if (performer.studentSignature) {
+          formData.append(`performers[${index}].studentSignature`, performer.studentSignature)
+        }
+        if (performer.signatureDate) {
+          formData.append(`performers[${index}].signatureDate`, performer.signatureDate)
+        }
+        if (performer.parentGuardianSignature) {
+          formData.append(`performers[${index}].parentGuardianSignature`, performer.parentGuardianSignature)
+        }
       })
+      
+      // Submit to API
+      const response = await fetch('/api/contestant', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Submission failed')
+      }
+      
+      toast.success("Registration Successful!", {
+        description: result.emailSent 
+          ? "Your QR code has been sent to your email." 
+          : "Registration completed. Please check your email for the QR code.",
+      })
+      
+      // Reset form after successful submission
+      form.reset()
+      setNumberOfPerformers(0)
+      
     } catch (error) {
       console.error("Submission error:", error)
       toast.error("Submission failed", {
-        description: "Something went wrong. Please try again." 
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again." 
       })
     } finally {
       setIsSubmitting(false)
