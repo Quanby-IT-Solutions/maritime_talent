@@ -48,9 +48,7 @@ const performerSchema = z.object({
   healthDeclaration: z.boolean().refine((val) => val === true, "Health declaration is required"),
   
   // E. Consent & Agreement
-  informationConsent: z.boolean().refine((val) => val === true, "Information consent is required"),
-  rulesAgreement: z.boolean().refine((val) => val === true, "Rules agreement is required"),
-  publicityConsent: z.boolean().refine((val) => val === true, "Publicity consent is required"),
+  termsAgreement: z.boolean().refine((val) => val === true, "You must agree to the terms and conditions to proceed"),
   
   // Signature fields
   studentSignature: z.string().optional(),
@@ -127,9 +125,7 @@ export default function RegistrationPage() {
           contactNumber: "",
           email: "",
           healthDeclaration: false,
-          informationConsent: false,
-          rulesAgreement: false,
-          publicityConsent: false,
+          termsAgreement: false,
           studentSignature: "",
           signatureDate: "",
           parentGuardianSignature: "",
