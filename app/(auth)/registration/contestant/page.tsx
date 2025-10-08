@@ -410,34 +410,6 @@ export default function RegistrationPage() {
                         </>
                       )}
                     </Button>
-                    {!form.formState.isValid && (
-                      <div className="text-center text-sm text-red-600 dark:text-red-400 mt-3 space-y-2">
-                        <p className="font-medium">Please complete all required fields</p>
-                        <details open className="mt-2 text-xs bg-red-50 dark:bg-red-900/20 p-3 rounded">
-                          <summary className="cursor-pointer font-semibold mb-2">
-                            Validation Status (Errors: {Object.keys(form.formState.errors).length})
-                          </summary>
-                          <div className="space-y-2 text-left">
-                            <div>
-                              <p className="font-medium">Form Values:</p>
-                              <pre className="mt-1 bg-white dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-32">
-                                {JSON.stringify(form.getValues(), null, 2)}
-                              </pre>
-                            </div>
-                            <div>
-                              <p className="font-medium">Validation Errors:</p>
-                              <pre className="mt-1 bg-white dark:bg-gray-800 p-2 rounded text-xs overflow-auto max-h-32">
-                                {JSON.stringify(form.formState.errors, null, 2)}
-                              </pre>
-                            </div>
-                            <div>
-                              <p className="font-medium">Is Valid: {form.formState.isValid ? 'Yes' : 'No'}</p>
-                              <p className="font-medium">Is Dirty: {form.formState.isDirty ? 'Yes' : 'No'}</p>
-                            </div>
-                          </div>
-                        </details>
-                      </div>
-                    )}
                     <p className="text-center text-sm text-gray-600 dark:text-gray-300 mt-3">
                       You will receive a confirmation email after successful registration
                     </p>

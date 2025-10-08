@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { UseFormReturn } from "react-hook-form"
+import { format } from "date-fns"
 import {
   FormControl,
   FormField,
@@ -13,7 +14,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, School, CheckCircle, PenTool, X, Trophy } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { FileText, School, CheckCircle, PenTool, X, Trophy, CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 import ESignModal from "@/components/reusable/esign-modal"
 import { TermsModal } from "@/components/registration/student/terms-modal"
 import { MechanicsModal } from "@/components/registration/student/mechanics-modal"
@@ -271,13 +275,39 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Date *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date"
-                        className="text-sm"
-                        {...field} 
-                      />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => {
+                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                          }}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
