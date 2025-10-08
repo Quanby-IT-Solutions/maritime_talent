@@ -1,6 +1,7 @@
 "use client"
 
 import { UseFormReturn } from "react-hook-form"
+import { useState, useEffect } from "react"
 import {
   FormControl,
   FormField,
@@ -26,81 +27,68 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
   const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
   const getFieldName = (field: string) => performerIndex !== undefined ? `${fieldPrefix}.${field}` : field
 
+  const handlePhoneChange = (value: string, onChange: (value: string) => void) => {
+    // Remove all non-digits
+    let cleanValue = value.replace(/\D/g, '');
+    
+    // If it starts with 63, keep it
+    // If it starts with 0, replace with 63
+    // If it's empty or starts with something else, prepend 63
+    if (cleanValue.startsWith('63')) {
+      // Keep as is, but limit to 12 digits total (63 + 10 digits)
+      cleanValue = cleanValue.substring(0, 12);
+    } else if (cleanValue.startsWith('0')) {
+      // Replace leading 0 with 63
+      cleanValue = '63' + cleanValue.substring(1);
+      cleanValue = cleanValue.substring(0, 12);
+    } else if (cleanValue.length > 0) {
+      // Prepend 63 to any other number
+      cleanValue = '63' + cleanValue;
+      cleanValue = cleanValue.substring(0, 12);
+    } else {
+      // Empty input, just set 63
+      cleanValue = '63';
+    }
+    
+    // Format the number: +63 XXX XXX XXXX
+    let formattedValue = '+63';
+    if (cleanValue.length > 2) {
+      const remaining = cleanValue.substring(2);
+      if (remaining.length <= 3) {
+        formattedValue += ' ' + remaining;
+      } else if (remaining.length <= 6) {
+        formattedValue += ' ' + remaining.substring(0, 3) + ' ' + remaining.substring(3);
+      } else {
+        formattedValue += ' ' + remaining.substring(0, 3) + ' ' + remaining.substring(3, 6) + ' ' + remaining.substring(6);
+      }
+    }
+    
+    onChange(formattedValue);
+  };
+
+  // Initialize contact number with +63 if empty
+  useEffect(() => {
+    const currentValue = form.getValues(getFieldName("contactNumber"));
+    if (!currentValue || currentValue === "") {
+      form.setValue(getFieldName("contactNumber"), "+63");
+    }
+  }, [form, getFieldName]);
+
   return (
     <div className="space-y-6">
-      {/* First row: First Name, Last Name, Middle Name, Suffix */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* First row: Full Name */}
+      <div className="grid grid-cols-1 gap-4">
         <FormField
           control={form.control}
           name={getFieldName("fullName")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                1. First Name *
+                Full Name *
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="First name" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("lastName")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                2. Last Name *
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Last name" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("middleName")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                3. Middle Name
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Middle name (optional)" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("suffix")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                4. Suffix
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Jr., Sr., III, etc. (optional)" 
+                  placeholder="Enter your full name" 
                   className="text-sm" 
                   {...field} 
                 />
@@ -111,39 +99,20 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
         />
       </div>
 
-      {/* Second row: Preferred Name, Nationality, Gender, Age */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Second row: Age and Gender */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
-          name={getFieldName("preferredName")}
+          name={getFieldName("age")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                5. Preferred Name
+                Age *
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="How would you like to be called" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("nationality")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                6. Nationality *
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="e.g., Filipino, American, etc." 
+                  type="number" 
+                  placeholder="Enter your age" 
                   className="text-sm" 
                   {...field} 
                 />
@@ -159,7 +128,7 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                7. Gender *
+                Gender *
               </FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
@@ -179,31 +148,10 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
             </FormItem>
           )}
         />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("age")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                8. Age *
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  placeholder="Enter your age" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </div>
 
-      {/* Additional fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Third row: School */}
+      <div className="grid grid-cols-1 gap-4">
         <FormField
           control={form.control}
           name={getFieldName("school")}
@@ -223,7 +171,10 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
             </FormItem>
           )}
         />
-        
+      </div>
+
+      {/* Fourth row: Course/Year Level */}
+      <div className="grid grid-cols-1 gap-4">
         <FormField
           control={form.control}
           name={getFieldName("courseYear")}
@@ -245,6 +196,7 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
         />
       </div>
 
+      {/* Fifth row: Contact Number and Email */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -256,9 +208,16 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="Enter your contact number" 
+                  placeholder="+63 XXX XXX XXXX" 
                   className="text-sm" 
-                  {...field} 
+                  value={field.value || '+63'}
+                  onChange={(e) => handlePhoneChange(e.target.value, field.onChange)}
+                  onKeyPress={(e) => {
+                    // Allow only numbers, backspace, delete, tab, enter, and space
+                    if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', ' '].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </FormControl>
               <FormMessage />

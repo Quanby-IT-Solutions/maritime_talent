@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { UseFormReturn } from "react-hook-form"
+import { format } from "date-fns"
 import {
   FormControl,
   FormField,
@@ -13,8 +14,13 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, School, CheckCircle, PenTool, X } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { FileText, School, CheckCircle, PenTool, X, Trophy, CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 import ESignModal from "@/components/reusable/esign-modal"
+import { TermsModal } from "@/components/registration/student/terms-modal"
+import { MechanicsModal } from "@/components/registration/student/mechanics-modal"
 
 interface AdditionalInformationProps {
   form: UseFormReturn<any>
@@ -25,6 +31,8 @@ interface AdditionalInformationProps {
 export function AdditionalInformation({ form, performerIndex, needsParentSignature = false }: AdditionalInformationProps) {
   const [studentSignatureModal, setStudentSignatureModal] = useState(false)
   const [parentSignatureModal, setParentSignatureModal] = useState(false)
+  const [termsModal, setTermsModal] = useState(false)
+  const [mechanicsModal, setMechanicsModal] = useState(false)
   
   // Field name prefix for multi-performer support
   const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
@@ -44,29 +52,81 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-950/30 dark:border-blue-800">
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                By checking the boxes below, I hereby declare that:
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                Maritime Talent Quest 2025 - Registration Agreement
               </p>
-              <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2 ml-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                By checking the box below, you acknowledge that you have read and agree to all terms and conditions, including:
+              </p>
+              <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 ml-4">
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  The information provided above is true and correct.
+                  <span className="w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  Declaration of accurate and truthful information
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  I agree to abide by the rules and regulations of the Maritime Talent Quest 2025.
+                  <span className="w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  Agreement to abide by event rules and regulations
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  I consent to the use of my name, school, photographs, and videos for event documentation and publicity purposes.
+                  <span className="w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  Consent for media usage and event documentation
+                </li>
+                <li className="flex items-start">
+                  <span className="w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  Health and safety declarations
                 </li>
               </ul>
             </div>
           </div>
 
+          {/* Buttons outside the blue highlight */}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setTermsModal(true)}
+              className="text-gray-700 border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              View Full Terms & Conditions
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setMechanicsModal(true)}
+              className="text-gray-700 border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
+            >
+              <Trophy className="h-4 w-4 mr-2" />
+              View Mechanics
+            </Button>
+          </div>
+
           <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name={getFieldName("termsAgreement")}
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm font-medium text-gray-900 dark:text-white">
+                      I have read and agree to all terms and conditions outlined above for the Maritime Talent Quest 2025 *
+                    </FormLabel>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name={getFieldName("informationConsent")}
@@ -79,8 +139,8 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel className="text-sm font-medium text-gray-900">
-                      I declare that the information provided above is true and correct *
+                    <FormLabel className="text-sm font-medium text-gray-900 dark:text-white">
+                      I certify that all information provided is accurate and truthful *
                     </FormLabel>
                   </div>
                   <FormMessage />
@@ -100,8 +160,8 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel className="text-sm font-medium text-gray-900">
-                      I agree to abide by the rules and regulations of the Maritime Talent Quest 2025 *
+                    <FormLabel className="text-sm font-medium text-gray-900 dark:text-white">
+                      I agree to abide by all event rules and regulations *
                     </FormLabel>
                   </div>
                   <FormMessage />
@@ -121,8 +181,8 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel className="text-sm font-medium text-gray-900">
-                      I consent to the use of my name, school, photographs, and videos for event documentation and publicity purposes *
+                    <FormLabel className="text-sm font-medium text-gray-900 dark:text-white">
+                      I consent to the use of my image, video, and performance for event documentation and publicity *
                     </FormLabel>
                   </div>
                   <FormMessage />
@@ -215,13 +275,39 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Date *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date"
-                        className="text-sm"
-                        {...field} 
-                      />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(new Date(field.value), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(field.value) : undefined}
+                          onSelect={(date) => {
+                            field.onChange(date ? format(date, "yyyy-MM-dd") : "")
+                          }}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -420,6 +506,18 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
         }}
         title="Parent/Guardian Electronic Signature"
         description="Parent/Guardian: Please draw your signature in the canvas below. This signature confirms your consent for your minor child to participate in the Maritime Talent Quest 2025."
+      />
+
+      {/* Terms & Conditions Modal */}
+      <TermsModal
+        open={termsModal}
+        onOpenChange={setTermsModal}
+      />
+
+      {/* Mechanics Modal */}
+      <MechanicsModal
+        open={mechanicsModal}
+        onOpenChange={setMechanicsModal}
       />
     </div>
   )

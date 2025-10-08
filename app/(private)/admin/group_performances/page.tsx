@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { GroupDataTable } from "@/components/group-data-table";
-import { createColumns, GroupData, GroupMemberData, safeParseGroupData } from "@/components/group-column-def";
+import { GroupDataTable } from "@/components/group-performance/group-data-table";
+import { createColumns, GroupData, GroupMemberData, safeParseGroupData } from "@/components/group-performance/group-column-def";
 import {
   Card,
   CardContent,

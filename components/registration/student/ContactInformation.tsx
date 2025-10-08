@@ -12,19 +12,18 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-
 interface ContactInformationProps {
   form: UseFormReturn<any>
 }
 
 export function ContactInformation({ form }: ContactInformationProps) {
   const performanceTypes = [
-    { value: "singing", label: "Singing" },
-    { value: "dancing", label: "Dancing" },
-    { value: "musical-instrument", label: "Musical Instrument" },
-    { value: "spoken-word", label: "Spoken Word/Poetry" },
-    { value: "theatrical", label: "Theatrical/Drama" },
-    { value: "other", label: "Other" }
+    { value: "Singing", label: "Singing" },
+    { value: "Dancing", label: "Dancing" },
+    { value: "Musical Instrument", label: "Musical Instrument" },
+    { value: "Spoken Word/Poetry", label: "Spoken Word/Poetry" },
+    { value: "Theatrical/Drama", label: "Theatrical/Drama" },
+    { value: "Other", label: "Other" }
   ]
 
   const watchPerformanceType = form.watch("performanceType")
@@ -68,7 +67,7 @@ export function ContactInformation({ form }: ContactInformationProps) {
           )}
         />
 
-        {watchPerformanceType === "other" && (
+        {watchPerformanceType === "Other" && (
           <FormField
             control={form.control}
             name="performanceOther"
@@ -109,7 +108,27 @@ export function ContactInformation({ form }: ContactInformationProps) {
             <FormItem>
               <FormLabel className="text-base font-medium">Duration (max 5 mins) *</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., 3 minutes 30 seconds" className="text-base" {...field} />
+                <Input 
+                  type="number" 
+                  min="1"
+                  max="5"
+                  placeholder="Enter duration in minutes (1-5)" 
+                  className="text-base" 
+                  onKeyPress={(e) => {
+                    // Prevent non-numeric characters
+                    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numbers 1-5
+                    if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 5)) {
+                      field.onChange(value);
+                    }
+                  }}
+                  value={field.value}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -129,38 +148,27 @@ export function ContactInformation({ form }: ContactInformationProps) {
                   max="10"
                   placeholder="Enter number of performers (1-10)" 
                   className="text-base" 
-                  {...field} 
+                  onKeyPress={(e) => {
+                    // Prevent non-numeric characters
+                    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numbers 1-10
+                    if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 10)) {
+                      field.onChange(value);
+                    }
+                  }}
+                  value={field.value}
                 />
               </FormControl>
-              <p className="text-sm text-gray-500">Enter a number between 1 and 10</p>
               <FormMessage />
             </FormItem>
           )}
         />
       </div>
-
-      {watchNumberOfPerformers && parseInt(watchNumberOfPerformers) > 1 && (
-        <div className="grid grid-cols-1 gap-6">
-          <FormField
-            control={form.control}
-            name="groupMembers"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-base font-medium">Names of Group Members</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Please list the full names of all group members, one per line"
-                    className="text-base min-h-[100px]"
-                    {...field} 
-                  />
-                </FormControl>
-                <p className="text-sm text-gray-500">List each member's full name on a separate line</p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      )}
     </div>
   )
 }

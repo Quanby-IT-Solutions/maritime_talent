@@ -86,11 +86,33 @@ export type Database = {
           endorsement_date?: string | null
         }
       }
+      group_members: {
+        Row: {
+          group_member_id: number
+          group_id: number
+          student_id: number
+          is_leader: boolean | null
+          joined_at: string | null
+        }
+        Insert: {
+          group_member_id?: number
+          group_id: number
+          student_id: number
+          is_leader?: boolean | null
+          joined_at?: string | null
+        }
+        Update: {
+          group_member_id?: number
+          group_id?: number
+          student_id?: number
+          is_leader?: boolean | null
+          joined_at?: string | null
+        }
+      }
       groups: {
         Row: {
           group_id: number
           group_name: string
-          leader_id: number | null
           performance_title: string | null
           performance_description: string | null
           created_at: string | null
@@ -98,7 +120,6 @@ export type Database = {
         Insert: {
           group_id?: number
           group_name: string
-          leader_id?: number | null
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
@@ -106,7 +127,6 @@ export type Database = {
         Update: {
           group_id?: number
           group_name?: string
-          leader_id?: number | null
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
@@ -260,24 +280,24 @@ export type Database = {
       singles: {
         Row: {
           single_id: number
+          student_id: number | null
           performance_title: string | null
           performance_description: string | null
           created_at: string | null
-          student_id: number | null
         }
         Insert: {
           single_id?: number
+          student_id?: number | null
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
-          student_id?: number | null
         }
         Update: {
           single_id?: number
+          student_id?: number | null
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
-          student_id?: number | null
         }
       }
       students: {
@@ -290,8 +310,7 @@ export type Database = {
           course_year: string | null
           contact_number: string | null
           email: string | null
-          gid: number | null
-          sid: number | null
+          created_at: string | null
         }
         Insert: {
           student_id?: number
@@ -302,8 +321,7 @@ export type Database = {
           course_year?: string | null
           contact_number?: string | null
           email?: string | null
-          gid?: number | null
-          sid?: number | null
+          created_at?: string | null
         }
         Update: {
           student_id?: number
@@ -314,8 +332,7 @@ export type Database = {
           course_year?: string | null
           contact_number?: string | null
           email?: string | null
-          gid?: number | null
-          sid?: number | null
+          created_at?: string | null
         }
       }
       users: {

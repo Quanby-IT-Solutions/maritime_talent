@@ -7,12 +7,14 @@ import * as z from "zod"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
-import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ArrowLeft, Loader2, CheckCircle2, Download, Mail } from "lucide-react"
 import Image from "next/image"
 import { Icon } from "@iconify/react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { useRouter } from "next/navigation"
 
 // Import components
 
@@ -28,19 +30,16 @@ import { DraftManager } from "@/components/registration/student/DraftManager"
 // Schema for individual performer
 const performerSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  lastName: z.string().optional(),
-  middleName: z.string().optional(),
-  suffix: z.string().optional(),
-  preferredName: z.string().optional(),
-  nationality: z.string().min(1, "Nationality is required"),
   age: z.string().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
   school: z.string().min(2, "School name is required"),
   courseYear: z.string().min(1, "Course/Year Level is required"),
-  contactNumber: z.string().min(10, "Valid contact number is required").regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+  contactNumber: z.string()
+    .min(16, "Valid Philippine mobile number is required")
+    .regex(/^\+63\s\d{3}\s\d{3}\s\d{4}$/, "Must be in format: +63 XXX XXX XXXX"),
   email: z.string().email("Valid email address is required"),
   
-  // C. Requirements (file uploads)
+  // C. Requirements (file uploads) - These will be validated on the form submission
   schoolCertification: z.any().optional(),
   schoolIdCopy: z.any().optional(),
   
@@ -48,14 +47,15 @@ const performerSchema = z.object({
   healthDeclaration: z.boolean().refine((val) => val === true, "Health declaration is required"),
   
   // E. Consent & Agreement
-  informationConsent: z.boolean().refine((val) => val === true, "Information consent is required"),
-  rulesAgreement: z.boolean().refine((val) => val === true, "Rules agreement is required"),
-  publicityConsent: z.boolean().refine((val) => val === true, "Publicity consent is required"),
+  termsAgreement: z.boolean().refine((val) => val === true, "You must agree to the terms and conditions to proceed"),
+  informationConsent: z.boolean().refine((val) => val === true, "You must consent to information usage"),
+  rulesAgreement: z.boolean().refine((val) => val === true, "You must agree to the event rules"),
+  publicityConsent: z.boolean().refine((val) => val === true, "You must consent to publicity"),
   
   // Signature fields
-  studentSignature: z.string().optional(),
-  signatureDate: z.string().optional(),
-  parentGuardianSignature: z.string().optional(), // Conditional based on age
+  studentSignature: z.string().min(1, "Student signature is required"),
+  signatureDate: z.string().min(1, "Signature date is required"),
+  parentGuardianSignature: z.string().optional(),
 })
 
 const formSchema = z.object({
@@ -63,9 +63,10 @@ const formSchema = z.object({
   performanceType: z.string().min(1, "Type of performance is required"),
   performanceOther: z.string().optional(),
   performanceTitle: z.string().min(1, "Title of piece/performance is required"),
-  performanceDuration: z.string().min(1, "Performance duration is required"),
+  performanceDuration: z.string()
+    .min(1, "Performance duration is required")
+    .regex(/^[1-5]$/, "Duration must be between 1-5 minutes"),
   numberOfPerformers: z.string().min(1, "Number of performers is required"),
-  groupMembers: z.string().optional(),
   
   // Performers (up to 10)
   performers: z.array(performerSchema).min(1, "At least one performer is required").max(10, "Maximum 10 performers allowed"),
@@ -80,6 +81,15 @@ type FormData = z.infer<typeof formSchema>
 export default function RegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [numberOfPerformers, setNumberOfPerformers] = useState(0)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [registrationData, setRegistrationData] = useState<{
+    qrCodeUrl: string;
+    isGroup: boolean;
+    emailSent: boolean;
+    leadName: string;
+  } | null>(null)
+  
+  const router = useRouter()
 
   // Initialize form before any watchers
   const form = useForm<FormData>({
@@ -90,7 +100,6 @@ export default function RegistrationPage() {
       performanceTitle: "",
       performanceDuration: "",
       numberOfPerformers: "",
-      groupMembers: "",
       performers: [],
       schoolOfficialName: "",
       schoolOfficialPosition: "",
@@ -115,18 +124,14 @@ export default function RegistrationPage() {
         }
         return {
           fullName: "",
-          lastName: "",
-          middleName: "",
-          suffix: "",
-          preferredName: "",
-          nationality: "",
           age: "",
           gender: "",
           school: "",
           courseYear: "",
-          contactNumber: "",
+          contactNumber: "+63",
           email: "",
           healthDeclaration: false,
+          termsAgreement: false,
           informationConsent: false,
           rulesAgreement: false,
           publicityConsent: false,
@@ -143,24 +148,112 @@ export default function RegistrationPage() {
     }
   }, [watchNumberOfPerformers, form])
 
-  // (form already initialized above)
-
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
     try {
-      // Simulated submission delay for UX feedback (static mode)
-      await new Promise(res => setTimeout(res, 800))
-      console.log("Form submitted:", data)
-      toast.success("Application submitted", {
-        description: "Your registration details have been captured.",
+      // Create FormData object for file uploads
+      const formData = new FormData()
+      
+      // Add performance details
+      formData.append('performanceType', data.performanceType)
+      if (data.performanceOther) {
+        formData.append('performanceOther', data.performanceOther)
+      }
+      formData.append('performanceTitle', data.performanceTitle)
+      formData.append('performanceDuration', data.performanceDuration)
+      formData.append('numberOfPerformers', data.numberOfPerformers)
+      
+      // Add school endorsement
+      if (data.schoolOfficialName) {
+        formData.append('schoolOfficialName', data.schoolOfficialName)
+      }
+      if (data.schoolOfficialPosition) {
+        formData.append('schoolOfficialPosition', data.schoolOfficialPosition)
+      }
+      
+      // Add performers data
+      data.performers.forEach((performer, index) => {
+        formData.append(`performers[${index}].fullName`, performer.fullName)
+        formData.append(`performers[${index}].age`, performer.age)
+        formData.append(`performers[${index}].gender`, performer.gender)
+        formData.append(`performers[${index}].school`, performer.school)
+        formData.append(`performers[${index}].courseYear`, performer.courseYear)
+        formData.append(`performers[${index}].contactNumber`, performer.contactNumber)
+        formData.append(`performers[${index}].email`, performer.email)
+        
+        // Add files
+        if (performer.schoolCertification) {
+          formData.append(`performers[${index}].schoolCertification`, performer.schoolCertification)
+        }
+        if (performer.schoolIdCopy) {
+          formData.append(`performers[${index}].schoolIdCopy`, performer.schoolIdCopy)
+        }
+        
+        // Add consents
+        formData.append(`performers[${index}].healthDeclaration`, String(performer.healthDeclaration))
+        formData.append(`performers[${index}].informationConsent`, String(performer.informationConsent))
+        formData.append(`performers[${index}].rulesAgreement`, String(performer.rulesAgreement))
+        formData.append(`performers[${index}].publicityConsent`, String(performer.publicityConsent))
+        
+        // Add signatures
+        if (performer.studentSignature) {
+          formData.append(`performers[${index}].studentSignature`, performer.studentSignature)
+        }
+        if (performer.signatureDate) {
+          formData.append(`performers[${index}].signatureDate`, performer.signatureDate)
+        }
+        if (performer.parentGuardianSignature) {
+          formData.append(`performers[${index}].parentGuardianSignature`, performer.parentGuardianSignature)
+        }
       })
+      
+      // Submit to API
+      const response = await fetch('/api/contestant', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Submission failed')
+      }
+
+      // Store registration data and show success modal
+      setRegistrationData({
+        qrCodeUrl: result.data.qrCodeUrl,
+        isGroup: result.data.isGroup,
+        emailSent: result.emailSent,
+        leadName: data.performers[0]?.fullName || 'Participant'
+      })
+      setShowSuccessModal(true)
+      
     } catch (error) {
       console.error("Submission error:", error)
       toast.error("Submission failed", {
-        description: "Something went wrong. Please try again." 
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again." 
       })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleModalClose = () => {
+    setShowSuccessModal(false)
+    setRegistrationData(null)
+    // Reset form for new registration
+    form.reset()
+    setNumberOfPerformers(0)
+    // Redirect to new registration
+    router.push('/registration/contestant')
+  }
+
+  const downloadQRCode = () => {
+    if (registrationData?.qrCodeUrl) {
+      const link = document.createElement('a')
+      link.href = registrationData.qrCodeUrl
+      link.download = `qr-code-${registrationData.leadName.replace(/\s+/g, '-')}.png`
+      link.click()
     }
   }
 
@@ -171,7 +264,7 @@ export default function RegistrationPage() {
         {/* Header Banner */}
         <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-800 mb-6">
           <Image
-            src="https://register.thebeaconexpo.com/images/beacon-reg.png"
+            src="/images/beacon-reg.png"
             alt="Maritime Talent Quest 2025 Registration"
             width={1600}
             height={300}
@@ -331,7 +424,7 @@ export default function RegistrationPage() {
                       type="submit"
                       className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                       size="lg"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !form.formState.isValid}
                     >
                       {isSubmitting ? (
                         <>
@@ -355,6 +448,80 @@ export default function RegistrationPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              Registration Successful!
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {registrationData && (
+              <>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    {registrationData.isGroup ? 'Group' : 'Individual'} registration completed for{' '}
+                    <span className="font-semibold">{registrationData.leadName}</span>
+                  </p>
+                  
+                  {/* QR Code Display */}
+                  <div className="bg-white p-4 rounded-lg border inline-block">
+                    <Image
+                      src={registrationData.qrCodeUrl}
+                      alt="Registration QR Code"
+                      width={200}
+                      height={200}
+                      className="mx-auto"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 mt-2">
+                    Your unique QR code for event entry
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <Mail className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-900 dark:text-blue-200">
+                        {registrationData.emailSent ? 'Email Sent!' : 'Email Notification'}
+                      </p>
+                      <p className="text-blue-700 dark:text-blue-300">
+                        {registrationData.emailSent 
+                          ? 'Your QR code has been sent to your email address.' 
+                          : 'Please save this QR code as backup.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={downloadQRCode}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download QR
+                  </Button>
+                  <Button
+                    onClick={handleModalClose}
+                    className="flex-1"
+                  >
+                    Done
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
