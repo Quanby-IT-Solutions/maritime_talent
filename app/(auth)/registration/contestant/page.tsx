@@ -7,12 +7,14 @@ import * as z from "zod"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
-import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ArrowLeft, Loader2, CheckCircle2, Download, Mail } from "lucide-react"
 import Image from "next/image"
 import { Icon } from "@iconify/react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { useRouter } from "next/navigation"
 
 // Import components
 
@@ -65,7 +67,6 @@ const formSchema = z.object({
     .min(1, "Performance duration is required")
     .regex(/^[1-5]$/, "Duration must be between 1-5 minutes"),
   numberOfPerformers: z.string().min(1, "Number of performers is required"),
-  groupMembers: z.string().optional(),
   
   // Performers (up to 10)
   performers: z.array(performerSchema).min(1, "At least one performer is required").max(10, "Maximum 10 performers allowed"),
@@ -80,6 +81,15 @@ type FormData = z.infer<typeof formSchema>
 export default function RegistrationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [numberOfPerformers, setNumberOfPerformers] = useState(0)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [registrationData, setRegistrationData] = useState<{
+    qrCodeUrl: string;
+    isGroup: boolean;
+    emailSent: boolean;
+    leadName: string;
+  } | null>(null)
+  
+  const router = useRouter()
 
   // Initialize form before any watchers
   const form = useForm<FormData>({
@@ -90,7 +100,6 @@ export default function RegistrationPage() {
       performanceTitle: "",
       performanceDuration: "",
       numberOfPerformers: "",
-      groupMembers: "",
       performers: [],
       schoolOfficialName: "",
       schoolOfficialPosition: "",
@@ -153,9 +162,6 @@ export default function RegistrationPage() {
       formData.append('performanceTitle', data.performanceTitle)
       formData.append('performanceDuration', data.performanceDuration)
       formData.append('numberOfPerformers', data.numberOfPerformers)
-      if (data.groupMembers) {
-        formData.append('groupMembers', data.groupMembers)
-      }
       
       // Add school endorsement
       if (data.schoolOfficialName) {
@@ -212,16 +218,15 @@ export default function RegistrationPage() {
       if (!response.ok) {
         throw new Error(result.error || 'Submission failed')
       }
-      
-      toast.success("Registration Successful!", {
-        description: result.emailSent 
-          ? "Your QR code has been sent to your email." 
-          : "Registration completed. Please check your email for the QR code.",
+
+      // Store registration data and show success modal
+      setRegistrationData({
+        qrCodeUrl: result.data.qrCodeUrl,
+        isGroup: result.data.isGroup,
+        emailSent: result.emailSent,
+        leadName: data.performers[0]?.fullName || 'Participant'
       })
-      
-      // Reset form after successful submission
-      form.reset()
-      setNumberOfPerformers(0)
+      setShowSuccessModal(true)
       
     } catch (error) {
       console.error("Submission error:", error)
@@ -230,6 +235,25 @@ export default function RegistrationPage() {
       })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleModalClose = () => {
+    setShowSuccessModal(false)
+    setRegistrationData(null)
+    // Reset form for new registration
+    form.reset()
+    setNumberOfPerformers(0)
+    // Redirect to new registration
+    router.push('/registration/contestant')
+  }
+
+  const downloadQRCode = () => {
+    if (registrationData?.qrCodeUrl) {
+      const link = document.createElement('a')
+      link.href = registrationData.qrCodeUrl
+      link.download = `qr-code-${registrationData.leadName.replace(/\s+/g, '-')}.png`
+      link.click()
     }
   }
 
@@ -424,6 +448,80 @@ export default function RegistrationPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              Registration Successful!
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {registrationData && (
+              <>
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    {registrationData.isGroup ? 'Group' : 'Individual'} registration completed for{' '}
+                    <span className="font-semibold">{registrationData.leadName}</span>
+                  </p>
+                  
+                  {/* QR Code Display */}
+                  <div className="bg-white p-4 rounded-lg border inline-block">
+                    <Image
+                      src={registrationData.qrCodeUrl}
+                      alt="Registration QR Code"
+                      width={200}
+                      height={200}
+                      className="mx-auto"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 mt-2">
+                    Your unique QR code for event entry
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <Mail className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-900 dark:text-blue-200">
+                        {registrationData.emailSent ? 'Email Sent!' : 'Email Notification'}
+                      </p>
+                      <p className="text-blue-700 dark:text-blue-300">
+                        {registrationData.emailSent 
+                          ? 'Your QR code has been sent to your email address.' 
+                          : 'Please save this QR code as backup.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={downloadQRCode}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download QR
+                  </Button>
+                  <Button
+                    onClick={handleModalClose}
+                    className="flex-1"
+                  >
+                    Done
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

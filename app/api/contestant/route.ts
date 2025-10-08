@@ -159,7 +159,6 @@ export async function POST(req: NextRequest) {
     const performanceTitle = formData.get('performanceTitle') as string;
     const performanceDuration = formData.get('performanceDuration') as string;
     const numberOfPerformers = parseInt(formData.get('numberOfPerformers') as string);
-    const groupMembers = formData.get('groupMembers') as string || null;
     
     // Extract school endorsement
     const schoolOfficialName = formData.get('schoolOfficialName') as string || null;
@@ -200,12 +199,13 @@ export async function POST(req: NextRequest) {
 
     if (isGroup) {
       // Create group entry
+      const performersNamesList = performers.map(p => p.fullName).join(', ');
       const { data: groupData, error: groupError } = await supabase
         .from('groups')
         .insert({
           group_name: `${performanceTitle} Group`,
           performance_title: performanceTitle,
-          performance_description: groupMembers,
+          performance_description: performersNamesList,
         } as any)
         .select()
         .single();
@@ -329,7 +329,7 @@ export async function POST(req: NextRequest) {
           title: performanceTitle,
           duration: performanceDuration,
           num_performers: numberOfPerformers,
-          group_members: groupMembers,
+          group_members: null,
         } as any);
       }
 
@@ -373,7 +373,6 @@ export async function POST(req: NextRequest) {
         .from('singles')
         .insert({
           performance_title: performanceTitle,
-          performance_description: groupMembers,
         } as any)
         .select()
         .single();
@@ -489,7 +488,7 @@ export async function POST(req: NextRequest) {
         title: performanceTitle,
         duration: performanceDuration,
         num_performers: numberOfPerformers,
-        group_members: groupMembers,
+        group_members: null,
       } as any);
 
       // Insert school endorsement if provided
