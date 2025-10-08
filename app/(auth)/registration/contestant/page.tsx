@@ -32,7 +32,9 @@ const performerSchema = z.object({
   gender: z.string().min(1, "Gender is required"),
   school: z.string().min(2, "School name is required"),
   courseYear: z.string().min(1, "Course/Year Level is required"),
-  contactNumber: z.string().min(10, "Valid contact number is required").regex(/^[0-9+\-\s()]+$/, "Invalid phone number format"),
+  contactNumber: z.string()
+    .min(16, "Valid Philippine mobile number is required")
+    .regex(/^\+63\s\d{3}\s\d{3}\s\d{4}$/, "Must be in format: +63 XXX XXX XXXX"),
   email: z.string().email("Valid email address is required"),
   
   // C. Requirements (file uploads) - These will be validated on the form submission
@@ -59,7 +61,9 @@ const formSchema = z.object({
   performanceType: z.string().min(1, "Type of performance is required"),
   performanceOther: z.string().optional(),
   performanceTitle: z.string().min(1, "Title of piece/performance is required"),
-  performanceDuration: z.string().min(1, "Performance duration is required"),
+  performanceDuration: z.string()
+    .min(1, "Performance duration is required")
+    .regex(/^[1-5]$/, "Duration must be between 1-5 minutes"),
   numberOfPerformers: z.string().min(1, "Number of performers is required"),
   groupMembers: z.string().optional(),
   
@@ -115,7 +119,7 @@ export default function RegistrationPage() {
           gender: "",
           school: "",
           courseYear: "",
-          contactNumber: "",
+          contactNumber: "+63",
           email: "",
           healthDeclaration: false,
           termsAgreement: false,

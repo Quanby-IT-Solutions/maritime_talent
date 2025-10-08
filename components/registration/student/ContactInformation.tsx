@@ -109,7 +109,27 @@ export function ContactInformation({ form }: ContactInformationProps) {
             <FormItem>
               <FormLabel className="text-base font-medium">Duration (max 5 mins) *</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., 3 minutes 30 seconds" className="text-base" {...field} />
+                <Input 
+                  type="number" 
+                  min="1"
+                  max="5"
+                  placeholder="Enter duration in minutes (1-5)" 
+                  className="text-base" 
+                  onKeyPress={(e) => {
+                    // Prevent non-numeric characters
+                    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numbers 1-5
+                    if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 5)) {
+                      field.onChange(value);
+                    }
+                  }}
+                  value={field.value}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -132,7 +152,6 @@ export function ContactInformation({ form }: ContactInformationProps) {
                   {...field} 
                 />
               </FormControl>
-              <p className="text-sm text-gray-500">Enter a number between 1 and 10</p>
               <FormMessage />
             </FormItem>
           )}
