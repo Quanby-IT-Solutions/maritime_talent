@@ -22,9 +22,19 @@ import {
   PointLight,
   ACESFilmicToneMapping,
   Raycaster,
-  Plane
+  Plane,
+  BufferGeometry,
+  BoxGeometry,
+  ConeGeometry,
+  IcosahedronGeometry,
+  CylinderGeometry,
+  TorusGeometry,
+  Group,
+  Mesh,
+  Float32BufferAttribute
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { Observer } from 'gsap/Observer';
 import { gsap } from 'gsap';
 
@@ -485,7 +495,7 @@ class Y extends MeshPhysicalMaterial {
 }
 
 const XConfig = {
-  count: 100,
+  count: 60,
   colors: [0xff6b6b, 0x4ecdc4, 0x45b7d1, 0x96ceb4, 0xfeca57, 0xff9ff3, 0x54a0ff],
   ambientColor: 0xffffff,
   ambientIntensity: 0.8,
@@ -686,24 +696,245 @@ function isInside(rect: DOMRect) {
   );
 }
 
+// Load STL Anchor
+function createAnchorSTLGeometry(): Promise<BufferGeometry> {
+  return new Promise((resolve) => {
+    const loader = new STLLoader();
+    // You'll need to put your anchor.stl file in the public folder
+    loader.load(
+      '/anchor_v3.stl', // Path to your STL file
+      (geometry) => {
+        // Center and scale the geometry
+        geometry.center();
+        geometry.scale(0.06, 0.06, 0.06); // Scale down more to make anchors smaller
+        resolve(geometry);
+      },
+      (progress) => {
+        console.log('Loading anchor STL:', (progress.loaded / progress.total * 100) + '%');
+      },
+      (error) => {
+        console.error('Error loading STL:', error);
+        // Fallback to a simple anchor if STL fails
+        resolve(createSimpleAnchorGeometry());
+      }
+    );
+  });
+}
+
+// Fallback simple anchor if STL fails
+function createSimpleAnchorGeometry(): BufferGeometry {
+  const group = new Group();
+
+  // Ring at top
+  const ring = new TorusGeometry(0.12, 0.03, 8, 16);
+  const ringMesh = new Mesh(ring);
+  ringMesh.position.y = 0.24;
+  ringMesh.rotation.x = Math.PI / 2;
+  group.add(ringMesh);
+
+  // Shank (main vertical bar)
+  const shank = new CylinderGeometry(0.024, 0.036, 0.72, 8);
+  const shankMesh = new Mesh(shank);
+  shankMesh.position.y = -0.12;
+  group.add(shankMesh);
+
+  // Stock (horizontal bar at bottom)
+  const stock = new CylinderGeometry(0.018, 0.018, 0.48, 8);
+  const stockMesh = new Mesh(stock);
+  stockMesh.rotation.z = Math.PI / 2;
+  stockMesh.position.y = -0.36;
+  group.add(stockMesh);
+
+  // Left fluke
+  const leftFluke = new BoxGeometry(0.072, 0.24, 0.048);
+  const leftFlukeMesh = new Mesh(leftFluke);
+  leftFlukeMesh.position.set(-0.24, -0.45, 0);
+  leftFlukeMesh.rotation.z = -Math.PI / 4;
+  group.add(leftFlukeMesh);
+
+  // Right fluke
+  const rightFluke = new BoxGeometry(0.072, 0.24, 0.048);
+  const rightFlukeMesh = new Mesh(rightFluke);
+  rightFlukeMesh.position.set(0.24, -0.45, 0);
+  rightFlukeMesh.rotation.z = Math.PI / 4;
+  group.add(rightFlukeMesh);
+
+  // Merge all geometries
+  const mergedGeometry = new BufferGeometry();
+  const geometries: BufferGeometry[] = [];
+
+  group.children.forEach((child) => {
+    if (child instanceof Mesh && child.geometry) {
+      const geo = child.geometry.clone();
+      child.updateMatrix();
+      geo.applyMatrix4(child.matrix);
+      geometries.push(geo);
+    }
+  });
+
+  if (geometries.length > 0) {
+    const positions: number[] = [];
+    const normals: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+    let indexOffset = 0;
+
+    geometries.forEach((geo) => {
+      const pos = geo.attributes.position;
+      const norm = geo.attributes.normal;
+      const uv = geo.attributes.uv;
+      const idx = geo.index;
+
+      if (pos) {
+        for (let i = 0; i < pos.count; i++) {
+          positions.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+        }
+      }
+      if (norm) {
+        for (let i = 0; i < norm.count; i++) {
+          normals.push(norm.getX(i), norm.getY(i), norm.getZ(i));
+        }
+      }
+      if (uv) {
+        for (let i = 0; i < uv.count; i++) {
+          uvs.push(uv.getX(i), uv.getY(i));
+        }
+      }
+      if (idx) {
+        for (let i = 0; i < idx.count; i++) {
+          indices.push(idx.getX(i) + indexOffset);
+        }
+      }
+      indexOffset += pos ? pos.count : 0;
+    });
+
+    mergedGeometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    mergedGeometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
+    if (uvs.length > 0) {
+      mergedGeometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+    }
+    if (indices.length > 0) {
+      mergedGeometry.setIndex(indices);
+    }
+    mergedGeometry.computeVertexNormals();
+  }
+
+  return mergedGeometry;
+}
+
+// Other geometric shapes
+function createConeGeometry(): BufferGeometry {
+  return new ConeGeometry(0.5, 1, 8);
+}
+
+function createCubeGeometry(): BufferGeometry {
+  return new BoxGeometry(0.8, 0.8, 0.8);
+}
+
+function createIcosahedronGeometry(): BufferGeometry {
+  return new IcosahedronGeometry(0.5, 0);
+}
+
+type GeometryType = 'sphere' | 'anchor';
+
 class Z extends InstancedMesh {
   config: typeof XConfig;
   physics: W;
   ambientLight: AmbientLight | undefined;
   light: PointLight | undefined;
+  instanceMeshes: Map<GeometryType, InstancedMesh>;
+  geometryTypes: GeometryType[];
 
   constructor(renderer: WebGLRenderer, params: Partial<typeof XConfig> = {}) {
     const config = { ...XConfig, ...params };
     const roomEnv = new RoomEnvironment();
     const pmrem = new PMREMGenerator(renderer);
     const envTexture = pmrem.fromScene(roomEnv).texture;
+
+    // Use sphere as the main geometry for the parent InstancedMesh
     const geometry = new SphereGeometry();
     const material = new Y({ envMap: envTexture, ...config.materialParams });
     material.envMapRotation.x = -Math.PI / 2;
     super(geometry, material, config.count);
+
     this.config = config;
     this.physics = new W(config);
+    this.instanceMeshes = new Map();
+
+    // Distribute objects: 60% spheres, 40% anchors
+    this.geometryTypes = [];
+
+    for (let i = 0; i < config.count; i++) {
+      const rand = Math.random();
+      if (rand < 0.6) {
+        this.geometryTypes.push('sphere');
+      } else {
+        this.geometryTypes.push('anchor');
+      }
+    }
+
+    // Count each type
+    const typeCounts = new Map<GeometryType, number>();
+    this.geometryTypes.forEach(type => {
+      typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
+    });
+
+    // Create instanced meshes for each type
+    this.#createInstanceMeshes(typeCounts, envTexture, config);
+
     this.#setupLights();
+  }
+
+  async #createInstanceMeshes(typeCounts: Map<GeometryType, number>, envTexture: unknown, config: typeof XConfig) {
+    // Create all geometries first
+    const geometries = new Map<GeometryType, BufferGeometry>();
+
+    for (const [type, count] of typeCounts) {
+      if (count > 0) {
+        let geom: BufferGeometry;
+
+        switch (type) {
+          case 'sphere':
+            geom = new SphereGeometry();
+            break;
+          case 'anchor':
+            try {
+              geom = await createAnchorSTLGeometry();
+            } catch (error) {
+              console.warn('Failed to load STL anchor, using fallback:', error);
+              geom = createSimpleAnchorGeometry();
+            }
+            break;
+          default:
+            geom = new SphereGeometry();
+        }
+
+        geometries.set(type, geom);
+      }
+    }
+
+    // Now create all instance meshes with the loaded geometries
+    for (const [type, count] of typeCounts) {
+      if (count > 0) {
+        const geom = geometries.get(type)!;
+        const mat = new Y({ envMap: envTexture, ...config.materialParams });
+        mat.envMapRotation.x = -Math.PI / 2;
+
+        // Make anchors chrome/metallic like spheres
+        if (type === 'anchor') {
+          mat.metalness = 0.1; // Match sphere metalness
+          mat.roughness = 0.2; // Match sphere roughness
+          mat.clearcoat = 1; // Match sphere clearcoat
+          mat.clearcoatRoughness = 0.1; // Match sphere clearcoat roughness
+        }
+
+        const instanceMesh = new InstancedMesh(geom, mat, count);
+        this.instanceMeshes.set(type, instanceMesh);
+        this.add(instanceMesh);
+      }
+    }
+
+    // Apply colors after all meshes are created
     this.setColors(config.colors);
   }
 
@@ -717,19 +948,12 @@ class Z extends InstancedMesh {
   setColors(colors: number[]) {
     if (Array.isArray(colors) && colors.length > 1) {
       const colorUtils = (function (colorsArr: number[]) {
-        let baseColors: number[] = colorsArr;
-        let colorObjects: Color[] = [];
+        const baseColors: number[] = colorsArr;
+        const colorObjects: Color[] = [];
         baseColors.forEach(col => {
           colorObjects.push(new Color(col));
         });
         return {
-          setColors: (cols: number[]) => {
-            baseColors = cols;
-            colorObjects = [];
-            baseColors.forEach(col => {
-              colorObjects.push(new Color(col));
-            });
-          },
           getColorAt: (ratio: number, out: Color = new Color()) => {
             const clamped = Math.max(0, Math.min(1, ratio));
             const scaled = clamped * (baseColors.length - 1);
@@ -745,32 +969,84 @@ class Z extends InstancedMesh {
           }
         };
       })(colors);
+
+      // Track indices for each type
+      const typeIndices = new Map<GeometryType, number>();
+      this.instanceMeshes.forEach((_, type) => {
+        typeIndices.set(type, 0);
+      });
+
       for (let idx = 0; idx < this.count; idx++) {
-        this.setColorAt(idx, colorUtils.getColorAt(idx / this.count));
+        const color = colorUtils.getColorAt(idx / this.count);
+        const type = this.geometryTypes[idx];
+        const instanceMesh = this.instanceMeshes.get(type);
+
+        if (instanceMesh) {
+          const typeIdx = typeIndices.get(type) || 0;
+          instanceMesh.setColorAt(typeIdx, color);
+          typeIndices.set(type, typeIdx + 1);
+        }
+
         if (idx === 0) {
-          this.light!.color.copy(colorUtils.getColorAt(idx / this.count));
+          this.light!.color.copy(color);
         }
       }
 
-      if (!this.instanceColor) return;
-      this.instanceColor.needsUpdate = true;
+      // Update all instance colors
+      this.instanceMeshes.forEach((instanceMesh) => {
+        if (instanceMesh.instanceColor) {
+          instanceMesh.instanceColor.needsUpdate = true;
+        }
+      });
     }
   }
 
   update(deltaInfo: { delta: number }) {
     this.physics.update(deltaInfo);
+
+    // Track indices for each type
+    const typeIndices = new Map<GeometryType, number>();
+    this.instanceMeshes.forEach((_, type) => {
+      typeIndices.set(type, 0);
+    });
+
     for (let idx = 0; idx < this.count; idx++) {
       U.position.fromArray(this.physics.positionData, 3 * idx);
+
       if (idx === 0 && this.config.followCursor === false) {
         U.scale.setScalar(0);
       } else {
         U.scale.setScalar(this.physics.sizeData[idx]);
       }
+
+      const type = this.geometryTypes[idx];
+
+      // Add rotation based on object type
+      if (type === 'sphere') {
+        U.rotation.set(0, 0, 0);
+      } else if (type === 'anchor') {
+        // Anchors rotate slowly and tumble
+        U.rotation.x += deltaInfo.delta * 0.3;
+        U.rotation.y += deltaInfo.delta * 0.2;
+      }
+
       U.updateMatrix();
-      this.setMatrixAt(idx, U.matrix);
+
+      // Update the appropriate instance mesh
+      const instanceMesh = this.instanceMeshes.get(type);
+      if (instanceMesh) {
+        const typeIdx = typeIndices.get(type) || 0;
+        instanceMesh.setMatrixAt(typeIdx, U.matrix);
+        typeIndices.set(type, typeIdx + 1);
+      }
+
       if (idx === 0) this.light!.position.copy(U.position);
     }
-    this.instanceMatrix.needsUpdate = true;
+
+    // Update all instance matrices
+    this.instanceMeshes.forEach((instanceMesh) => {
+      instanceMesh.instanceMatrix.needsUpdate = true;
+    });
   }
 }
 
