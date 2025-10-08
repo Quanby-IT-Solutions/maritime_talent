@@ -349,55 +349,82 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
   useEffect(() => {
     console.log('Setting up realtime subscriptions...');
     
-    // Create channels for each table
+    // Create channels for each table with proper status callbacks
     const studentChannel = supabase
-      .channel('public:students')
+      .channel('students-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, handleStudentChange)
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Students channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Students realtime subscribed');
+          setIsConnected(true);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Students channel error');
+          setConnectionError('Failed to subscribe to students channel');
+        }
+      });
 
     const guestChannel = supabase
-      .channel('public:guests')
+      .channel('guests-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'guests' }, handleGuestChange)
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Guests channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Guests realtime subscribed');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Guests channel error');
+        }
+      });
 
     const groupChannel = supabase
-      .channel('public:groups')
+      .channel('groups-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, handleGroupChange)
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Groups channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Groups realtime subscribed');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Groups channel error');
+        }
+      });
 
     const singleChannel = supabase
-      .channel('public:singles')
+      .channel('singles-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'singles' }, handleSingleChange)
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Singles channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Singles realtime subscribed');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Singles channel error');
+        }
+      });
 
     const qrCodeChannel = supabase
-      .channel('public:qr_codes')
+      .channel('qr-codes-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'qr_codes' }, handleQRCodeChange)
-      .subscribe();
+      .subscribe((status) => {
+        console.log('QR Codes channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ QR Codes realtime subscribed');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ QR Codes channel error');
+        }
+      });
 
     const attendanceLogChannel = supabase
-      .channel('public:attendance_logs')
+      .channel('attendance-logs-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, handleAttendanceLogChange)
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Attendance Logs channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Attendance Logs realtime subscribed');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Attendance Logs channel error');
+        }
+      });
 
     setChannels([studentChannel, guestChannel, groupChannel, singleChannel, qrCodeChannel, attendanceLogChannel]);
-
-    // Monitor connection status
-    const statusListener = supabase.channel('connection-status')
-      .on('presence', { event: 'sync' }, () => {
-        setIsConnected(true);
-        setConnectionError(null);
-        console.log('✅ Supabase realtime connected');
-      })
-      .on('presence', { event: 'join' }, () => {
-        setIsConnected(true);
-        console.log('✅ Supabase realtime joined');
-      })
-      .on('presence', { event: 'leave' }, () => {
-        setIsConnected(false);
-        console.log('❌ Supabase realtime disconnected');
-      })
-      .subscribe();
 
     // Cleanup function
     return () => {
@@ -408,7 +435,6 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
       supabase.removeChannel(singleChannel);
       supabase.removeChannel(qrCodeChannel);
       supabase.removeChannel(attendanceLogChannel);
-      supabase.removeChannel(statusListener);
     };
   }, [handleStudentChange, handleGuestChange, handleGroupChange, handleSingleChange, handleQRCodeChange, handleAttendanceLogChange]);
 

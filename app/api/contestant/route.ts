@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import * as QRCode from 'qrcode';
+import type { PerformerFormData, EmailRecipient } from '@/types/contestant';
 
 const BUCKET_NAME = 'attachment';
+const QR_BUCKET_NAME = 'qr-codes';
 
 // Helper function to upload file to Supabase Storage
 async function uploadFileToStorage(
   supabase: ReturnType<typeof createServerClient>,
   file: File,
   folder: string,
-  fileName: string
+  fileName: string,
+  bucketName: string = BUCKET_NAME
 ): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  
   const filePath = `${folder}/${fileName}`;
   
   const { error: uploadError } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(bucketName)
     .upload(filePath, buffer, {
       contentType: file.type,
       upsert: true,
@@ -28,7 +30,7 @@ async function uploadFileToStorage(
   }
 
   const { data: publicUrlData } = supabase.storage
-    .from(BUCKET_NAME)
+    .from(bucketName)
     .getPublicUrl(filePath);
 
   return publicUrlData.publicUrl;
@@ -39,16 +41,15 @@ async function uploadSignatureToStorage(
   supabase: ReturnType<typeof createServerClient>,
   base64Data: string,
   folder: string,
-  fileName: string
+  fileName: string,
+  bucketName: string = BUCKET_NAME
 ): Promise<string> {
-  // Remove data:image/png;base64, prefix if present
   const base64String = base64Data.replace(/^data:image\/\w+;base64,/, '');
   const buffer = Buffer.from(base64String, 'base64');
-  
   const filePath = `${folder}/${fileName}`;
   
   const { error: uploadError } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(bucketName)
     .upload(filePath, buffer, {
       contentType: 'image/png',
       upsert: true,
@@ -59,13 +60,13 @@ async function uploadSignatureToStorage(
   }
 
   const { data: publicUrlData } = supabase.storage
-    .from(BUCKET_NAME)
+    .from(bucketName)
     .getPublicUrl(filePath);
 
   return publicUrlData.publicUrl;
 }
 
-// Helper function to generate and upload QR code with student name
+// Helper function to generate and upload QR code
 async function generateAndUploadQRCode(
   supabase: ReturnType<typeof createServerClient>,
   id: number,
@@ -74,20 +75,13 @@ async function generateAndUploadQRCode(
 ): Promise<string> {
   const payload = JSON.stringify({ type, id });
   const pngBuffer = await QRCode.toBuffer(payload, { type: 'png', width: 512 });
-
-  let dir = type === 'contestant_single' ? 'singles' : 'groups';
-  
-  // Use student name in filename if provided, otherwise use ID
-  let fileName = id + '.png';
-  if (studentName) {
-    const sanitizedName = studentName.replace(/[^a-zA-Z0-9]/g, '_');
-    fileName = `${id}_${sanitizedName}.png`;
-  }
-  
+  const dir = type === 'contestant_single' ? 'singles' : 'groups';
+  const sanitizedName = studentName?.replace(/[^a-zA-Z0-9]/g, '_') || id.toString();
+  const fileName = `${id}_${sanitizedName}.png`;
   const filePath = `${dir}/${fileName}`;
 
   const { error: uploadError } = await supabase.storage
-    .from('qr-codes')
+    .from(QR_BUCKET_NAME)
     .upload(filePath, pngBuffer, { contentType: 'image/png', upsert: true });
 
   if (uploadError) {
@@ -95,7 +89,7 @@ async function generateAndUploadQRCode(
   }
 
   const { data: publicUrlData } = supabase.storage
-    .from('qr-codes')
+    .from(QR_BUCKET_NAME)
     .getPublicUrl(filePath);
 
   return publicUrlData.publicUrl;
@@ -103,32 +97,13 @@ async function generateAndUploadQRCode(
 
 // Helper function to send QR code email
 async function sendQRCodeEmail(
-  email: string,
-  name: string,
-  qrCodeUrl: string,
-  userType: string,
-  additionalRecipients?: Array<{email: string, name: string, qrCodeUrl: string, userType: string}>
-) {
+  recipients: EmailRecipient[]
+): Promise<boolean> {
   try {
-    const recipients = [
-      {
-        email,
-        name,
-        qrCodeUrl,
-        userType,
-      },
-    ];
-    
-    // Add additional recipients if provided (for group registrations)
-    if (additionalRecipients && additionalRecipients.length > 0) {
-      recipients.push(...additionalRecipients);
-    }
-    
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/send-qr-emails`, {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/send-qr-emails`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         recipients,
         subject: 'Your Maritime Talent Quest 2025 QR Code',
@@ -139,12 +114,137 @@ async function sendQRCodeEmail(
       console.error('Failed to send QR code email:', await response.text());
       return false;
     }
-
     return true;
   } catch (error) {
     console.error('Error sending QR code email:', error);
     return false;
   }
+}
+
+// Helper function to process performer files and signatures
+async function processPerformerFiles(
+  supabase: ReturnType<typeof createServerClient>,
+  performer: PerformerFormData,
+  folder: string,
+  timestamp: number
+) {
+  const urls = {
+    certificationUrl: null as string | null,
+    schoolIdUrl: null as string | null,
+    studentSigUrl: null as string | null,
+    parentSigUrl: null as string | null,
+  };
+
+  if (performer.schoolCertification) {
+    urls.certificationUrl = await uploadFileToStorage(
+      supabase,
+      performer.schoolCertification,
+      folder,
+      `certification_${timestamp}.${performer.schoolCertification.name.split('.').pop()}`
+    );
+  }
+
+  if (performer.schoolIdCopy) {
+    urls.schoolIdUrl = await uploadFileToStorage(
+      supabase,
+      performer.schoolIdCopy,
+      folder,
+      `school_id_${timestamp}.${performer.schoolIdCopy.name.split('.').pop()}`
+    );
+  }
+
+  if (performer.studentSignature) {
+    urls.studentSigUrl = await uploadSignatureToStorage(
+      supabase,
+      performer.studentSignature,
+      folder,
+      `student_signature_${timestamp}.png`
+    );
+  }
+
+  if (performer.parentGuardianSignature) {
+    urls.parentSigUrl = await uploadSignatureToStorage(
+      supabase,
+      performer.parentGuardianSignature,
+      folder,
+      `parent_signature_${timestamp}.png`
+    );
+  }
+
+  return urls;
+}
+
+// Helper function to insert student and related records
+async function insertStudentRecords(
+  supabase: ReturnType<typeof createServerClient>,
+  performer: PerformerFormData,
+  performanceType: string,
+  performanceTitle: string,
+  performanceDuration: string,
+  numberOfPerformers: number,
+  urls: {
+    certificationUrl: string | null;
+    schoolIdUrl: string | null;
+    studentSigUrl: string | null;
+    parentSigUrl: string | null;
+  }
+): Promise<number> {
+  // Insert student record
+  const { data: studentData, error: studentError } = await supabase
+    .from('students')
+    .insert({
+      full_name: performer.fullName,
+      age: performer.age,
+      gender: performer.gender,
+      school: performer.school,
+      course_year: performer.courseYear,
+      contact_number: performer.contactNumber,
+      email: performer.email,
+    } as any)
+    .select()
+    .single();
+
+  if (studentError) throw new Error(`Failed to create student: ${studentError.message}`);
+  const studentId = (studentData as any).student_id;
+
+  // Insert performance record
+  await supabase.from('performances').insert({
+    student_id: studentId,
+    performance_type: performanceType,
+    title: performanceTitle,
+    duration: performanceDuration,
+    num_performers: numberOfPerformers,
+    group_members: null,
+  } as any);
+
+  // Insert requirements
+  if (urls.certificationUrl || urls.schoolIdUrl) {
+    await supabase.from('requirements').insert({
+      student_id: studentId,
+      certification_url: urls.certificationUrl,
+      school_id_url: urls.schoolIdUrl,
+    } as any);
+  }
+
+  // Insert health & fitness declaration
+  await supabase.from('health_fitness').insert({
+    student_id: studentId,
+    is_physically_fit: performer.healthDeclaration,
+    student_signature_url: urls.studentSigUrl,
+    parent_guardian_signature_url: urls.parentSigUrl,
+  } as any);
+
+  // Insert consent
+  await supabase.from('consents').insert({
+    student_id: studentId,
+    info_correct: performer.informationConsent,
+    agree_to_rules: performer.rulesAgreement,
+    consent_to_publicity: performer.publicityConsent,
+    student_signature_url: urls.studentSigUrl,
+    parent_guardian_signature_url: urls.parentSigUrl,
+  } as any);
+
+  return studentId;
 }
 
 export async function POST(req: NextRequest) {
@@ -155,10 +255,48 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     
     // Extract performance details
-    const performanceType = formData.get('performanceType') as string;
+    const rawPerformanceType = formData.get('performanceType') as string;
     const performanceTitle = formData.get('performanceTitle') as string;
     const performanceDuration = formData.get('performanceDuration') as string;
     const numberOfPerformers = parseInt(formData.get('numberOfPerformers') as string);
+    const groupMembers = formData.get('groupMembers') as string || null;
+
+    // Validate required fields
+    if (!rawPerformanceType || rawPerformanceType.trim() === '') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Performance type is required. Please select a performance type.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!performanceTitle || performanceTitle.trim() === '') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Performance title is required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Normalize performance type to match database enum values
+    const performanceTypeMap: Record<string, string> = {
+      'singing': 'Singing',
+      'dancing': 'Dancing',
+      'musical instrument': 'Musical Instrument',
+      'spoken word/poetry': 'Spoken Word/Poetry',
+      'theatrical/drama': 'Theatrical/Drama',
+      'other': 'Other',
+    };
+
+    const performanceType = performanceTypeMap[rawPerformanceType.toLowerCase()] || rawPerformanceType;
+    
+    // Extract school endorsement
+    const schoolOfficialName = formData.get('schoolOfficialName') as string || null;
+    const schoolOfficialPosition = formData.get('schoolOfficialPosition') as string || null;
     
     // Determine if it's a group or single performance
     const isGroup = numberOfPerformers >= 2;
@@ -203,7 +341,8 @@ export async function POST(req: NextRequest) {
         .insert({
           group_name: `${performanceTitle} Group`,
           performance_title: performanceTitle,
-          performance_description: performersNamesList,
+          performance_description: groupMembers,
+          performance_type: performanceType,
         } as any)
         .select()
         .single();
@@ -218,66 +357,19 @@ export async function POST(req: NextRequest) {
         const sanitizedName = performer.fullName.replace(/[^a-zA-Z0-9]/g, '_');
         const performerFolder = `group_${groupId}/performer_${i + 1}_${sanitizedName}`;
 
-        // Upload files to storage
-        let certificationUrl: string | null = null;
-        let schoolIdUrl: string | null = null;
-        let studentSigUrl: string | null = null;
-        let parentSigUrl: string | null = null;
+        // Process files and signatures
+        const urls = await processPerformerFiles(supabase, performer, performerFolder, timestamp);
 
-        if (performer.schoolCertification) {
-          certificationUrl = await uploadFileToStorage(
-            supabase,
-            performer.schoolCertification,
-            performerFolder,
-            `certification_${timestamp}.${performer.schoolCertification.name.split('.').pop()}`
-          );
-        }
-
-        if (performer.schoolIdCopy) {
-          schoolIdUrl = await uploadFileToStorage(
-            supabase,
-            performer.schoolIdCopy,
-            performerFolder,
-            `school_id_${timestamp}.${performer.schoolIdCopy.name.split('.').pop()}`
-          );
-        }
-
-        if (performer.studentSignature) {
-          studentSigUrl = await uploadSignatureToStorage(
-            supabase,
-            performer.studentSignature,
-            performerFolder,
-            `student_signature_${timestamp}.png`
-          );
-        }
-
-        if (performer.parentGuardianSignature) {
-          parentSigUrl = await uploadSignatureToStorage(
-            supabase,
-            performer.parentGuardianSignature,
-            performerFolder,
-            `parent_signature_${timestamp}.png`
-          );
-        }
-
-        // Insert student record
-        const { data: studentData, error: studentError } = await supabase
-          .from('students')
-          .insert({
-            full_name: performer.fullName,
-            age: performer.age,
-            gender: performer.gender,
-            school: performer.school,
-            course_year: performer.courseYear,
-            contact_number: performer.contactNumber,
-            email: performer.email,
-          } as any)
-          .select()
-          .single();
-
-        if (studentError) throw new Error(`Failed to create student: ${studentError.message}`);
-
-        const studentId = (studentData as any).student_id;
+        // Insert student and related records
+        const studentId = await insertStudentRecords(
+          supabase,
+          performer,
+          performanceType,
+          performanceTitle,
+          performanceDuration,
+          numberOfPerformers,
+          urls
+        );
 
         // Add student to group_members table
         const isLeader = i === 0;
@@ -292,46 +384,20 @@ export async function POST(req: NextRequest) {
           leadEmail = performer.email;
           leadName = performer.fullName;
         }
+      }
 
-        // Insert requirements
-        if (certificationUrl || schoolIdUrl) {
-          await supabase.from('requirements').insert({
-            student_id: studentId,
-            certification_url: certificationUrl,
-            school_id_url: schoolIdUrl,
-          } as any);
-        }
+      // Insert school endorsement if provided
+      if (schoolOfficialName && performers[0]) {
+        // Get the leader's student_id from group_members
+        const { data: groupMemberData } = await supabase
+          .from('group_members')
+          .select('student_id')
+          .eq('group_id', groupId as any)
+          .eq('is_leader', true)
+          .limit(1)
+          .single();
 
-        // Insert health & fitness declaration
-        await supabase.from('health_fitness').insert({
-          student_id: studentId,
-          is_physically_fit: performer.healthDeclaration,
-          student_signature_url: studentSigUrl,
-          parent_guardian_signature_url: parentSigUrl,
-        } as any);
-
-        // Insert consent
-        await supabase.from('consents').insert({
-          student_id: studentId,
-          info_correct: performer.informationConsent,
-          agree_to_rules: performer.rulesAgreement,
-          consent_to_publicity: performer.publicityConsent,
-          student_signature_url: studentSigUrl,
-          parent_guardian_signature_url: parentSigUrl,
-        } as any);
-
-        // Insert performance record
-        await supabase.from('performances').insert({
-          student_id: studentId,
-          performance_type: performanceType as any,
-          title: performanceTitle,
-          duration: performanceDuration,
-          num_performers: numberOfPerformers,
-          group_members: null,
-        } as any);
-
-        // Insert school endorsement if provided for this performer
-        if (performer.schoolOfficialName) {
+        if (groupMemberData) {
           await supabase.from('endorsements').insert({
             student_id: studentId,
             school_official_name: performer.schoolOfficialName,
@@ -360,6 +426,7 @@ export async function POST(req: NextRequest) {
         .from('singles')
         .insert({
           performance_title: performanceTitle,
+          performance_type: performanceType,
         } as any)
         .select()
         .single();
@@ -369,66 +436,19 @@ export async function POST(req: NextRequest) {
 
       const performerFolder = `single_${singleId}_${sanitizedName}`;
 
-      // Upload files to storage
-      let certificationUrl: string | null = null;
-      let schoolIdUrl: string | null = null;
-      let studentSigUrl: string | null = null;
-      let parentSigUrl: string | null = null;
+      // Process files and signatures
+      const urls = await processPerformerFiles(supabase, performer, performerFolder, timestamp);
 
-      if (performer.schoolCertification) {
-        certificationUrl = await uploadFileToStorage(
-          supabase,
-          performer.schoolCertification,
-          performerFolder,
-          `certification_${timestamp}.${performer.schoolCertification.name.split('.').pop()}`
-        );
-      }
-
-      if (performer.schoolIdCopy) {
-        schoolIdUrl = await uploadFileToStorage(
-          supabase,
-          performer.schoolIdCopy,
-          performerFolder,
-          `school_id_${timestamp}.${performer.schoolIdCopy.name.split('.').pop()}`
-        );
-      }
-
-      if (performer.studentSignature) {
-        studentSigUrl = await uploadSignatureToStorage(
-          supabase,
-          performer.studentSignature,
-          performerFolder,
-          `student_signature_${timestamp}.png`
-        );
-      }
-
-      if (performer.parentGuardianSignature) {
-        parentSigUrl = await uploadSignatureToStorage(
-          supabase,
-          performer.parentGuardianSignature,
-          performerFolder,
-          `parent_signature_${timestamp}.png`
-        );
-      }
-
-      // Insert student record
-      const { data: studentData, error: studentError } = await supabase
-        .from('students')
-        .insert({
-          full_name: performer.fullName,
-          age: performer.age,
-          gender: performer.gender,
-          school: performer.school,
-          course_year: performer.courseYear,
-          contact_number: performer.contactNumber,
-          email: performer.email,
-        } as any)
-        .select()
-        .single();
-
-      if (studentError) throw new Error(`Failed to create student: ${studentError.message}`);
-
-      const studentId = (studentData as any).student_id;
+      // Insert student and related records
+      const studentId = await insertStudentRecords(
+        supabase,
+        performer,
+        performanceType,
+        performanceTitle,
+        performanceDuration,
+        numberOfPerformers,
+        urls
+      );
 
       // Update single entry with student_id
       const { error: updateError } = await (supabase as any)
@@ -440,43 +460,6 @@ export async function POST(req: NextRequest) {
 
       leadEmail = performer.email;
       leadName = performer.fullName;
-
-      // Insert requirements
-      if (certificationUrl || schoolIdUrl) {
-        await supabase.from('requirements').insert({
-          student_id: studentId,
-          certification_url: certificationUrl,
-          school_id_url: schoolIdUrl,
-        } as any);
-      }
-
-      // Insert health & fitness declaration
-      await supabase.from('health_fitness').insert({
-        student_id: studentId,
-        is_physically_fit: performer.healthDeclaration,
-        student_signature_url: studentSigUrl,
-        parent_guardian_signature_url: parentSigUrl,
-      } as any);
-
-      // Insert consent
-      await supabase.from('consents').insert({
-        student_id: studentId,
-        info_correct: performer.informationConsent,
-        agree_to_rules: performer.rulesAgreement,
-        consent_to_publicity: performer.publicityConsent,
-        student_signature_url: studentSigUrl,
-        parent_guardian_signature_url: parentSigUrl,
-      } as any);
-
-      // Insert performance record
-      await supabase.from('performances').insert({
-        student_id: studentId,
-        performance_type: performanceType as any,
-        title: performanceTitle,
-        duration: performanceDuration,
-        num_performers: numberOfPerformers,
-        group_members: null,
-      } as any);
 
       // Insert school endorsement if provided
       if (performer.schoolOfficialName) {
@@ -497,34 +480,16 @@ export async function POST(req: NextRequest) {
       } as any);
     }
 
-    let emailSent = false;
+    // Prepare email recipients
+    const emailRecipients: EmailRecipient[] = performers.map(performer => ({
+      email: performer.email,
+      name: performer.fullName,
+      qrCodeUrl,
+      userType: isGroup ? 'contestant_group' : 'contestant_single'
+    }));
     
-    if (isGroup) {
-      // Send QR code email to all group members
-      const groupEmailRecipients = performers.map(performer => ({
-        email: performer.email,
-        name: performer.fullName,
-        qrCodeUrl,
-        userType: 'contestant_group'
-      }));
-      
-      // Send to all group members using the first member as the primary
-      emailSent = await sendQRCodeEmail(
-        performers[0].email, // Primary email
-        performers[0].fullName,
-        qrCodeUrl,
-        'contestant_group',
-        groupEmailRecipients
-      );
-    } else {
-      // Send QR code email to single performer
-      emailSent = await sendQRCodeEmail(
-        leadEmail,
-        leadName,
-        qrCodeUrl,
-        'contestant_single'
-      );
-    }
+    // Send QR code emails
+    const emailSent = await sendQRCodeEmail(emailRecipients);
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 "use client"
 
-import { LoginForm } from "@/components/login-form"
+import { LoginForm } from "@/components/auth/login-form"
 import Ballpit from "@/components/Ballpit"
 import { useState, useEffect } from "react"
 
