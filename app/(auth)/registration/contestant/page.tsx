@@ -28,11 +28,6 @@ import { DraftManager } from "@/components/registration/student/DraftManager"
 // Schema for individual performer
 const performerSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  lastName: z.string().optional(),
-  middleName: z.string().optional(),
-  suffix: z.string().optional(),
-  preferredName: z.string().optional(),
-  nationality: z.string().min(1, "Nationality is required"),
   age: z.string().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
   school: z.string().min(2, "School name is required"),
@@ -113,11 +108,6 @@ export default function RegistrationPage() {
         }
         return {
           fullName: "",
-          lastName: "",
-          middleName: "",
-          suffix: "",
-          preferredName: "",
-          nationality: "",
           age: "",
           gender: "",
           school: "",
