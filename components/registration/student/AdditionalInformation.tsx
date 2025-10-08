@@ -13,9 +13,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, School, CheckCircle, PenTool, X } from "lucide-react"
+import { FileText, School, CheckCircle, PenTool, X, Trophy } from "lucide-react"
 import ESignModal from "@/components/reusable/esign-modal"
-import { TermsModal } from "@/components/registration/student/terms-modal"
+import { TermsModal } from "@/components/ui/terms-modal"
+import { MechanicsModal } from "@/components/ui/mechanics-modal"
 
 interface AdditionalInformationProps {
   form: UseFormReturn<any>
@@ -27,6 +28,7 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
   const [studentSignatureModal, setStudentSignatureModal] = useState(false)
   const [parentSignatureModal, setParentSignatureModal] = useState(false)
   const [termsModal, setTermsModal] = useState(false)
+  const [mechanicsModal, setMechanicsModal] = useState(false)
   
   // Field name prefix for multi-performer support
   const fieldPrefix = performerIndex !== undefined ? `performers.${performerIndex}` : ""
@@ -72,19 +74,31 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                   Health and safety declarations
                 </li>
               </ul>
-              <div className="pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTermsModal(true)}
-                  className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-600 dark:hover:bg-blue-950/50"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  View Full Terms & Conditions
-                </Button>
-              </div>
             </div>
+          </div>
+
+          {/* Buttons outside the blue highlight */}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setTermsModal(true)}
+              className="text-gray-700 border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              View Full Terms & Conditions
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setMechanicsModal(true)}
+              className="text-gray-700 border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
+            >
+              <Trophy className="h-4 w-4 mr-2" />
+              View Mechanics
+            </Button>
           </div>
 
           <div className="space-y-4">
@@ -405,6 +419,12 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
       <TermsModal
         open={termsModal}
         onOpenChange={setTermsModal}
+      />
+
+      {/* Mechanics Modal */}
+      <MechanicsModal
+        open={mechanicsModal}
+        onOpenChange={setMechanicsModal}
       />
     </div>
   )
