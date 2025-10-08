@@ -171,7 +171,7 @@ export default function RegistrationPage() {
         {/* Header Banner */}
         <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-800 mb-6">
           <Image
-            src="https://register.thebeaconexpo.com/images/beacon-reg.png"
+            src="/images/beacon-reg.png"
             alt="Maritime Talent Quest 2025 Registration"
             width={1600}
             height={300}
