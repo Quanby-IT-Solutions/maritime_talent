@@ -15,8 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, School, CheckCircle, PenTool, X, Trophy } from "lucide-react"
 import ESignModal from "@/components/reusable/esign-modal"
-import { TermsModal } from "@/components/ui/terms-modal"
-import { MechanicsModal } from "@/components/ui/mechanics-modal"
+import { TermsModal } from "@/components/registration/student/terms-modal"
+import { MechanicsModal } from "@/components/registration/student/mechanics-modal"
 
 interface AdditionalInformationProps {
   form: UseFormReturn<any>
