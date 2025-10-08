@@ -707,6 +707,19 @@ function createAnchorSTLGeometry(): Promise<BufferGeometry> {
         // Center and scale the geometry
         geometry.center();
         geometry.scale(0.06, 0.06, 0.06); // Scale down more to make anchors smaller
+
+        // Ensure proper UV coordinates for color mapping
+        if (!geometry.attributes.uv) {
+          geometry.computeVertexNormals();
+          // Create UV coordinates for proper color mapping
+          const uvArray = new Float32Array(geometry.attributes.position.count * 2);
+          for (let i = 0; i < geometry.attributes.position.count; i++) {
+            uvArray[i * 2] = 0.5; // U coordinate
+            uvArray[i * 2 + 1] = 0.5; // V coordinate
+          }
+          geometry.setAttribute('uv', new Float32BufferAttribute(uvArray, 2));
+        }
+
         resolve(geometry);
       },
       (progress) => {
@@ -926,6 +939,8 @@ class Z extends InstancedMesh {
           mat.roughness = 0.2; // Match sphere roughness
           mat.clearcoat = 1; // Match sphere clearcoat
           mat.clearcoatRoughness = 0.1; // Match sphere clearcoat roughness
+          mat.vertexColors = false; // Ensure instance colors work
+          mat.color = new Color(0x2C2C54); // Set default maritime color
         }
 
         const instanceMesh = new InstancedMesh(geom, mat, count);

@@ -29,7 +29,7 @@ export default function LoginPage() {
       {/* Right Side - Ballpit Animation */}
       <div className="flex-1 relative overflow-hidden bg-slate-900 shadow-lg">
         <Ballpit
-          count={70}
+          count={80}
           gravity={0}
           friction={0.978}
           wallBounce={0.95}
