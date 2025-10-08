@@ -15,9 +15,9 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useRouter } from "next/navigation"
+import { useContestantRegistration } from "@/hooks/use-contestant-registration"
 
 // Import components
-
 import { PersonalInformation } from "@/components/registration/student/PersonalInformation"
 import { ContactInformation } from "@/components/registration/student/ContactInformation"
 import { EventPreferences } from "@/components/registration/student/EventPreferences"
@@ -79,17 +79,12 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 export default function RegistrationPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [numberOfPerformers, setNumberOfPerformers] = useState(0)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [registrationData, setRegistrationData] = useState<{
-    qrCodeUrl: string;
-    isGroup: boolean;
-    emailSent: boolean;
-    leadName: string;
-  } | null>(null)
-  
   const router = useRouter()
+  
+  // Use custom hook for registration
+  const { isSubmitting, registrationData, submitRegistration, resetRegistration } = useContestantRegistration()
 
   // Initialize form before any watchers
   const form = useForm<FormData>({
@@ -149,102 +144,17 @@ export default function RegistrationPage() {
   }, [watchNumberOfPerformers, form])
 
   const onSubmit = async (data: FormData) => {
-    setIsSubmitting(true)
-    try {
-      // Create FormData object for file uploads
-      const formData = new FormData()
-      
-      // Add performance details
-      formData.append('performanceType', data.performanceType)
-      if (data.performanceOther) {
-        formData.append('performanceOther', data.performanceOther)
-      }
-      formData.append('performanceTitle', data.performanceTitle)
-      formData.append('performanceDuration', data.performanceDuration)
-      formData.append('numberOfPerformers', data.numberOfPerformers)
-      
-      // Add school endorsement
-      if (data.schoolOfficialName) {
-        formData.append('schoolOfficialName', data.schoolOfficialName)
-      }
-      if (data.schoolOfficialPosition) {
-        formData.append('schoolOfficialPosition', data.schoolOfficialPosition)
-      }
-      
-      // Add performers data
-      data.performers.forEach((performer, index) => {
-        formData.append(`performers[${index}].fullName`, performer.fullName)
-        formData.append(`performers[${index}].age`, performer.age)
-        formData.append(`performers[${index}].gender`, performer.gender)
-        formData.append(`performers[${index}].school`, performer.school)
-        formData.append(`performers[${index}].courseYear`, performer.courseYear)
-        formData.append(`performers[${index}].contactNumber`, performer.contactNumber)
-        formData.append(`performers[${index}].email`, performer.email)
-        
-        // Add files
-        if (performer.schoolCertification) {
-          formData.append(`performers[${index}].schoolCertification`, performer.schoolCertification)
-        }
-        if (performer.schoolIdCopy) {
-          formData.append(`performers[${index}].schoolIdCopy`, performer.schoolIdCopy)
-        }
-        
-        // Add consents
-        formData.append(`performers[${index}].healthDeclaration`, String(performer.healthDeclaration))
-        formData.append(`performers[${index}].informationConsent`, String(performer.informationConsent))
-        formData.append(`performers[${index}].rulesAgreement`, String(performer.rulesAgreement))
-        formData.append(`performers[${index}].publicityConsent`, String(performer.publicityConsent))
-        
-        // Add signatures
-        if (performer.studentSignature) {
-          formData.append(`performers[${index}].studentSignature`, performer.studentSignature)
-        }
-        if (performer.signatureDate) {
-          formData.append(`performers[${index}].signatureDate`, performer.signatureDate)
-        }
-        if (performer.parentGuardianSignature) {
-          formData.append(`performers[${index}].parentGuardianSignature`, performer.parentGuardianSignature)
-        }
-      })
-      
-      // Submit to API
-      const response = await fetch('/api/contestant', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Submission failed')
-      }
-
-      // Store registration data and show success modal
-      setRegistrationData({
-        qrCodeUrl: result.data.qrCodeUrl,
-        isGroup: result.data.isGroup,
-        emailSent: result.emailSent,
-        leadName: data.performers[0]?.fullName || 'Participant'
-      })
+    const result = await submitRegistration(data)
+    if (result) {
       setShowSuccessModal(true)
-      
-    } catch (error) {
-      console.error("Submission error:", error)
-      toast.error("Submission failed", {
-        description: error instanceof Error ? error.message : "Something went wrong. Please try again." 
-      })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    setRegistrationData(null)
-    // Reset form for new registration
+    resetRegistration()
     form.reset()
     setNumberOfPerformers(0)
-    // Redirect to new registration
     router.push('/registration/contestant')
   }
 
