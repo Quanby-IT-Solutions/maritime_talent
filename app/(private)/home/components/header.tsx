@@ -15,10 +15,10 @@ export default function Header() {
       {/* Title Section - Constrained */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-6 sm:mb-8 lg:mb-10">
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary">
-            &lt;ORGANIZATIONS&gt;
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-primary-foreground">
+            ORGANIZATIONS
           </h2>
-          <p className="text-xs sm:text-sm md:text-base text-secondary-foreground">
+          <p className="text-xs sm:text-sm md:text-base text-primary-foreground">
             in collaboration with:
           </p>
         </div>
