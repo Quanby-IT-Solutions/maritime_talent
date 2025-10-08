@@ -160,10 +160,6 @@ export async function POST(req: NextRequest) {
     const performanceDuration = formData.get('performanceDuration') as string;
     const numberOfPerformers = parseInt(formData.get('numberOfPerformers') as string);
     
-    // Extract school endorsement
-    const schoolOfficialName = formData.get('schoolOfficialName') as string || null;
-    const schoolOfficialPosition = formData.get('schoolOfficialPosition') as string || null;
-    
     // Determine if it's a group or single performance
     const isGroup = numberOfPerformers >= 2;
     
@@ -187,6 +183,8 @@ export async function POST(req: NextRequest) {
         studentSignature: formData.get(`performers[${i}].studentSignature`) as string,
         signatureDate: formData.get(`performers[${i}].signatureDate`) as string,
         parentGuardianSignature: formData.get(`performers[${i}].parentGuardianSignature`) as string || null,
+        schoolOfficialName: formData.get(`performers[${i}].schoolOfficialName`) as string || null,
+        schoolOfficialPosition: formData.get(`performers[${i}].schoolOfficialPosition`) as string || null,
       };
       performers.push(performerData);
     }
@@ -331,24 +329,13 @@ export async function POST(req: NextRequest) {
           num_performers: numberOfPerformers,
           group_members: null,
         } as any);
-      }
 
-      // Insert school endorsement if provided
-      if (schoolOfficialName && performers[0]) {
-        // Get the leader's student_id from group_members
-        const { data: groupMemberData } = await supabase
-          .from('group_members')
-          .select('student_id')
-          .eq('group_id', groupId as any)
-          .eq('is_leader', true)
-          .limit(1)
-          .single();
-
-        if (groupMemberData) {
+        // Insert school endorsement if provided for this performer
+        if (performer.schoolOfficialName) {
           await supabase.from('endorsements').insert({
-            student_id: (groupMemberData as any).student_id,
-            school_official_name: schoolOfficialName,
-            position: schoolOfficialPosition,
+            student_id: studentId,
+            school_official_name: performer.schoolOfficialName,
+            position: performer.schoolOfficialPosition,
           } as any);
         }
       }
@@ -492,11 +479,11 @@ export async function POST(req: NextRequest) {
       } as any);
 
       // Insert school endorsement if provided
-      if (schoolOfficialName) {
+      if (performer.schoolOfficialName) {
         await supabase.from('endorsements').insert({
           student_id: studentId,
-          school_official_name: schoolOfficialName,
-          position: schoolOfficialPosition,
+          school_official_name: performer.schoolOfficialName,
+          position: performer.schoolOfficialPosition,
         } as any);
       }
 
