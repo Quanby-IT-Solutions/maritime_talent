@@ -28,79 +28,19 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
 
   return (
     <div className="space-y-6">
-      {/* First row: First Name, Last Name, Middle Name, Suffix */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* First row: Full Name */}
+      <div className="grid grid-cols-1 gap-4">
         <FormField
           control={form.control}
           name={getFieldName("fullName")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                1. First Name *
+                Full Name *
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="First name" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("lastName")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                2. Last Name *
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Last name" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("middleName")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                3. Middle Name
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Middle name (optional)" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("suffix")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                4. Suffix
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Jr., Sr., III, etc. (optional)" 
+                  placeholder="Enter your full name" 
                   className="text-sm" 
                   {...field} 
                 />
@@ -111,39 +51,20 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
         />
       </div>
 
-      {/* Second row: Preferred Name, Nationality, Gender, Age */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Second row: Age and Gender */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
-          name={getFieldName("preferredName")}
+          name={getFieldName("age")}
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                5. Preferred Name
+                Age *
               </FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="How would you like to be called" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("nationality")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                6. Nationality *
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="e.g., Filipino, American, etc." 
+                  type="number" 
+                  placeholder="Enter your age" 
                   className="text-sm" 
                   {...field} 
                 />
@@ -159,7 +80,7 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                7. Gender *
+                Gender *
               </FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
@@ -179,31 +100,10 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
             </FormItem>
           )}
         />
-        
-        <FormField
-          control={form.control}
-          name={getFieldName("age")}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                8. Age *
-              </FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  placeholder="Enter your age" 
-                  className="text-sm" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </div>
 
-      {/* Additional fields */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Third row: School */}
+      <div className="grid grid-cols-1 gap-4">
         <FormField
           control={form.control}
           name={getFieldName("school")}
@@ -223,7 +123,10 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
             </FormItem>
           )}
         />
-        
+      </div>
+
+      {/* Fourth row: Course/Year Level */}
+      <div className="grid grid-cols-1 gap-4">
         <FormField
           control={form.control}
           name={getFieldName("courseYear")}
@@ -245,6 +148,7 @@ export function PersonalInformation({ form, performerIndex }: PersonalInformatio
         />
       </div>
 
+      {/* Fifth row: Contact Number and Email */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}

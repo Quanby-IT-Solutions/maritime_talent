@@ -28,11 +28,6 @@ import { DraftManager } from "@/components/registration/student/DraftManager"
 // Schema for individual performer
 const performerSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  lastName: z.string().optional(),
-  middleName: z.string().optional(),
-  suffix: z.string().optional(),
-  preferredName: z.string().optional(),
-  nationality: z.string().min(1, "Nationality is required"),
   age: z.string().min(1, "Age is required"),
   gender: z.string().min(1, "Gender is required"),
   school: z.string().min(2, "School name is required"),
@@ -48,9 +43,7 @@ const performerSchema = z.object({
   healthDeclaration: z.boolean().refine((val) => val === true, "Health declaration is required"),
   
   // E. Consent & Agreement
-  informationConsent: z.boolean().refine((val) => val === true, "Information consent is required"),
-  rulesAgreement: z.boolean().refine((val) => val === true, "Rules agreement is required"),
-  publicityConsent: z.boolean().refine((val) => val === true, "Publicity consent is required"),
+  termsAgreement: z.boolean().refine((val) => val === true, "You must agree to the terms and conditions to proceed"),
   
   // Signature fields
   studentSignature: z.string().min(1, "Student signature is required"),
@@ -115,11 +108,6 @@ export default function RegistrationPage() {
         }
         return {
           fullName: "",
-          lastName: "",
-          middleName: "",
-          suffix: "",
-          preferredName: "",
-          nationality: "",
           age: "",
           gender: "",
           school: "",
@@ -127,9 +115,7 @@ export default function RegistrationPage() {
           contactNumber: "",
           email: "",
           healthDeclaration: false,
-          informationConsent: false,
-          rulesAgreement: false,
-          publicityConsent: false,
+          termsAgreement: false,
           studentSignature: "",
           signatureDate: "",
           parentGuardianSignature: "",
@@ -249,7 +235,7 @@ export default function RegistrationPage() {
         {/* Header Banner */}
         <div className="relative w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-gray-800 mb-6">
           <Image
-            src="https://register.thebeaconexpo.com/images/beacon-reg.png"
+            src="/images/beacon-reg.png"
             alt="Maritime Talent Quest 2025 Registration"
             width={1600}
             height={300}
