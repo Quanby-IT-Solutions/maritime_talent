@@ -61,9 +61,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Edit, Save, X } from "lucide-react";
+import { Eye, Edit, Save, X, Pen, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { GroupData, GroupMemberData } from "./group-column-def";
+import ESignModal from "@/components/reusable/esign-modal";
 
 // Member Details Sheet Component
 const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: GroupMemberData; groupId: string; onMemberUpdate?: (updatedMember: GroupMemberData, groupId: string) => void }) => {
@@ -79,9 +80,207 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
     gender: member.gender || '',
   });
 
+  // Signature file states (for upload)
+  const [healthStudentSigFile, setHealthStudentSigFile] = useState<File | null>(null);
+  const [healthParentSigFile, setHealthParentSigFile] = useState<File | null>(null);
+  const [consentsStudentSigFile, setConsentsStudentSigFile] = useState<File | null>(null);
+  const [consentsParentSigFile, setConsentsParentSigFile] = useState<File | null>(null);
+  const [endorsementSigFile, setEndorsementSigFile] = useState<File | null>(null);
+
+  // Signature drawn states (from signature pad)
+  const [healthStudentSigDrawn, setHealthStudentSigDrawn] = useState<string | null>(null);
+  const [healthParentSigDrawn, setHealthParentSigDrawn] = useState<string | null>(null);
+  const [consentsStudentSigDrawn, setConsentsStudentSigDrawn] = useState<string | null>(null);
+  const [consentsParentSigDrawn, setConsentsParentSigDrawn] = useState<string | null>(null);
+  const [endorsementSigDrawn, setEndorsementSigDrawn] = useState<string | null>(null);
+
+  // Signature modal states
+  const [healthStudentModalOpen, setHealthStudentModalOpen] = useState(false);
+  const [healthParentModalOpen, setHealthParentModalOpen] = useState(false);
+  const [consentsStudentModalOpen, setConsentsStudentModalOpen] = useState(false);
+  const [consentsParentModalOpen, setConsentsParentModalOpen] = useState(false);
+  const [endorsementModalOpen, setEndorsementModalOpen] = useState(false);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const supabase = createClient();
+
+      // Helper function to convert dataURL to blob
+      const dataURLtoBlob = (dataURL: string): Blob => {
+        const arr = dataURL.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime });
+      };
+
+      // Helper function to upload file signature to Supabase storage
+      const uploadSignature = async (file: File, path: string): Promise<string | null> => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${member.member_id}-${Date.now()}.${fileExt}`;
+        const filePath = `${path}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('attachment')
+          .upload(filePath, file, { upsert: true });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          return null;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('attachment')
+          .getPublicUrl(filePath);
+
+        return publicUrl;
+      };
+
+      // Helper function to upload drawn signature to Supabase storage
+      const uploadDrawnSignature = async (dataURL: string, path: string): Promise<string | null> => {
+        const blob = dataURLtoBlob(dataURL);
+        const fileName = `${member.member_id}-${Date.now()}.png`;
+        const filePath = `${path}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('attachment')
+          .upload(filePath, blob, {
+            upsert: true,
+            contentType: 'image/png'
+          });
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          return null;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('attachment')
+          .getPublicUrl(filePath);
+
+        return publicUrl;
+      };
+
+      // Upload signatures (drawn signatures take priority over file uploads)
+      let healthStudentSigUrl = member.health?.student_signature_url || null;
+      let healthParentSigUrl = member.health?.parent_guardian_signature_url || null;
+      let consentsStudentSigUrl = member.consents?.student_signature_url || null;
+      let consentsParentSigUrl = member.consents?.parent_guardian_signature_url || null;
+      let endorsementSigUrl = member.endorsement?.school_official_signature_url || null;
+
+      // Health Student Signature (drawn takes priority)
+      if (healthStudentSigDrawn) {
+        const url = await uploadDrawnSignature(healthStudentSigDrawn, 'health-signatures/student');
+        if (url) healthStudentSigUrl = url;
+      } else if (healthStudentSigFile) {
+        const url = await uploadSignature(healthStudentSigFile, 'health-signatures/student');
+        if (url) healthStudentSigUrl = url;
+      }
+
+      // Health Parent Signature (drawn takes priority)
+      if (healthParentSigDrawn) {
+        const url = await uploadDrawnSignature(healthParentSigDrawn, 'health-signatures/parent');
+        if (url) healthParentSigUrl = url;
+      } else if (healthParentSigFile) {
+        const url = await uploadSignature(healthParentSigFile, 'health-signatures/parent');
+        if (url) healthParentSigUrl = url;
+      }
+
+      // Consents Student Signature (drawn takes priority)
+      if (consentsStudentSigDrawn) {
+        const url = await uploadDrawnSignature(consentsStudentSigDrawn, 'consents-signatures/student');
+        if (url) consentsStudentSigUrl = url;
+      } else if (consentsStudentSigFile) {
+        const url = await uploadSignature(consentsStudentSigFile, 'consents-signatures/student');
+        if (url) consentsStudentSigUrl = url;
+      }
+
+      // Consents Parent Signature (drawn takes priority)
+      if (consentsParentSigDrawn) {
+        const url = await uploadDrawnSignature(consentsParentSigDrawn, 'consents-signatures/parent');
+        if (url) consentsParentSigUrl = url;
+      } else if (consentsParentSigFile) {
+        const url = await uploadSignature(consentsParentSigFile, 'consents-signatures/parent');
+        if (url) consentsParentSigUrl = url;
+      }
+
+      // Endorsement Signature (drawn takes priority)
+      if (endorsementSigDrawn) {
+        const url = await uploadDrawnSignature(endorsementSigDrawn, 'endorsement-signatures');
+        if (url) endorsementSigUrl = url;
+      } else if (endorsementSigFile) {
+        const url = await uploadSignature(endorsementSigFile, 'endorsement-signatures');
+        if (url) endorsementSigUrl = url;
+      }
+
+      // Update student basic info
+      const { error: studentError } = await supabase
+        .from('students')
+        .update({
+          full_name: formData.full_name,
+          email: formData.email || null,
+          contact_number: formData.contact_number || null,
+          age: formData.age ? parseInt(String(formData.age)) : null,
+          gender: formData.gender || null,
+          course_year: formData.role,
+        })
+        .eq('student_id', member.member_id);
+
+      if (studentError) {
+        console.error('Error updating student:', studentError);
+        alert('Failed to update student. Please try again.');
+        return;
+      }
+
+      // Update health signatures if member has health data
+      if (member.health && (healthStudentSigFile || healthParentSigFile || healthStudentSigDrawn || healthParentSigDrawn)) {
+        const { error: healthError } = await supabase
+          .from('health_fitness')
+          .update({
+            student_signature_url: healthStudentSigUrl,
+            parent_guardian_signature_url: healthParentSigUrl,
+          })
+          .eq('student_id', member.member_id);
+
+        if (healthError) {
+          console.error('Error updating health signatures:', healthError);
+        }
+      }
+
+      // Update consents signatures if member has consents data
+      if (member.consents && (consentsStudentSigFile || consentsParentSigFile || consentsStudentSigDrawn || consentsParentSigDrawn)) {
+        const { error: consentsError } = await supabase
+          .from('consents')
+          .update({
+            student_signature_url: consentsStudentSigUrl,
+            parent_guardian_signature_url: consentsParentSigUrl,
+          })
+          .eq('student_id', member.member_id);
+
+        if (consentsError) {
+          console.error('Error updating consents signatures:', consentsError);
+        }
+      }
+
+      // Update endorsement signature if member has endorsement data
+      if (member.endorsement && (endorsementSigFile || endorsementSigDrawn)) {
+        const { error: endorsementError } = await supabase
+          .from('endorsements')
+          .update({
+            school_official_signature_url: endorsementSigUrl,
+          })
+          .eq('student_id', member.member_id);
+
+        if (endorsementError) {
+          console.error('Error updating endorsement signature:', endorsementError);
+        }
+      }
+
       // Create updated member object
       const updatedMember: GroupMemberData = {
         ...member,
@@ -91,35 +290,42 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
         contact_number: formData.contact_number || null,
         age: formData.age ? parseInt(String(formData.age)) : null,
         gender: formData.gender || null,
+        health: member.health ? {
+          ...member.health,
+          student_signature_url: healthStudentSigUrl,
+          parent_guardian_signature_url: healthParentSigUrl,
+        } : null,
+        consents: member.consents ? {
+          ...member.consents,
+          student_signature_url: consentsStudentSigUrl,
+          parent_guardian_signature_url: consentsParentSigUrl,
+        } : null,
+        endorsement: member.endorsement ? {
+          ...member.endorsement,
+          school_official_signature_url: endorsementSigUrl,
+        } : null,
       };
-
-      // Update in Supabase students table
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('students')
-        .update({
-          full_name: updatedMember.full_name,
-          email: updatedMember.email,
-          contact_number: updatedMember.contact_number,
-          age: updatedMember.age,
-          gender: updatedMember.gender,
-          course_year: updatedMember.role, // Map role back to course_year
-        })
-        .eq('student_id', member.member_id);
-
-      if (error) {
-        console.error('Error updating student:', error);
-        alert('Failed to update student. Please try again.');
-        return;
-      }
 
       // Call the update function to refresh the UI
       if (onMemberUpdate) {
         onMemberUpdate(updatedMember, groupId);
       }
 
+      // Reset file and drawn signature states
+      setHealthStudentSigFile(null);
+      setHealthParentSigFile(null);
+      setConsentsStudentSigFile(null);
+      setConsentsParentSigFile(null);
+      setEndorsementSigFile(null);
+      setHealthStudentSigDrawn(null);
+      setHealthParentSigDrawn(null);
+      setConsentsStudentSigDrawn(null);
+      setConsentsParentSigDrawn(null);
+      setEndorsementSigDrawn(null);
+
       console.log('Member updated successfully:', updatedMember);
       setIsEditing(false);
+      alert('Member updated successfully!');
     } catch (error) {
       console.error('Error saving member:', error);
       alert('Failed to update member. Please try again.');
@@ -140,6 +346,17 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
         age: member.age || '',
         gender: member.gender || '',
       });
+      // Reset signature file and drawn states
+      setHealthStudentSigFile(null);
+      setHealthParentSigFile(null);
+      setConsentsStudentSigFile(null);
+      setConsentsParentSigFile(null);
+      setEndorsementSigFile(null);
+      setHealthStudentSigDrawn(null);
+      setHealthParentSigDrawn(null);
+      setConsentsStudentSigDrawn(null);
+      setConsentsParentSigDrawn(null);
+      setEndorsementSigDrawn(null);
       setIsEditing(false);
     }, 200);
   };
@@ -329,11 +546,11 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                   </div>
                 )}
 
-                {/* Health & Fitness - Edit Mode (Read-only display) */}
+                {/* Health & Fitness - Edit Mode */}
                 {member.health && (
                   <div className="border border-slate-200 rounded-lg overflow-hidden">
                     <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                      <h3 className="text-sm font-semibold text-slate-900">Health & Fitness Declaration (View Only)</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Health & Fitness Declaration</h3>
                     </div>
                     <div className="p-4 bg-white space-y-4">
                       <div className="grid grid-cols-3 gap-4">
@@ -345,38 +562,112 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                         </div>
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
-                          {member.health.student_signature_url ? (
+                          {healthStudentSigDrawn || healthStudentSigFile ? (
+                            <img
+                              src={healthStudentSigDrawn || (healthStudentSigFile ? URL.createObjectURL(healthStudentSigFile) : '')}
+                              alt="Student Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                            />
+                          ) : member.health.student_signature_url ? (
                             <img
                               src={member.health.student_signature_url}
                               alt="Student Signature"
-                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
                             />
                           ) : (
-                            <p className="text-sm text-muted-foreground">Not provided</p>
+                            <div className="mb-2 h-20 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm text-muted-foreground">No signature</p>
+                            </div>
                           )}
+                          {healthStudentSigDrawn && (
+                            <Badge variant="default" className="mb-2">✍️ Signature drawn</Badge>
+                          )}
+                          {healthStudentSigFile && (
+                            <Badge variant="default" className="mb-2 bg-green-600">📁 File uploaded</Badge>
+                          )}
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setHealthStudentSigFile(e.target.files?.[0] || null)}
+                                className="text-sm"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <Upload className="h-3 w-3 inline mr-1" />Upload file
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setHealthStudentModalOpen(true)}
+                              className="whitespace-nowrap"
+                            >
+                              <Pen className="h-4 w-4 mr-1" />
+                              Draw
+                            </Button>
+                          </div>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
-                          {member.health.parent_guardian_signature_url ? (
+                          {healthParentSigDrawn || healthParentSigFile ? (
+                            <img
+                              src={healthParentSigDrawn || (healthParentSigFile ? URL.createObjectURL(healthParentSigFile) : '')}
+                              alt="Parent/Guardian Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                            />
+                          ) : member.health.parent_guardian_signature_url ? (
                             <img
                               src={member.health.parent_guardian_signature_url}
                               alt="Parent/Guardian Signature"
-                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
                             />
                           ) : (
-                            <p className="text-sm text-muted-foreground">Not provided</p>
+                            <div className="mb-2 h-20 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm text-muted-foreground">No signature</p>
+                            </div>
                           )}
+                          {healthParentSigDrawn && (
+                            <Badge variant="default" className="mb-2">✍️ Signature drawn</Badge>
+                          )}
+                          {healthParentSigFile && (
+                            <Badge variant="default" className="mb-2 bg-green-600">📁 File uploaded</Badge>
+                          )}
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setHealthParentSigFile(e.target.files?.[0] || null)}
+                                className="text-sm"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <Upload className="h-3 w-3 inline mr-1" />Upload file
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setHealthParentModalOpen(true)}
+                              className="whitespace-nowrap"
+                            >
+                              <Pen className="h-4 w-4 mr-1" />
+                              Draw
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Consents - Edit Mode (Read-only display) */}
+                {/* Consents - Edit Mode */}
                 {member.consents && (
                   <div className="border border-slate-200 rounded-lg overflow-hidden">
                     <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                      <h3 className="text-sm font-semibold text-slate-900">Consents & Agreements (View Only)</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Consents & Agreements</h3>
                     </div>
                     <div className="p-4 bg-white space-y-4">
                       <div className="grid grid-cols-3 gap-4 mb-4">
@@ -399,15 +690,115 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                           </Badge>
                         </div>
                       </div>
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                          {consentsStudentSigDrawn || consentsStudentSigFile ? (
+                            <img
+                              src={consentsStudentSigDrawn || (consentsStudentSigFile ? URL.createObjectURL(consentsStudentSigFile) : '')}
+                              alt="Student Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                            />
+                          ) : member.consents.student_signature_url ? (
+                            <img
+                              src={member.consents.student_signature_url}
+                              alt="Student Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                            />
+                          ) : (
+                            <div className="mb-2 h-20 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm text-muted-foreground">No signature</p>
+                            </div>
+                          )}
+                          {consentsStudentSigDrawn && (
+                            <Badge variant="default" className="mb-2">✍️ Signature drawn</Badge>
+                          )}
+                          {consentsStudentSigFile && (
+                            <Badge variant="default" className="mb-2 bg-green-600">📁 File uploaded</Badge>
+                          )}
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setConsentsStudentSigFile(e.target.files?.[0] || null)}
+                                className="text-sm"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <Upload className="h-3 w-3 inline mr-1" />Upload file
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConsentsStudentModalOpen(true)}
+                              className="whitespace-nowrap"
+                            >
+                              <Pen className="h-4 w-4 mr-1" />
+                              Draw
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                          {consentsParentSigDrawn || consentsParentSigFile ? (
+                            <img
+                              src={consentsParentSigDrawn || (consentsParentSigFile ? URL.createObjectURL(consentsParentSigFile) : '')}
+                              alt="Parent/Guardian Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                            />
+                          ) : member.consents.parent_guardian_signature_url ? (
+                            <img
+                              src={member.consents.parent_guardian_signature_url}
+                              alt="Parent/Guardian Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                            />
+                          ) : (
+                            <div className="mb-2 h-20 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm text-muted-foreground">No signature</p>
+                            </div>
+                          )}
+                          {consentsParentSigDrawn && (
+                            <Badge variant="default" className="mb-2">✍️ Signature drawn</Badge>
+                          )}
+                          {consentsParentSigFile && (
+                            <Badge variant="default" className="mb-2 bg-green-600">📁 File uploaded</Badge>
+                          )}
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setConsentsParentSigFile(e.target.files?.[0] || null)}
+                                className="text-sm"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <Upload className="h-3 w-3 inline mr-1" />Upload file
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConsentsParentModalOpen(true)}
+                              className="whitespace-nowrap"
+                            >
+                              <Pen className="h-4 w-4 mr-1" />
+                              Draw
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Endorsement - Edit Mode (Read-only display) */}
+                {/* Endorsement - Edit Mode */}
                 {member.endorsement && (
                   <div className="border border-slate-200 rounded-lg overflow-hidden">
                     <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                      <h3 className="text-sm font-semibold text-slate-900">School Endorsement (View Only)</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">School Endorsement</h3>
                     </div>
                     <div className="p-4 bg-white space-y-4">
                       <div className="grid grid-cols-2 gap-4">
@@ -418,6 +809,55 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Position</p>
                           <Badge variant="outline">{member.endorsement.position || "N/A"}</Badge>
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">School Official Signature</p>
+                        {endorsementSigDrawn || endorsementSigFile ? (
+                          <img
+                            src={endorsementSigDrawn || (endorsementSigFile ? URL.createObjectURL(endorsementSigFile) : '')}
+                            alt="School Official Signature"
+                            className="w-full max-w-md h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                          />
+                        ) : member.endorsement.school_official_signature_url ? (
+                          <img
+                            src={member.endorsement.school_official_signature_url}
+                            alt="School Official Signature"
+                            className="w-full max-w-md h-20 object-contain bg-white rounded-lg border border-gray-200 mb-2"
+                          />
+                        ) : (
+                          <div className="mb-2 h-20 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                            <p className="text-sm text-muted-foreground">No signature</p>
+                          </div>
+                        )}
+                        {endorsementSigDrawn && (
+                          <Badge variant="default" className="mb-2">✍️ Signature drawn</Badge>
+                        )}
+                        {endorsementSigFile && (
+                          <Badge variant="default" className="mb-2 bg-green-600">📁 File uploaded</Badge>
+                        )}
+                        <div className="flex gap-2 max-w-md">
+                          <div className="flex-1">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => setEndorsementSigFile(e.target.files?.[0] || null)}
+                              className="text-sm"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              <Upload className="h-3 w-3 inline mr-1" />Upload file
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEndorsementModalOpen(true)}
+                            className="whitespace-nowrap"
+                          >
+                            <Pen className="h-4 w-4 mr-1" />
+                            Draw
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -693,6 +1133,47 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Signature Pad Modals */}
+      <ESignModal
+        open={healthStudentModalOpen}
+        onOpenChange={setHealthStudentModalOpen}
+        onSignatureSave={(sig) => setHealthStudentSigDrawn(sig)}
+        title="Student Health Signature"
+        description="Draw the student's signature for health declaration"
+      />
+
+      <ESignModal
+        open={healthParentModalOpen}
+        onOpenChange={setHealthParentModalOpen}
+        onSignatureSave={(sig) => setHealthParentSigDrawn(sig)}
+        title="Parent/Guardian Health Signature"
+        description="Draw the parent/guardian's signature for health declaration"
+      />
+
+      <ESignModal
+        open={consentsStudentModalOpen}
+        onOpenChange={setConsentsStudentModalOpen}
+        onSignatureSave={(sig) => setConsentsStudentSigDrawn(sig)}
+        title="Student Consent Signature"
+        description="Draw the student's signature for consents and agreements"
+      />
+
+      <ESignModal
+        open={consentsParentModalOpen}
+        onOpenChange={setConsentsParentModalOpen}
+        onSignatureSave={(sig) => setConsentsParentSigDrawn(sig)}
+        title="Parent/Guardian Consent Signature"
+        description="Draw the parent/guardian's signature for consents and agreements"
+      />
+
+      <ESignModal
+        open={endorsementModalOpen}
+        onOpenChange={setEndorsementModalOpen}
+        onSignatureSave={(sig) => setEndorsementSigDrawn(sig)}
+        title="School Official Signature"
+        description="Draw the school official's signature for endorsement"
+      />
     </>
   );
 };
