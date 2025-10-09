@@ -19,7 +19,19 @@ import {
   RefreshCw,
   Download,
   UserPlus,
+  FileDown,
+  FileText,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function GroupPerformancesPage() {
   const [groups, setGroups] = useState<GroupData[]>([]);
@@ -34,6 +46,259 @@ export default function GroupPerformancesPage() {
     drama: 0,
     totalMembers: 0,
   });
+
+  // Export to CSV
+  const exportToCSV = () => {
+    try {
+      // Prepare CSV data
+      const headers = ["Group ID", "Group Name", "Performance Type", "Description", "Total Members", "Members"];
+
+      const rows = filteredGroups.map(group => {
+        const members = (group.group_members || [])
+          .map(m => `${m.full_name} (${m.role})`)
+          .join("; ");
+
+        return [
+          group.group_id,
+          group.group_name,
+          group.performance_type,
+          group.description || "N/A",
+          (group.group_members || []).length.toString(),
+          members || "No members"
+        ];
+      });
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row =>
+          row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        )
+      ].join("\n");
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Maritime_Talent_Quest_Group_Performances_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log("CSV export successful");
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      alert("Failed to export CSV. Please try again.");
+    }
+  };
+
+  // Export to PDF
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
+
+      // Add header with logo/title
+      doc.setFillColor(30, 64, 175); // Blue header
+      doc.rect(0, 0, 297, 35, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("MARITIME TALENT QUEST 2025", 148.5, 15, { align: "center" });
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text("Group Performances Report", 148.5, 24, { align: "center" });
+
+      // Add date and statistics
+      doc.setFontSize(9);
+      doc.setTextColor(220, 220, 220);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 148.5, 30, { align: "center" });
+
+      // Add summary statistics box
+      doc.setFillColor(248, 250, 252);
+      doc.rect(10, 40, 277, 20, "F");
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+
+      const statY = 48;
+      doc.text(`Total Groups: ${stats.total}`, 20, statY);
+      doc.text(`Musical: ${stats.musical}`, 80, statY);
+      doc.text(`Dance: ${stats.dance}`, 130, statY);
+      doc.text(`Drama: ${stats.drama}`, 180, statY);
+      doc.text(`Total Members: ${stats.totalMembers}`, 230, statY);
+
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Showing ${filteredGroups.length} of ${groups.length} groups`, 20, statY + 8);
+
+      // Prepare table data
+      const tableData = filteredGroups.map((group, index) => {
+        const members = (group.group_members || []);
+        const leader = members.find(m => m.role.toLowerCase().includes("leader"));
+
+        return [
+          (index + 1).toString(),
+          group.group_name,
+          group.performance_type,
+          members.length.toString(),
+          leader?.full_name || "N/A",
+          group.description || "No description provided"
+        ];
+      });
+
+      // Add main table
+      autoTable(doc, {
+        startY: 65,
+        head: [["#", "Group Name", "Type", "Members", "Leader", "Description"]],
+        body: tableData,
+        theme: "striped",
+        headStyles: {
+          fillColor: [30, 64, 175],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: "bold",
+          halign: "left",
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          lineColor: [220, 220, 220],
+          lineWidth: 0.1,
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        columnStyles: {
+          0: { halign: "center", cellWidth: 10 },
+          1: { cellWidth: 50, fontStyle: "bold" },
+          2: { halign: "center", cellWidth: 25 },
+          3: { halign: "center", cellWidth: 20 },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 70 },
+        },
+        margin: { left: 10, right: 10 },
+        didDrawPage: (data: { pageNumber: number }) => {
+          // Footer
+          const pageCount = doc.getNumberOfPages();
+          const currentPage = data.pageNumber;
+
+          doc.setFontSize(8);
+          doc.setTextColor(100, 100, 100);
+          doc.text(
+            `Page ${currentPage} of ${pageCount}`,
+            148.5,
+            doc.internal.pageSize.height - 10,
+            { align: "center" }
+          );
+
+          doc.text(
+            "Maritime Talent Quest © 2025",
+            10,
+            doc.internal.pageSize.height - 10
+          );
+
+          doc.text(
+            "Confidential",
+            doc.internal.pageSize.width - 10,
+            doc.internal.pageSize.height - 10,
+            { align: "right" }
+          );
+        },
+      });
+
+      // Add detailed member breakdown on new pages
+      filteredGroups.forEach((group) => {
+        const members = group.group_members || [];
+
+        if (members.length > 0) {
+          doc.addPage();
+
+          // Group header
+          doc.setFillColor(30, 64, 175);
+          doc.rect(0, 0, 297, 25, "F");
+
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(16);
+          doc.setFont("helvetica", "bold");
+          doc.text(group.group_name, 148.5, 12, { align: "center" });
+
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "normal");
+          doc.text(`${group.performance_type} Performance • ${members.length} Members`, 148.5, 19, { align: "center" });
+
+          // Group details
+          doc.setFillColor(248, 250, 252);
+          doc.rect(10, 30, 277, 15, "F");
+
+          doc.setTextColor(30, 41, 59);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text("Description:", 15, 37);
+          doc.setFont("helvetica", "normal");
+          doc.text(group.description || "No description provided", 15, 42, {
+            maxWidth: 267,
+          });
+
+          // Members table
+          const memberData = members.map((member, idx) => [
+            (idx + 1).toString(),
+            member.full_name,
+            member.role,
+            member.email || "N/A",
+            member.contact_number || "N/A",
+            member.age?.toString() || "N/A",
+            member.gender || "N/A",
+          ]);
+
+          autoTable(doc, {
+            startY: 50,
+            head: [["#", "Full Name", "Role", "Email", "Contact", "Age", "Gender"]],
+            body: memberData,
+            theme: "grid",
+            headStyles: {
+              fillColor: [30, 64, 175],
+              textColor: [255, 255, 255],
+              fontSize: 9,
+              fontStyle: "bold",
+            },
+            styles: {
+              fontSize: 8,
+              cellPadding: 2.5,
+            },
+            columnStyles: {
+              0: { halign: "center", cellWidth: 10 },
+              1: { cellWidth: 45, fontStyle: "bold" },
+              2: { cellWidth: 35 },
+              3: { cellWidth: 50 },
+              4: { cellWidth: 35 },
+              5: { halign: "center", cellWidth: 15 },
+              6: { halign: "center", cellWidth: 20 },
+            },
+            margin: { left: 10, right: 10 },
+          });
+        }
+      });
+
+      // Save PDF
+      doc.save(`Maritime_Talent_Quest_Group_Performances_${new Date().toISOString().split('T')[0]}.pdf`);
+
+      console.log("PDF export successful");
+    } catch (error) {
+      console.error("Error exporting to PDF:", error);
+      alert("Failed to export PDF. Please try again.");
+    }
+  };
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -249,10 +514,26 @@ export default function GroupPerformancesPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={exportToPDF} className="cursor-pointer">
+                <FileDown className="h-4 w-4 mr-2" />
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToCSV} className="cursor-pointer">
+                <FileText className="h-4 w-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
