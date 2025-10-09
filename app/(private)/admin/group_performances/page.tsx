@@ -354,6 +354,14 @@ export default function GroupPerformancesPage() {
               contact_number: student.contact_number ? String(student.contact_number) : null,
               age: age,
               gender: student.gender ? String(student.gender) : null,
+              school: student.school ? String(student.school) : null,
+              course_year: student.course_year ? String(student.course_year) : null,
+              // Include all detailed data from API
+              requirements: student.requirements || null,
+              health: student.health || null,
+              consents: student.consents || null,
+              endorsement: student.endorsement || null,
+              performance: student.performance || null,
             };
           });
 

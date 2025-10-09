@@ -24,7 +24,7 @@ export async function GET() {
 
     console.log(`[Group Performances API] Found ${groupsData?.length || 0} groups`)
 
-    // Fetch students for each group via group_members junction table
+    // Fetch detailed data for each group and its members
     const groupsWithMembers = await Promise.all(
       (groupsData || []).map(async (group: Record<string, unknown>) => {
         // First, get the group member relationships
@@ -42,11 +42,13 @@ export async function GET() {
           return { ...group, students: [] }
         }
 
-        // Then, fetch the actual student details
+        // Fetch detailed student data with all related information
         const studentIds = groupMembers.map((gm: { student_id: string; is_leader: boolean }) => gm.student_id)
+
+        // Fetch students
         const { data: students, error: studentsError } = await supabase
           .from('students')
-          .select('student_id, full_name, age, gender, contact_number, email, school, course_year')
+          .select('*')
           .in('student_id', studentIds)
 
         if (studentsError) {
@@ -54,21 +56,64 @@ export async function GET() {
           return { ...group, students: [] }
         }
 
-        // Merge student data with is_leader info
+        // Fetch requirements for all students in parallel
+        const { data: requirementsData } = await supabase
+          .from('requirements')
+          .select('*')
+          .in('student_id', studentIds)
+
+        // Fetch health & fitness for all students
+        const { data: healthData } = await supabase
+          .from('health_fitness')
+          .select('*')
+          .in('student_id', studentIds)
+
+        // Fetch consents for all students
+        const { data: consentsData } = await supabase
+          .from('consents')
+          .select('*')
+          .in('student_id', studentIds)
+
+        // Fetch endorsements for all students
+        const { data: endorsementsData } = await supabase
+          .from('endorsements')
+          .select('*')
+          .in('student_id', studentIds)
+
+        // Fetch performances for all students
+        const { data: performancesData } = await supabase
+          .from('performances')
+          .select('*')
+          .in('student_id', studentIds)
+
+        // Create maps for quick lookup
+        const requirementsMap = new Map((requirementsData || []).map((r: { student_id: string }) => [r.student_id, r]))
+        const healthMap = new Map((healthData || []).map((h: { student_id: string }) => [h.student_id, h]))
+        const consentsMap = new Map((consentsData || []).map((c: { student_id: string }) => [c.student_id, c]))
+        const endorsementsMap = new Map((endorsementsData || []).map((e: { student_id: string }) => [e.student_id, e]))
+        const performancesMap = new Map((performancesData || []).map((p: { student_id: string }) => [p.student_id, p]))
+
+        // Merge all data for each student
         type GroupMember = { student_id: string; is_leader: boolean }
-        const studentsWithLeaderInfo = (students || []).map((student: { student_id: string;[key: string]: unknown }) => {
+        const studentsWithCompleteInfo = (students || []).map((student: { student_id: string;[key: string]: unknown }) => {
           const memberInfo = (groupMembers as GroupMember[]).find((gm: GroupMember) => gm.student_id === student.student_id)
+
           return {
             ...student,
-            is_leader: memberInfo?.is_leader || false
+            is_leader: memberInfo?.is_leader || false,
+            requirements: requirementsMap.get(student.student_id) || null,
+            health: healthMap.get(student.student_id) || null,
+            consents: consentsMap.get(student.student_id) || null,
+            endorsement: endorsementsMap.get(student.student_id) || null,
+            performance: performancesMap.get(student.student_id) || null,
           }
         })
 
-        return { ...group, students: studentsWithLeaderInfo }
+        return { ...group, students: studentsWithCompleteInfo }
       })
     )
 
-    console.log(`[Group Performances API] Successfully fetched ${groupsWithMembers.length} groups with members`)
+    console.log(`[Group Performances API] Successfully fetched ${groupsWithMembers.length} groups with complete member data`)
 
     return NextResponse.json({
       success: true,

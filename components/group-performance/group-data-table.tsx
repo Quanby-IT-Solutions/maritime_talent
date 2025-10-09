@@ -174,7 +174,7 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
         setOpen(newOpen);
         if (!newOpen) setIsEditing(false);
       }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="min-w-[55%] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -281,6 +281,148 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                     </div>
                   </div>
                 </div>
+
+                {/* Requirements Section - Edit Mode (Read-only display) */}
+                {member.requirements && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">Requirements (View Only)</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Certification</p>
+                          {member.requirements.certification_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.requirements.certification_url}
+                                alt="Certification"
+                                className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                              />
+                              <a href={member.requirements.certification_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                Open in new tab
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not uploaded</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">School ID</p>
+                          {member.requirements.school_id_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.requirements.school_id_url}
+                                alt="School ID"
+                                className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                              />
+                              <a href={member.requirements.school_id_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                Open in new tab
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not uploaded</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Health & Fitness - Edit Mode (Read-only display) */}
+                {member.health && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">Health & Fitness Declaration (View Only)</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Physically Fit</p>
+                          <Badge variant={member.health.is_physically_fit ? "default" : "destructive"}>
+                            {member.health.is_physically_fit ? "Yes" : "No"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                          {member.health.student_signature_url ? (
+                            <img
+                              src={member.health.student_signature_url}
+                              alt="Student Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200"
+                            />
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                          {member.health.parent_guardian_signature_url ? (
+                            <img
+                              src={member.health.parent_guardian_signature_url}
+                              alt="Parent/Guardian Signature"
+                              className="w-full h-20 object-contain bg-white rounded-lg border border-gray-200"
+                            />
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Consents - Edit Mode (Read-only display) */}
+                {member.consents && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">Consents & Agreements (View Only)</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Information Correct</p>
+                          <Badge variant={member.consents.info_correct ? "default" : "destructive"}>
+                            {member.consents.info_correct ? "Confirmed" : "Not Confirmed"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Agree to Rules</p>
+                          <Badge variant={member.consents.agree_to_rules ? "default" : "destructive"}>
+                            {member.consents.agree_to_rules ? "Agreed" : "Not Agreed"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Consent to Publicity</p>
+                          <Badge variant={member.consents.consent_to_publicity ? "default" : "destructive"}>
+                            {member.consents.consent_to_publicity ? "Consented" : "Not Consented"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Endorsement - Edit Mode (Read-only display) */}
+                {member.endorsement && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">School Endorsement (View Only)</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
+                          <p className="text-base font-semibold">{member.endorsement.school_official_name || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Position</p>
+                          <Badge variant="outline">{member.endorsement.position || "N/A"}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -320,8 +462,232 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                         {member.contact_number || <span className="text-slate-400">Not provided</span>}
                       </p>
                     </div>
+                    {member.school && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">School</p>
+                        <p className="text-base font-medium text-slate-900">{member.school}</p>
+                      </div>
+                    )}
+                    {member.course_year && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Course/Year</p>
+                        <p className="text-base font-medium text-slate-900">{member.course_year}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Requirements Card */}
+                {member.requirements && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">Requirements</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Certification</p>
+                          {member.requirements.certification_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.requirements.certification_url}
+                                alt="Certification"
+                                className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(member.requirements?.certification_url, '_blank')}
+                              />
+                              <a href={member.requirements.certification_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                Open in new tab
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not uploaded</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">School ID</p>
+                          {member.requirements.school_id_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.requirements.school_id_url}
+                                alt="School ID"
+                                className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(member.requirements?.school_id_url, '_blank')}
+                              />
+                              <a href={member.requirements.school_id_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                Open in new tab
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not uploaded</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Health & Fitness Card */}
+                {member.health && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">Health & Fitness Declaration</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Physically Fit</p>
+                          <Badge variant={member.health.is_physically_fit ? "default" : "destructive"}>
+                            {member.health.is_physically_fit ? "Yes" : "No"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                          {member.health.student_signature_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.health.student_signature_url}
+                                alt="Student Signature"
+                                className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(member.health?.student_signature_url, '_blank')}
+                              />
+                              <a href={member.health.student_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                View full size
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                          {member.health.parent_guardian_signature_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.health.parent_guardian_signature_url}
+                                alt="Parent/Guardian Signature"
+                                className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(member.health?.parent_guardian_signature_url, '_blank')}
+                              />
+                              <a href={member.health.parent_guardian_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                View full size
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Consents Card */}
+                {member.consents && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">Consents & Agreements</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Information Correct</p>
+                          <Badge variant={member.consents.info_correct ? "default" : "destructive"}>
+                            {member.consents.info_correct ? "Confirmed" : "Not Confirmed"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Agree to Rules</p>
+                          <Badge variant={member.consents.agree_to_rules ? "default" : "destructive"}>
+                            {member.consents.agree_to_rules ? "Agreed" : "Not Agreed"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Consent to Publicity</p>
+                          <Badge variant={member.consents.consent_to_publicity ? "default" : "destructive"}>
+                            {member.consents.consent_to_publicity ? "Consented" : "Not Consented"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
+                          {member.consents.student_signature_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.consents.student_signature_url}
+                                alt="Student Signature"
+                                className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(member.consents?.student_signature_url, '_blank')}
+                              />
+                              <a href={member.consents.student_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                View full size
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Parent/Guardian Signature</p>
+                          {member.consents.parent_guardian_signature_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.consents.parent_guardian_signature_url}
+                                alt="Parent/Guardian Signature"
+                                className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(member.consents?.parent_guardian_signature_url, '_blank')}
+                              />
+                              <a href={member.consents.parent_guardian_signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                View full size
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Endorsement Card */}
+                {member.endorsement && (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+                      <h3 className="text-sm font-semibold text-slate-900">School Endorsement</h3>
+                    </div>
+                    <div className="p-4 bg-white space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
+                          <p className="text-base font-semibold">{member.endorsement.school_official_name || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Position</p>
+                          <Badge variant="outline">{member.endorsement.position || "N/A"}</Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Official Signature</p>
+                          {member.endorsement.signature_url ? (
+                            <div className="space-y-2">
+                              <img
+                                src={member.endorsement.signature_url}
+                                alt="Official Signature"
+                                className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
+                                onClick={() => window.open(member.endorsement?.signature_url, '_blank')}
+                              />
+                              <a href={member.endorsement.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                                View full size
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

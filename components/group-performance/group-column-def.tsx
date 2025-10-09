@@ -40,6 +40,13 @@ export const GroupMemberSchema = z.object({
     z.null()
   ]).optional(),
   gender: z.string().nullable(),
+  school: z.string().nullable().optional(),
+  course_year: z.string().nullable().optional(),
+  requirements: z.any().nullable().optional(),
+  health: z.any().nullable().optional(),
+  consents: z.any().nullable().optional(),
+  endorsement: z.any().nullable().optional(),
+  performance: z.any().nullable().optional(),
 });
 
 // Zod schema for group validation
