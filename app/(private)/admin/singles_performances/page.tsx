@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { SingleDataTable } from "@/components/single-performance/single-data-table";
 import { createColumns, SingleData } from "@/components/single-performance/single-column-def";
 import {
@@ -24,20 +24,29 @@ import { useSinglePerformances } from "@/hooks/use-single-performances";
 import { useRealtimeSingles } from "@/provider/SupabaseRealtimeProvider";
 
 export default function SinglesPerformancesPage() {
-  const { singles, loading, error, refetch, updateSingle } = useSinglePerformances();
+  // Use the hook for enriched data (with student joins)
+  const { singles, loading, error, refetch } = useSinglePerformances();
+  // Monitor realtime changes to trigger refetch
   const { data: realtimeSingles } = useRealtimeSingles();
   const [searchQuery, setSearchQuery] = useState("");
   const [performanceTypeFilter, setPerformanceTypeFilter] = useState<"all" | "Singing" | "Dancing" | "Musical Instrument" | "Spoken Word/Poetry" | "Theatrical/Drama" | "Other">("all");
-  const [prevRealtimeLength, setPrevRealtimeLength] = useState(0);
 
-  // Refetch when realtime detects changes in singles table
+  // Track previous count to detect actual changes
+  const prevCountRef = useRef(realtimeSingles.length);
+  
+  // Auto-refetch when realtime singles count changes (detects INSERT/DELETE)
   useEffect(() => {
-    // Only refetch if the length actually changed (not on initial mount)
-    if (prevRealtimeLength > 0 && realtimeSingles.length !== prevRealtimeLength) {
+    const currentCount = realtimeSingles.length;
+    const prevCount = prevCountRef.current;
+    
+    // Only refetch if count actually changed (not on initial mount)
+    if (currentCount !== prevCount && prevCount > 0) {
+      console.log(`🔄 Realtime singles changed: ${prevCount} → ${currentCount}, refetching...`);
       refetch();
     }
-    setPrevRealtimeLength(realtimeSingles.length);
-  }, [realtimeSingles.length]);
+    
+    prevCountRef.current = currentCount;
+  }, [realtimeSingles.length, refetch]);
 
   // Calculate statistics using useMemo
   const stats = useMemo(() => {
@@ -52,7 +61,7 @@ export default function SinglesPerformancesPage() {
     return { total, singing, dancing, musicalInstrument, spokenWord, theatrical, other };
   }, [singles]);
 
-  // Handle single updates - just refetch the data
+  // Handle single updates - refetch to get latest data
   const handleSingleUpdate = () => {
     refetch();
   };

@@ -60,6 +60,10 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
   // Connection state
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const maxRetries = 3;
+  const retryDelay = 3000; // 3 seconds
   
   // Data states
   const [students, setStudents] = useState<StudentData[]>([]);
@@ -262,23 +266,28 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
   }, []);
 
   const handleSingleChange = useCallback((payload: RealtimePostgresChangesPayload<SingleData>) => {
-    console.log('Single change:', payload);
+    console.log('🔔 Single change detected:', payload.eventType, payload);
     
     switch (payload.eventType) {
       case 'INSERT':
-        setSingles(prev => [payload.new, ...prev]);
+        setSingles(prev => {
+          console.log(`➕ Adding single: ${payload.new.single_id}, prev count: ${prev.length}`);
+          return [payload.new, ...prev];
+        });
         toast.success('New single performance registered!');
         break;
       case 'UPDATE':
-        setSingles(prev => 
-          prev.map(item => item.single_id === payload.new.single_id ? payload.new : item)
-        );
+        setSingles(prev => {
+          console.log(`✏️ Updating single: ${payload.new.single_id}`);
+          return prev.map(item => item.single_id === payload.new.single_id ? payload.new : item);
+        });
         toast.info('Single performance updated');
         break;
       case 'DELETE':
-        setSingles(prev => 
-          prev.filter(item => item.single_id !== payload.old.single_id)
-        );
+        setSingles(prev => {
+          console.log(`🗑️ Deleting single: ${payload.old.single_id}`);
+          return prev.filter(item => item.single_id !== payload.old.single_id);
+        });
         toast.info('Single performance removed');
         break;
     }
@@ -345,9 +354,47 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
     };
   }, []);
 
+  // Retry connection function
+  const retryConnection = useCallback(() => {
+    if (retryCount < maxRetries && !isRetrying) {
+      setIsRetrying(true);
+      console.log(`🔄 Retrying connection (${retryCount + 1}/${maxRetries})...`);
+      
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setIsRetrying(false);
+        setConnectionError(null);
+      }, retryDelay);
+    } else if (retryCount >= maxRetries) {
+      console.error('❌ Max retries reached. Realtime features disabled.');
+      toast.error('Unable to connect to realtime updates. Please refresh the page.');
+    }
+  }, [retryCount, isRetrying]);
+
   // Set up realtime subscriptions
   useEffect(() => {
     console.log('Setting up realtime subscriptions...');
+    const totalChannels = 6;
+    const subscribedChannels = new Set<string>();
+    
+    const checkAllSubscribed = () => {
+      if (subscribedChannels.size === totalChannels) {
+        console.log('✅ All channels subscribed successfully');
+        setIsConnected(true);
+        setRetryCount(0);
+        setConnectionError(null);
+        clearTimeout(connectionTimeout);
+      }
+    };
+    
+    // Set a timeout to detect if connection is stuck
+    const connectionTimeout = setTimeout(() => {
+      if (subscribedChannels.size === 0) {
+        console.error('⏱️ Connection timeout - no channels subscribed after 10 seconds');
+        setConnectionError('Connection timeout. Your Supabase project may be paused or unreachable.');
+        toast.error('Unable to connect to Supabase. Please check if your project is active.');
+      }
+    }, 10000); // 10 second timeout
     
     // Create channels for each table with proper status callbacks
     const studentChannel = supabase
@@ -357,10 +404,21 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
         console.log('Students channel status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Students realtime subscribed');
-          setIsConnected(true);
+          subscribedChannels.add('students');
+          checkAllSubscribed();
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Students channel error');
+          clearTimeout(connectionTimeout);
           setConnectionError('Failed to subscribe to students channel');
+          retryConnection();
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Students channel timed out');
+          clearTimeout(connectionTimeout);
+          setConnectionError('Connection timed out');
+          retryConnection();
+        } else if (status === 'CLOSED') {
+          console.warn('🔌 Students channel closed');
+          setIsConnected(false);
         }
       });
 
@@ -371,8 +429,14 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
         console.log('Guests channel status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Guests realtime subscribed');
+          subscribedChannels.add('guests');
+          checkAllSubscribed();
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Guests channel error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Guests channel timed out');
+        } else if (status === 'CLOSED') {
+          console.warn('🔌 Guests channel closed');
         }
       });
 
@@ -383,8 +447,14 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
         console.log('Groups channel status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Groups realtime subscribed');
+          subscribedChannels.add('groups');
+          checkAllSubscribed();
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Groups channel error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Groups channel timed out');
+        } else if (status === 'CLOSED') {
+          console.warn('🔌 Groups channel closed');
         }
       });
 
@@ -395,8 +465,14 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
         console.log('Singles channel status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Singles realtime subscribed');
+          subscribedChannels.add('singles');
+          checkAllSubscribed();
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Singles channel error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Singles channel timed out');
+        } else if (status === 'CLOSED') {
+          console.warn('🔌 Singles channel closed');
         }
       });
 
@@ -407,8 +483,14 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
         console.log('QR Codes channel status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ QR Codes realtime subscribed');
+          subscribedChannels.add('qr_codes');
+          checkAllSubscribed();
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ QR Codes channel error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ QR Codes channel timed out');
+        } else if (status === 'CLOSED') {
+          console.warn('🔌 QR Codes channel closed');
         }
       });
 
@@ -419,8 +501,14 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
         console.log('Attendance Logs channel status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Attendance Logs realtime subscribed');
+          subscribedChannels.add('attendance_logs');
+          checkAllSubscribed();
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Attendance Logs channel error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏱️ Attendance Logs channel timed out');
+        } else if (status === 'CLOSED') {
+          console.warn('🔌 Attendance Logs channel closed');
         }
       });
 
@@ -429,6 +517,7 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
     // Cleanup function
     return () => {
       console.log('Cleaning up realtime subscriptions...');
+      clearTimeout(connectionTimeout);
       supabase.removeChannel(studentChannel);
       supabase.removeChannel(guestChannel);
       supabase.removeChannel(groupChannel);
@@ -436,7 +525,7 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
       supabase.removeChannel(qrCodeChannel);
       supabase.removeChannel(attendanceLogChannel);
     };
-  }, [handleStudentChange, handleGuestChange, handleGroupChange, handleSingleChange, handleQRCodeChange, handleAttendanceLogChange]);
+  }, [handleStudentChange, handleGuestChange, handleGroupChange, handleSingleChange, handleQRCodeChange, handleAttendanceLogChange, retryConnection, retryCount]);
 
   // Fetch initial data on mount
   useEffect(() => {

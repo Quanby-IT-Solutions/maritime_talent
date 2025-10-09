@@ -306,7 +306,7 @@ export default function LandingPage() {
         </Button>
 
         {/* Main Registration Button */}
-        <Link href="/registration" className="block">
+        <Link href="/registration/contestant" className="block">
           <Button
             size="lg"
             className="rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-pulse hover:animate-none bg-primary hover:bg-primary/90"
