@@ -126,9 +126,11 @@ async function generateAndUploadQR(
   const insert: QRCodeInsert = {
     qr_code_url: publicUrl
   }
-  if (type === "guest") insert.guest_id = id
-  if (type === "contestant_single") insert.single_id = id
-  if (type === "contestant_group") insert.group_id = id
+  // Convert string ID to number for database
+  const numericId = parseInt(id, 10)
+  if (type === "guest") insert.guest_id = numericId
+  if (type === "contestant_single") insert.single_id = numericId
+  if (type === "contestant_group") insert.group_id = numericId
 
   console.log(`[QR Generate] Inserting QR code for ${type} ID ${id}:`, insert)
 
