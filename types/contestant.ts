@@ -69,8 +69,8 @@ export interface RegistrationAPIResponse {
   message: string;
   data: {
     isGroup: boolean;
-    groupId: number | null;
-    singleId: number | null;
+    groupId: string | null;
+    singleId: string | null;
     qrCodeUrl: string;
     emailSent: boolean;
   };
