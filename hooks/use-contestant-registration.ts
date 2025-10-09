@@ -63,6 +63,14 @@ export function useContestantRegistration() {
       if (performer.parentGuardianSignature) {
         formData.append(`${prefix}.parentGuardianSignature`, performer.parentGuardianSignature);
       }
+      
+      // School Endorsement (per performer)
+      if (performer.schoolOfficialName) {
+        formData.append(`${prefix}.schoolOfficialName`, performer.schoolOfficialName);
+      }
+      if (performer.schoolOfficialPosition) {
+        formData.append(`${prefix}.schoolOfficialPosition`, performer.schoolOfficialPosition);
+      }
     });
     
     return formData;

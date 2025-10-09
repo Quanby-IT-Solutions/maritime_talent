@@ -20,6 +20,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@radix-ui/react-select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 // Zod schema for single performance validation
 export const SingleSchema = z.object({
@@ -97,10 +108,8 @@ interface SinglePerformanceData {
   } | null;
   endorsement: {
     endorsement_id: string; // UUID
-    school_official_name: string;
+    official_name: string;
     position: string;
-    signature_url: string;
-    endorsement_date: string;
   } | null;
 }
 
@@ -108,9 +117,11 @@ interface SinglePerformanceData {
 const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate?: () => void }) => {
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [data, setData] = useState<SinglePerformanceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form state for editing
@@ -125,6 +136,8 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
     contact_number: "",
     email: "",
     duration: "",
+    official_name: "",
+    position: "",
   });
 
   // File upload states
@@ -164,6 +177,8 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
         contact_number: result.data.student.contact_number || "",
         email: result.data.student.email || "",
         duration: result.data.performance?.duration || "",
+        official_name: result.data.endorsement?.official_name || "",
+        position: result.data.endorsement?.position || "",
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -198,31 +213,32 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
             duration: formData.duration,
             performance_type: formData.performance_type,
           },
+          endorsement: {
+            official_name: formData.official_name,
+            position: formData.position,
+          },
         }),
       });
 
       const result = await response.json();
 
       if (!result.success) {
-        alert(`Error: ${result.error || "Failed to update performance"}`);
+        toast.error(result.error || "Failed to update performance");
         return;
       }
 
-      alert("Performance updated successfully!");
+      toast.success("Performance updated successfully!");
       setEditOpen(false);
       if (onUpdate) onUpdate();
     } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : "An error occurred"}`);
+      toast.error(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${single.performance_title}"? This will delete all related data and files permanently.`)) {
-      return;
-    }
-
+    setDeleting(true);
     try {
       const response = await fetch(`/api/single_performance/${single.single_id}`, {
         method: "DELETE",
@@ -231,14 +247,17 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
       const result = await response.json();
 
       if (!result.success) {
-        alert(`Error: ${result.error || "Failed to delete performance"}`);
+        toast.error(result.error || "Failed to delete performance");
         return;
       }
 
-      alert("Performance deleted successfully!");
+      toast.success("Performance deleted successfully!");
+      setDeleteOpen(false);
       if (onUpdate) onUpdate();
     } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : "An error occurred"}`);
+      toast.error(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -274,7 +293,7 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
         className="flex items-center gap-2 text-red-600"
         onSelect={(e) => {
           e.preventDefault();
-          handleDelete();
+          setDeleteOpen(true);
         }}
       >
         <Trash2 className="h-4 w-4" />
@@ -579,29 +598,11 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
-                        <p className="text-base font-semibold">{data.endorsement.school_official_name}</p>
+                        <p className="text-base font-semibold">{data.endorsement.official_name}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Position</p>
                         <p className="text-base">{data.endorsement.position}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">Official Signature</p>
-                        {data.endorsement.signature_url ? (
-                          <div className="space-y-2">
-                            <img 
-                              src={data.endorsement.signature_url} 
-                              alt="Official Signature" 
-                              className="w-full max-w-md h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
-                              onClick={() => window.open(data.endorsement?.signature_url, '_blank')}
-                            />
-                            <a href={data.endorsement.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                              View full size
-                            </a>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">Not provided</p>
-                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -963,52 +964,85 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
                 </Card>
               )}
 
-              {/* Endorsement (Read-only) */}
-              {data.endorsement && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5" />
-                      School Endorsement
-                      <Badge variant="secondary" className="ml-2">View Only</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
-                        <p className="text-base font-semibold">{data.endorsement.school_official_name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Position</p>
-                        <p className="text-base">{data.endorsement.position}</p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">Official Signature</p>
-                        {data.endorsement.signature_url ? (
-                          <div className="space-y-2">
-                            <img 
-                              src={data.endorsement.signature_url} 
-                              alt="Official Signature" 
-                              className="w-full max-w-md h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
-                              onClick={() => window.open(data.endorsement?.signature_url, '_blank')}
-                            />
-                            <a href={data.endorsement.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                              View full size
-                            </a>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">Not provided</p>
-                        )}
-                      </div>
+              {/* Endorsement (Editable) */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    School Endorsement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="official_name">School Official Name</Label>
+                      <Input
+                        id="official_name"
+                        value={formData.official_name}
+                        onChange={(e) => setFormData({ ...formData, official_name: e.target.value })}
+                        placeholder="Enter school official name"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                    <div className="space-y-2">
+                      <Label htmlFor="position">Position</Label>
+                      <Input
+                        id="position"
+                        value={formData.position}
+                        onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                        placeholder="Enter position/title"
+                      />
+                    </div>
+                  </div>
+                  {!data.endorsement && (
+                    <p className="text-xs text-muted-foreground">
+                      No endorsement data found. You can add it here.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete "{single.performance_title}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete:
+            </AlertDialogDescription>
+            <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-muted-foreground">
+              <li>Performance record</li>
+              <li>Student information</li>
+              <li>All uploaded files (certifications, signatures, QR codes)</li>
+              <li>Health declarations and consents</li>
+              <li>School endorsement</li>
+            </ul>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
