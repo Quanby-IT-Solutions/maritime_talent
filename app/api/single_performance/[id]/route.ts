@@ -9,9 +9,9 @@ export async function GET(
   try {
     const supabase = createServerClient();
     const { id } = await params;
-    const singleId = parseInt(id);
+    const singleId = id;
 
-    if (isNaN(singleId)) {
+    if (!singleId) {
       return NextResponse.json(
         { success: false, error: 'Invalid single ID' },
         { status: 400 }
@@ -110,10 +110,10 @@ export async function PUT(
   try {
     const supabase = createServerClient();
     const { id } = await params;
-    const singleId = parseInt(id);
+    const singleId = id;
     const body = await req.json();
 
-    if (isNaN(singleId)) {
+    if (!singleId) {
       return NextResponse.json(
         { success: false, error: 'Invalid single ID' },
         { status: 400 }
@@ -185,9 +185,9 @@ export async function DELETE(
   try {
     const supabase = createServerClient();
     const { id } = await params;
-    const singleId = parseInt(id);
+    const singleId = id;
 
-    if (isNaN(singleId)) {
+    if (!singleId) {
       return NextResponse.json(
         { success: false, error: 'Invalid single ID' },
         { status: 400 }

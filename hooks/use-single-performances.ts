@@ -7,7 +7,7 @@ interface UseSinglePerformancesReturn {
   error: string | null;
   refetch: () => Promise<void>;
   updateSingle: (single: SingleData) => Promise<{ success: boolean; error?: string }>;
-  deleteSingle: (singleId: number) => Promise<{ success: boolean; error?: string }>;
+  deleteSingle: (singleId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function useSinglePerformances(): UseSinglePerformancesReturn {
@@ -69,7 +69,7 @@ export function useSinglePerformances(): UseSinglePerformancesReturn {
     }
   }, []);
 
-  const deleteSingle = useCallback(async (singleId: number) => {
+  const deleteSingle = useCallback(async (singleId: string) => {
     try {
       const response = await fetch(`/api/single_performance?single_id=${singleId}`, {
         method: 'DELETE',

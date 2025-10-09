@@ -23,10 +23,10 @@ import { Input } from "@/components/ui/input";
 
 // Zod schema for single performance validation
 export const SingleSchema = z.object({
-  id: z.number(), // Required for DataTable
-  single_id: z.number(),
+  id: z.string(), // Required for DataTable (UUID)
+  single_id: z.string(), // UUID
   performance_title: z.string().min(1, "Performance title is required"),
-  student_id: z.number().nullable(),
+  student_id: z.string().nullable(), // UUID
   created_at: z.string().nullable(),
   student_name: z.string().nullable(),
   student_school: z.string().nullable(),
@@ -50,14 +50,14 @@ export const safeParseSingleData = (data: unknown) => {
 // Interface for full performance data
 interface SinglePerformanceData {
   single: {
-    single_id: number;
-    student_id: number;
+    single_id: string; // UUID
+    student_id: string; // UUID
     performance_title: string;
     performance_type: string;
     created_at: string;
   };
   student: {
-    student_id: number;
+    student_id: string; // UUID
     full_name: string;
     age: number;
     gender: string;
@@ -67,27 +67,27 @@ interface SinglePerformanceData {
     email: string;
   };
   performance: {
-    performance_id: number;
+    performance_id: string; // UUID
     performance_type: string;
     title: string;
     duration: string;
     num_performers: number;
   } | null;
   requirements: {
-    requirement_id: number;
+    requirement_id: string; // UUID
     certification_url: string;
     school_id_url: string;
     uploaded_at: string;
   } | null;
   health: {
-    declaration_id: number;
+    declaration_id: string; // UUID
     is_physically_fit: boolean;
     student_signature_url: string;
     parent_guardian_signature_url: string;
     declaration_date: string;
   } | null;
   consents: {
-    consent_id: number;
+    consent_id: string; // UUID
     info_correct: boolean;
     agree_to_rules: boolean;
     consent_to_publicity: boolean;
@@ -96,7 +96,7 @@ interface SinglePerformanceData {
     consent_date: string;
   } | null;
   endorsement: {
-    endorsement_id: number;
+    endorsement_id: string; // UUID
     school_official_name: string;
     position: string;
     signature_url: string;
@@ -1122,29 +1122,11 @@ export const createColumns = (onUpdate?: (updatedSingle: SingleData) => void): C
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(single.single_id.toString())
-              }
-            >
-              Copy performance ID
-            </DropdownMenuItem>
-            {single.student_id && (
-              <DropdownMenuItem
-                onClick={() =>
-                  navigator.clipboard.writeText(single.student_id!.toString())
-                }
-              >
-                Copy student ID
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
             <SingleDetailsSheet single={single} />
           </DropdownMenuContent>
         </DropdownMenu>
       );
     },
-    size: 120,
   },
 ];
 
