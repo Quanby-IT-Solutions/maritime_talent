@@ -296,7 +296,7 @@ export default function LandingPage() {
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 z-50 space-y-3">
         {/* Main Registration Button */}
-        <Link href="/registration" className="block">
+        <Link href="/registration/contestant" className="block">
           <Button
             size="lg"
             className="rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-pulse hover:animate-none bg-primary hover:bg-primary/90"
