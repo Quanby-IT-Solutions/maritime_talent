@@ -111,6 +111,7 @@ interface SinglePerformanceData {
     endorsement_id: string; // UUID
     official_name: string;
     position: string;
+    signature_url: string;
   } | null;
 }
 
@@ -394,6 +395,25 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
       }
 
       toast.success("Performance updated successfully!");
+
+      // Reset file and signature states
+      setFiles({
+        certification: null,
+        school_id: null,
+        health_student_signature: null,
+        health_parent_signature: null,
+        consent_student_signature: null,
+        consent_parent_signature: null,
+        endorsement_signature: null,
+      });
+      setDrawnSignatures({
+        health_student: null,
+        health_parent: null,
+        consent_student: null,
+        consent_parent: null,
+        endorsement: null,
+      });
+
       setEditOpen(false);
       if (onUpdate) onUpdate();
     } catch (err) {
@@ -1297,7 +1317,7 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete "{single.performance_title}"?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure you want to delete &quot;{single.performance_title}&quot;?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete:
             </AlertDialogDescription>
@@ -1331,6 +1351,48 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Signature Modals */}
+      <ESignModal
+        open={signatureModals.health_student}
+        onOpenChange={(open) => setSignatureModals({ ...signatureModals, health_student: open })}
+        onSignatureSave={(dataUrl) => {
+          setDrawnSignatures({ ...drawnSignatures, health_student: dataUrl });
+          setSignatureModals({ ...signatureModals, health_student: false });
+        }}
+      />
+      <ESignModal
+        open={signatureModals.health_parent}
+        onOpenChange={(open) => setSignatureModals({ ...signatureModals, health_parent: open })}
+        onSignatureSave={(dataUrl) => {
+          setDrawnSignatures({ ...drawnSignatures, health_parent: dataUrl });
+          setSignatureModals({ ...signatureModals, health_parent: false });
+        }}
+      />
+      <ESignModal
+        open={signatureModals.consent_student}
+        onOpenChange={(open) => setSignatureModals({ ...signatureModals, consent_student: open })}
+        onSignatureSave={(dataUrl) => {
+          setDrawnSignatures({ ...drawnSignatures, consent_student: dataUrl });
+          setSignatureModals({ ...signatureModals, consent_student: false });
+        }}
+      />
+      <ESignModal
+        open={signatureModals.consent_parent}
+        onOpenChange={(open) => setSignatureModals({ ...signatureModals, consent_parent: open })}
+        onSignatureSave={(dataUrl) => {
+          setDrawnSignatures({ ...drawnSignatures, consent_parent: dataUrl });
+          setSignatureModals({ ...signatureModals, consent_parent: false });
+        }}
+      />
+      <ESignModal
+        open={signatureModals.endorsement}
+        onOpenChange={(open) => setSignatureModals({ ...signatureModals, endorsement: open })}
+        onSignatureSave={(dataUrl) => {
+          setDrawnSignatures({ ...drawnSignatures, endorsement: dataUrl });
+          setSignatureModals({ ...signatureModals, endorsement: false });
+        }}
+      />
     </>
   );
 };
