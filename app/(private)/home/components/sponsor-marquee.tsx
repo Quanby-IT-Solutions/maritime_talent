@@ -22,7 +22,7 @@ const imageLogos = [
 
 export default function SponsorMarquee() {
   return (
-    <div style={{ height: "200px", position: "relative", overflow: "hidden" }}>
+    <div className="w-full max-w-full h-32 sm:h-40 md:h-48 relative overflow-hidden">
       <LogoLoop
         logos={imageLogos}
         speed={120}
