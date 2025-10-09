@@ -394,79 +394,77 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
         </CardContent>
       </Card>
 
-      {/* School Endorsement - Only show if this is not a multi-performer context or performerIndex is undefined */}
-      {performerIndex === undefined && (
-        <Card className="border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-white">
-              <School className="h-5 w-5" />
-              F. For School Endorsement
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                <strong>For School Officials:</strong> We hereby certify that the above student(s) is/are currently enrolled in our institution and is/are endorsed to participate in the Maritime Talent Quest 2025.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="schoolOfficialName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Name of School Official</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter name of school official"
-                          className="text-sm"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+      {/* School Endorsement - Show for each performer */}
+      <Card className="border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-white">
+            <School className="h-5 w-5" />
+            F. For School Endorsement
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+              <strong>For School Officials:</strong> We hereby certify that the above student is currently enrolled in our institution and is endorsed to participate in the Maritime Talent Quest 2025.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name={getFieldName("schoolOfficialName")}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Name of School Official</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter name of school official"
+                        className="text-sm"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="schoolOfficialPosition"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Position</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter position/title"
-                          className="text-sm"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name={getFieldName("schoolOfficialPosition")}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Position</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter position/title"
+                        className="text-sm"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+          </div>
 
-            <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <FileText className="h-5 w-5 text-purple-600 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-purple-900">School Endorsement Requirements</h4>
-                  <div className="text-sm text-purple-800 mt-1 space-y-1">
-                    <p>• Official signature and school seal required</p>
-                    <p>• Date of endorsement must be provided</p>
-                    <p>• School official must be authorized to endorse students</p>
-                    <p className="text-xs text-purple-600 mt-2">
-                      Physical signatures and school seal can be submitted separately or during event registration.
-                    </p>
-                  </div>
+          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <FileText className="h-5 w-5 text-purple-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-purple-900 dark:text-purple-200">School Endorsement Requirements</h4>
+                <div className="text-sm text-purple-800 dark:text-purple-300 mt-1 space-y-1">
+                  <p>• Official signature and school seal required</p>
+                  <p>• Date of endorsement must be provided</p>
+                  <p>• School official must be authorized to endorse students</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                    Physical signatures and school seal can be submitted separately or during event registration.
+                  </p>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div className="flex items-start space-x-3">
