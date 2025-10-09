@@ -38,21 +38,24 @@ async function getUserName(
       .select("full_name")
       .eq("guest_id", id)
       .single()
-    return (data as any)?.full_name || `guest_${id}`
+    const guestData = data as { full_name: string } | null
+    return guestData?.full_name || `guest_${id}`
   } else if (type === "contestant_single") {
     const { data } = await supabase
       .from("singles")
       .select("students!fk_single_student(full_name)")
       .eq("single_id", id)
       .single()
-    return (data as any)?.students?.full_name || `single_${id}`
+    const singleData = data as { students: { full_name: string } } | null
+    return singleData?.students?.full_name || `single_${id}`
   } else if (type === "contestant_group") {
     const { data } = await supabase
       .from("groups")
       .select("group_name")
       .eq("group_id", id)
       .single()
-    return (data as any)?.group_name || `group_${id}`
+    const groupData = data as { group_name: string } | null
+    return groupData?.group_name || `group_${id}`
   }
   return `user_${id}`
 }
@@ -69,48 +72,41 @@ async function generateAndUploadQR(
   const pngBuffer = await QRCode.toBuffer(payload, { type: "png", width: 512 })
 
   const dir = type === "guest" ? "guests" : type === "contestant_single" ? "singles" : "groups"
-  console.log(`Using directory: ${dir} for type: ${type}`)
 
-  // Get or use provided name
+  // Always use consistent filename format: {id}_{sanitized_name}.png
   const userName = name || await getUserName(supabase, id, type)
   const sanitizedName = sanitizeFilename(userName)
-
-  // Generate filename based on whether it's manual or bulk
-  const filename = manual
-    ? `${sanitizedName}_manual_qr_code.png`
-    : `${id}.png`
-
+  const filename = `${id}_${sanitizedName}.png`
   const filePath = `${dir}/${filename}`
 
-  // If manual generation, check for and delete old QR code first
-  if (manual) {
-    // Check if there's an existing QR code in the database
-    const queryField = type === "guest" ? "guest_id" : type === "contestant_single" ? "single_id" : "group_id"
-    const { data: existingQR } = await supabase
-      .from("qr_codes")
-      .select("qr_code_url")
-      .eq(queryField, id)
-      .single()
+  // Check if there's an existing QR code in the database and delete old file
+  const queryField = type === "guest" ? "guest_id" : type === "contestant_single" ? "single_id" : "group_id"
+  const { data: existingQR } = await supabase
+    .from("qr_codes")
+    .select("qr_code_url")
+    .eq(queryField, id)
+    .single()
 
-    const existingQRData = existingQR as any
-    if (existingQRData?.qr_code_url) {
-      // Extract the old file path from the URL
-      try {
-        const urlObj = new URL(existingQRData.qr_code_url)
-        const pathParts = urlObj.pathname.split(`/${BUCKET}/`)
-        if (pathParts.length > 1) {
-          const oldFilePath = pathParts[1]
-          // Delete the old file (ignore errors if it doesn't exist)
+  const existingQRData = existingQR as { qr_code_url: string } | null
+  if (existingQRData?.qr_code_url) {
+    // Extract the old file path from the URL
+    try {
+      const urlObj = new URL(existingQRData.qr_code_url)
+      const pathParts = urlObj.pathname.split(`/${BUCKET}/`)
+      if (pathParts.length > 1) {
+        const oldFilePath = pathParts[1]
+        // Delete the old file only if it has a different name
+        if (oldFilePath !== filePath) {
           await supabase.storage.from(BUCKET).remove([oldFilePath])
-          console.log(`Deleted old QR code: ${oldFilePath}`)
         }
-      } catch (e) {
-        console.log("Could not delete old QR code file", e)
-        // Continue anyway
       }
+    } catch (e) {
+      console.log("Could not delete old QR code file", e)
+      // Continue anyway
     }
   }
 
+  // Upload the QR code (upsert will overwrite if same filename exists)
   const { error: upErr } = await supabase.storage
     .from(BUCKET)
     .upload(filePath, pngBuffer, { contentType: "image/png", upsert: true })
@@ -119,14 +115,34 @@ async function generateAndUploadQR(
   const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath)
   const publicUrl = publicUrlData.publicUrl
 
-  const insert: any = { qr_code_url: publicUrl }
+  // Build the insert object based on type
+  type QRCodeInsert = {
+    qr_code_url: string
+    guest_id?: number
+    single_id?: number
+    group_id?: number
+  }
+
+  const insert: QRCodeInsert = {
+    qr_code_url: publicUrl
+  }
   if (type === "guest") insert.guest_id = id
   if (type === "contestant_single") insert.single_id = id
   if (type === "contestant_group") insert.group_id = id
 
-  const onConflict = type === "guest" ? "guest_id" : type === "contestant_single" ? "single_id" : "group_id"
-  const { error: dbErr } = await supabase.from("qr_codes").upsert(insert, { onConflict })
-  if (dbErr) throw dbErr
+  console.log(`[QR Generate] Inserting QR code for ${type} ID ${id}:`, insert)
+
+  // First try to delete any existing QR code for this user
+  const deleteField = type === "guest" ? "guest_id" : type === "contestant_single" ? "single_id" : "group_id"
+  await supabase.from("qr_codes").delete().eq(deleteField, id)
+
+  // Then insert the new one
+  const insertResult = await supabase.from("qr_codes").insert([insert as unknown as never])
+  if (insertResult.error) {
+    console.error(`[QR Generate] Database error for ${type} ID ${id}:`, insertResult.error)
+    throw insertResult.error
+  }
+  console.log(`[QR Generate] Successfully saved QR code for ${type} ID ${id}`)
 
   return publicUrl
 }
@@ -134,16 +150,13 @@ async function generateAndUploadQR(
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as GenerateBody
-    console.log('QR Generate API received body:', JSON.stringify(body, null, 2))
 
     let items: GenerateItem[] = []
     if (Array.isArray(body?.items) && body.items.length) {
       items = body.items
-      console.log('Processing items:', items)
     } else if (Array.isArray(body?.userIds) && body.userIds.length) {
       // Back-compat: treat as guest ids
       items = body.userIds.map((id) => ({ id, type: "guest" as const }))
-      console.log('Processing userIds (back-compat):', items)
     }
     if (!items.length) {
       return NextResponse.json({ success: false, error: "Provide items: [{id,type}] or userIds[]" }, { status: 400 })

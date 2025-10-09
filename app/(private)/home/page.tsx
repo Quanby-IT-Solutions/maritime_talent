@@ -295,16 +295,6 @@ export default function LandingPage() {
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 z-50 space-y-3">
-        {/* Back to Top Button */}
-        <Button
-          size="icon"
-          variant="outline"
-          className="rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-background/80 backdrop-blur-sm"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        >
-          <ArrowUp className="h-4 w-4" />
-        </Button>
-
         {/* Main Registration Button */}
         <Link href="/registration/contestant" className="block">
           <Button

@@ -30,12 +30,15 @@ export async function GET(req: NextRequest) {
     const guestIds = (guests || []).map((g: any) => g.guest_id)
     const { data: guestQrs } = guestIds.length
       ? await supabase
-          .from("qr_codes")
-          .select("qr_code_url, guest_id, created_at")
-          .in("guest_id", guestIds)
+        .from("qr_codes")
+        .select("qr_code_url, guest_id, created_at")
+        .in("guest_id", guestIds)
       : { data: [] as any[] }
+    console.log(`[QR Management API] Found ${guestQrs?.length || 0} QR codes for ${guestIds.length} guests`)
+    console.log(`[QR Management API] Guest IDs:`, guestIds)
+    console.log(`[QR Management API] Guest QR codes:`, guestQrs?.map(r => ({ guest_id: r.guest_id, url: r.qr_code_url })))
     const guestQrMap = new Map<number, any>()
-    ;(guestQrs || []).forEach((r: any) => guestQrMap.set(r.guest_id, r))
+      ; (guestQrs || []).forEach((r: any) => guestQrMap.set(r.guest_id, r))
     const guestItems = (guests || []).map((g: any) => ({
       type: "guest" as const,
       id: g.guest_id as number,
@@ -65,12 +68,15 @@ export async function GET(req: NextRequest) {
     const singleIds = (singles || []).map((s: any) => s.single_id)
     const { data: singleQrs } = singleIds.length
       ? await supabase
-          .from("qr_codes")
-          .select("qr_code_url, single_id, created_at")
-          .in("single_id", singleIds)
+        .from("qr_codes")
+        .select("qr_code_url, single_id, created_at")
+        .in("single_id", singleIds)
       : { data: [] as any[] }
+    console.log(`[QR Management API] Found ${singleQrs?.length || 0} QR codes for ${singleIds.length} singles`)
+    console.log(`[QR Management API] Single IDs:`, singleIds)
+    console.log(`[QR Management API] Single QR codes:`, singleQrs?.map(r => ({ single_id: r.single_id, url: r.qr_code_url })))
     const singleQrMap = new Map<number, any>()
-    ;(singleQrs || []).forEach((r: any) => singleQrMap.set(r.single_id, r))
+      ; (singleQrs || []).forEach((r: any) => singleQrMap.set(r.single_id, r))
     const singleItems = (singles || [])
       .map((s: any) => {
         const student = s.students
@@ -112,19 +118,20 @@ export async function GET(req: NextRequest) {
     const groupIds = (groups || []).map((g: any) => g.group_id)
     const { data: groupQrs } = groupIds.length
       ? await supabase
-          .from("qr_codes")
-          .select("qr_code_url, group_id, created_at")
-          .in("group_id", groupIds)
+        .from("qr_codes")
+        .select("qr_code_url, group_id, created_at")
+        .in("group_id", groupIds)
       : { data: [] as any[] }
+    console.log(`[QR Management API] Found ${groupQrs?.length || 0} QR codes for ${groupIds.length} groups`)
     const groupQrMap = new Map<number, any>()
-    ;(groupQrs || []).forEach((r: any) => groupQrMap.set(r.group_id, r))
+      ; (groupQrs || []).forEach((r: any) => groupQrMap.set(r.group_id, r))
     const groupItems = (groups || [])
       .map((g: any) => {
         // Find the leader from group members
         const members = g.group_members || []
         const leader = members.find((m: any) => m.is_leader)?.students
         const memberCount = members.length
-        
+
         return {
           type: "contestant_group" as const,
           id: g.group_id as number,
@@ -147,16 +154,23 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
 
     const total = combined.length
+    console.log(`[QR Management API] Total combined records: ${total}`)
+    console.log(`[QR Management API] All records:`, combined.map(i => ({ type: i.type, id: i.id, name: i.name, hasQR: !!i.qr })))
+
     const start = (page - 1) * pageSize
     const end = start + pageSize
     const items = combined.slice(start, end)
+
+    console.log(`[QR Management API] Pagination: page=${page}, pageSize=${pageSize}, start=${start}, end=${end}`)
+    console.log(`[QR Management API] Returning ${items.length} items (${items.filter(i => i.qr).length} with QR codes)`)
+    console.log(`[QR Management API] Items with QR codes:`, items.filter(i => i.qr).map(i => ({ type: i.type, id: i.id, name: i.name, hasQR: !!i.qr })))
 
     return NextResponse.json({ success: true, page, pageSize, total, items })
   } catch (err) {
     console.error("[QR Management API] Error:", err)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: err instanceof Error ? err.message : "Unknown error",
         details: err instanceof Error ? err.stack : undefined
       },

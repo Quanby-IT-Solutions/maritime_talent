@@ -1,7 +1,7 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Waves, Users, Trophy, Heart } from "lucide-react";
+import { Waves } from "lucide-react";
 import SponsorMarquee from "./sponsor-marquee";
 import { Separator } from "@/components/ui/separator";
 export default function TitleOfEvent() {
