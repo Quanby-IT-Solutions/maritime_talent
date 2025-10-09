@@ -7,22 +7,22 @@ export type Database = {
     Tables: {
       attendance_logs: {
         Row: {
-          attendance_id: number
-          qr_id: number
+          attendance_id: string
+          qr_id: string
           scan_time: string | null
           scanned_by: string | null
           status: string | null
         }
         Insert: {
-          attendance_id?: number
-          qr_id: number
+          attendance_id?: string
+          qr_id: string
           scan_time?: string | null
           scanned_by?: string | null
           status?: string | null
         }
         Update: {
-          attendance_id?: number
-          qr_id?: number
+          attendance_id?: string
+          qr_id?: string
           scan_time?: string | null
           scanned_by?: string | null
           status?: string | null
@@ -30,8 +30,8 @@ export type Database = {
       }
       consents: {
         Row: {
-          consent_id: number
-          student_id: number | null
+          consent_id: string
+          student_id: string | null
           info_correct: boolean | null
           agree_to_rules: boolean | null
           consent_to_publicity: boolean | null
@@ -40,8 +40,8 @@ export type Database = {
           consent_date: string | null
         }
         Insert: {
-          consent_id?: number
-          student_id?: number | null
+          consent_id?: string
+          student_id?: string | null
           info_correct?: boolean | null
           agree_to_rules?: boolean | null
           consent_to_publicity?: boolean | null
@@ -50,8 +50,8 @@ export type Database = {
           consent_date?: string | null
         }
         Update: {
-          consent_id?: number
-          student_id?: number | null
+          consent_id?: string
+          student_id?: string | null
           info_correct?: boolean | null
           agree_to_rules?: boolean | null
           consent_to_publicity?: boolean | null
@@ -62,24 +62,24 @@ export type Database = {
       }
       endorsements: {
         Row: {
-          endorsement_id: number
-          student_id: number | null
+          endorsement_id: string
+          student_id: string | null
           school_official_name: string | null
           position: string | null
           signature_url: string | null
           endorsement_date: string | null
         }
         Insert: {
-          endorsement_id?: number
-          student_id?: number | null
+          endorsement_id?: string
+          student_id?: string | null
           school_official_name?: string | null
           position?: string | null
           signature_url?: string | null
           endorsement_date?: string | null
         }
         Update: {
-          endorsement_id?: number
-          student_id?: number | null
+          endorsement_id?: string
+          student_id?: string | null
           school_official_name?: string | null
           position?: string | null
           signature_url?: string | null
@@ -88,44 +88,44 @@ export type Database = {
       }
       group_members: {
         Row: {
-          group_member_id: number
-          group_id: number
-          student_id: number
+          group_member_id: string
+          group_id: string
+          student_id: string
           is_leader: boolean | null
           joined_at: string | null
         }
         Insert: {
-          group_member_id?: number
-          group_id: number
-          student_id: number
+          group_member_id?: string
+          group_id: string
+          student_id: string
           is_leader?: boolean | null
           joined_at?: string | null
         }
         Update: {
-          group_member_id?: number
-          group_id?: number
-          student_id?: number
+          group_member_id?: string
+          group_id?: string
+          student_id?: string
           is_leader?: boolean | null
           joined_at?: string | null
         }
       }
       groups: {
         Row: {
-          group_id: number
+          group_id: string
           group_name: string
           performance_title: string | null
           performance_description: string | null
           created_at: string | null
         }
         Insert: {
-          group_id?: number
+          group_id?: string
           group_name: string
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
         }
         Update: {
-          group_id?: number
+          group_id?: string
           group_name?: string
           performance_title?: string | null
           performance_description?: string | null
@@ -134,7 +134,7 @@ export type Database = {
       }
       guests: {
         Row: {
-          guest_id: number
+          guest_id: string
           full_name: string
           age: number | null
           gender: string | null
@@ -145,7 +145,7 @@ export type Database = {
           registration_date: string | null
         }
         Insert: {
-          guest_id?: number
+          guest_id?: string
           full_name: string
           age?: number | null
           gender?: string | null
@@ -156,7 +156,7 @@ export type Database = {
           registration_date?: string | null
         }
         Update: {
-          guest_id?: number
+          guest_id?: string
           full_name?: string
           age?: number | null
           gender?: string | null
@@ -169,28 +169,25 @@ export type Database = {
       }
       health_fitness: {
         Row: {
-          declaration_id: number
-          student_id: number | null
+          declaration_id: string
+          student_id: string | null
           is_physically_fit: boolean | null
-          medical_conditions: string | null
           student_signature_url: string | null
           parent_guardian_signature_url: string | null
           declaration_date: string | null
         }
         Insert: {
-          declaration_id?: number
-          student_id?: number | null
+          declaration_id?: string
+          student_id?: string | null
           is_physically_fit?: boolean | null
-          medical_conditions?: string | null
           student_signature_url?: string | null
           parent_guardian_signature_url?: string | null
           declaration_date?: string | null
         }
         Update: {
-          declaration_id?: number
-          student_id?: number | null
+          declaration_id?: string
+          student_id?: string | null
           is_physically_fit?: boolean | null
-          medical_conditions?: string | null
           student_signature_url?: string | null
           parent_guardian_signature_url?: string | null
           declaration_date?: string | null
@@ -198,8 +195,8 @@ export type Database = {
       }
       performances: {
         Row: {
-          performance_id: number
-          student_id: number | null
+          performance_id: string
+          student_id: string | null
           performance_type: PerformanceType
           title: string | null
           duration: string | null
@@ -208,8 +205,8 @@ export type Database = {
           created_at: string | null
         }
         Insert: {
-          performance_id?: number
-          student_id?: number | null
+          performance_id?: string
+          student_id?: string | null
           performance_type: PerformanceType
           title?: string | null
           duration?: string | null
@@ -218,8 +215,8 @@ export type Database = {
           created_at?: string | null
         }
         Update: {
-          performance_id?: number
-          student_id?: number | null
+          performance_id?: string
+          student_id?: string | null
           performance_type?: PerformanceType
           title?: string | null
           duration?: string | null
@@ -230,48 +227,48 @@ export type Database = {
       }
       qr_codes: {
         Row: {
-          qr_id: number
+          qr_id: string
           qr_code_url: string
-          group_id: number | null
-          single_id: number | null
-          guest_id: number | null
+          group_id: string | null
+          single_id: string | null
+          guest_id: string | null
           created_at: string | null
         }
         Insert: {
-          qr_id?: number
+          qr_id?: string
           qr_code_url: string
-          group_id?: number | null
-          single_id?: number | null
-          guest_id?: number | null
+          group_id?: string | null
+          single_id?: string | null
+          guest_id?: string | null
           created_at?: string | null
         }
         Update: {
-          qr_id?: number
+          qr_id?: string
           qr_code_url?: string
-          group_id?: number | null
-          single_id?: number | null
-          guest_id?: number | null
+          group_id?: string | null
+          single_id?: string | null
+          guest_id?: string | null
           created_at?: string | null
         }
       }
       requirements: {
         Row: {
-          requirement_id: number
-          student_id: number | null
+          requirement_id: string
+          student_id: string | null
           certification_url: string | null
           school_id_url: string | null
           uploaded_at: string | null
         }
         Insert: {
-          requirement_id?: number
-          student_id?: number | null
+          requirement_id?: string
+          student_id?: string | null
           certification_url?: string | null
           school_id_url?: string | null
           uploaded_at?: string | null
         }
         Update: {
-          requirement_id?: number
-          student_id?: number | null
+          requirement_id?: string
+          student_id?: string | null
           certification_url?: string | null
           school_id_url?: string | null
           uploaded_at?: string | null
@@ -279,22 +276,22 @@ export type Database = {
       }
       singles: {
         Row: {
-          single_id: number
-          student_id: number | null
+          single_id: string
+          student_id: string | null
           performance_title: string | null
           performance_description: string | null
           created_at: string | null
         }
         Insert: {
-          single_id?: number
-          student_id?: number | null
+          single_id?: string
+          student_id?: string | null
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
         }
         Update: {
-          single_id?: number
-          student_id?: number | null
+          single_id?: string
+          student_id?: string | null
           performance_title?: string | null
           performance_description?: string | null
           created_at?: string | null
@@ -302,7 +299,7 @@ export type Database = {
       }
       students: {
         Row: {
-          student_id: number
+          student_id: string
           full_name: string
           age: number | null
           gender: string | null
@@ -313,7 +310,7 @@ export type Database = {
           created_at: string | null
         }
         Insert: {
-          student_id?: number
+          student_id?: string
           full_name: string
           age?: number | null
           gender?: string | null
@@ -324,7 +321,7 @@ export type Database = {
           created_at?: string | null
         }
         Update: {
-          student_id?: number
+          student_id?: string
           full_name?: string
           age?: number | null
           gender?: string | null
@@ -337,7 +334,7 @@ export type Database = {
       }
       users: {
         Row: {
-          user_id: number
+          user_id: string
           email: string
           password_hash: string
           full_name: string
@@ -345,7 +342,7 @@ export type Database = {
           created_at: string | null
         }
         Insert: {
-          user_id?: number
+          user_id?: string
           email: string
           password_hash: string
           full_name: string
@@ -353,7 +350,7 @@ export type Database = {
           created_at?: string | null
         }
         Update: {
-          user_id?: number
+          user_id?: string
           email?: string
           password_hash?: string
           full_name?: string

@@ -82,7 +82,6 @@ export default function TalentsDetailsPage() {
               declaration_id: 1,
               student_id: 1,
               is_physically_fit: true,
-              medical_conditions: null,
               student_signature_url: "https://example.com/sig1.png",
               parent_guardian_signature_url:
                 "https://example.com/parent_sig1.png",

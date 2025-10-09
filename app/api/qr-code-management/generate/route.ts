@@ -3,14 +3,14 @@ import QRCode from "qrcode"
 import { createServerClient } from "@/lib/supabase"
 
 type GenerateItem = {
-  id: number;
+  id: string;
   type: "guest" | "contestant_single" | "contestant_group";
   name?: string;
   manual?: boolean;
 }
 type GenerateBody = {
   // Back-compat for earlier payload
-  userIds?: number[]
+  userIds?: string[]
   // New preferred payload
   items?: GenerateItem[]
 }
@@ -29,7 +29,7 @@ function sanitizeFilename(name: string): string {
 // Helper to get user name from database
 async function getUserName(
   supabase: ReturnType<typeof createServerClient>,
-  id: number,
+  id: string,
   type: string
 ): Promise<string> {
   if (type === "guest") {
@@ -64,8 +64,11 @@ async function generateAndUploadQR(
   supabase: ReturnType<typeof createServerClient>,
   item: GenerateItem
 ) {
-  const { id, type, name } = item
-  const payload = JSON.stringify({ type, id })
+  const { id, type, name, manual } = item
+  console.log(`Generating QR for item:`, { id, type, name, manual })
+
+  // QR code contains just the ID (single_id, group_id, or guest_id)
+  const payload = id;
   const pngBuffer = await QRCode.toBuffer(payload, { type: "png", width: 512 })
 
   const dir = type === "guest" ? "guests" : type === "contestant_single" ? "singles" : "groups"
@@ -161,7 +164,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient()
 
-    const results: Array<{ id: number; type: string; url?: string; error?: string }> = []
+    const results: Array<{ id: string; type: string; url?: string; error?: string }> = []
     for (const it of items) {
       try {
         const url = await generateAndUploadQR(supabase, it)

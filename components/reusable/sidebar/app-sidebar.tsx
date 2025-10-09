@@ -12,9 +12,9 @@ import {
   IconCamera,
 } from "@tabler/icons-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/reusable/sidebar/nav-main"
+import { NavSecondary } from "@/components/reusable/sidebar/nav-secondary"
+import { NavUser } from "@/components/reusable/sidebar/nav-user"
 import {
   Sidebar,
   SidebarContent,

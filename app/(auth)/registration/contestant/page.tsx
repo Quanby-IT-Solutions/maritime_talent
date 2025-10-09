@@ -15,15 +15,14 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useRouter } from "next/navigation"
+import { useContestantRegistration } from "@/hooks/use-contestant-registration"
 
 // Import components
-
 import { PersonalInformation } from "@/components/registration/student/PersonalInformation"
 import { ContactInformation } from "@/components/registration/student/ContactInformation"
 import { EventPreferences } from "@/components/registration/student/EventPreferences"
 import { EmergencySafety } from "@/components/registration/student/EmergencySafety"
 import { AdditionalInformation } from "@/components/registration/student/AdditionalInformation"
-import { SchoolEndorsement } from "@/components/registration/student/SchoolEndorsement"
 import { PerformerSection } from "@/components/registration/student/PerformerSection"
 import { DraftManager } from "@/components/registration/student/DraftManager"
 
@@ -56,6 +55,10 @@ const performerSchema = z.object({
   studentSignature: z.string().min(1, "Student signature is required"),
   signatureDate: z.string().min(1, "Signature date is required"),
   parentGuardianSignature: z.string().optional(),
+  
+  // School Endorsement (individual per performer)
+  schoolOfficialName: z.string().optional(),
+  schoolOfficialPosition: z.string().optional(),
 })
 
 const formSchema = z.object({
@@ -70,26 +73,17 @@ const formSchema = z.object({
   
   // Performers (up to 10)
   performers: z.array(performerSchema).min(1, "At least one performer is required").max(10, "Maximum 10 performers allowed"),
-  
-  // F. School Endorsement (single section)
-  schoolOfficialName: z.string().optional(),
-  schoolOfficialPosition: z.string().optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
 
 export default function RegistrationPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [numberOfPerformers, setNumberOfPerformers] = useState(0)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [registrationData, setRegistrationData] = useState<{
-    qrCodeUrl: string;
-    isGroup: boolean;
-    emailSent: boolean;
-    leadName: string;
-  } | null>(null)
-  
   const router = useRouter()
+  
+  // Use custom hook for registration
+  const { isSubmitting, registrationData, submitRegistration, resetRegistration } = useContestantRegistration()
 
   // Initialize form before any watchers
   const form = useForm<FormData>({
@@ -101,8 +95,6 @@ export default function RegistrationPage() {
       performanceDuration: "",
       numberOfPerformers: "",
       performers: [],
-      schoolOfficialName: "",
-      schoolOfficialPosition: "",
     },
     mode: 'onChange'
   })
@@ -138,6 +130,8 @@ export default function RegistrationPage() {
           studentSignature: "",
           signatureDate: "",
           parentGuardianSignature: "",
+          schoolOfficialName: "",
+          schoolOfficialPosition: "",
         }
       })
       
@@ -149,102 +143,17 @@ export default function RegistrationPage() {
   }, [watchNumberOfPerformers, form])
 
   const onSubmit = async (data: FormData) => {
-    setIsSubmitting(true)
-    try {
-      // Create FormData object for file uploads
-      const formData = new FormData()
-      
-      // Add performance details
-      formData.append('performanceType', data.performanceType)
-      if (data.performanceOther) {
-        formData.append('performanceOther', data.performanceOther)
-      }
-      formData.append('performanceTitle', data.performanceTitle)
-      formData.append('performanceDuration', data.performanceDuration)
-      formData.append('numberOfPerformers', data.numberOfPerformers)
-      
-      // Add school endorsement
-      if (data.schoolOfficialName) {
-        formData.append('schoolOfficialName', data.schoolOfficialName)
-      }
-      if (data.schoolOfficialPosition) {
-        formData.append('schoolOfficialPosition', data.schoolOfficialPosition)
-      }
-      
-      // Add performers data
-      data.performers.forEach((performer, index) => {
-        formData.append(`performers[${index}].fullName`, performer.fullName)
-        formData.append(`performers[${index}].age`, performer.age)
-        formData.append(`performers[${index}].gender`, performer.gender)
-        formData.append(`performers[${index}].school`, performer.school)
-        formData.append(`performers[${index}].courseYear`, performer.courseYear)
-        formData.append(`performers[${index}].contactNumber`, performer.contactNumber)
-        formData.append(`performers[${index}].email`, performer.email)
-        
-        // Add files
-        if (performer.schoolCertification) {
-          formData.append(`performers[${index}].schoolCertification`, performer.schoolCertification)
-        }
-        if (performer.schoolIdCopy) {
-          formData.append(`performers[${index}].schoolIdCopy`, performer.schoolIdCopy)
-        }
-        
-        // Add consents
-        formData.append(`performers[${index}].healthDeclaration`, String(performer.healthDeclaration))
-        formData.append(`performers[${index}].informationConsent`, String(performer.informationConsent))
-        formData.append(`performers[${index}].rulesAgreement`, String(performer.rulesAgreement))
-        formData.append(`performers[${index}].publicityConsent`, String(performer.publicityConsent))
-        
-        // Add signatures
-        if (performer.studentSignature) {
-          formData.append(`performers[${index}].studentSignature`, performer.studentSignature)
-        }
-        if (performer.signatureDate) {
-          formData.append(`performers[${index}].signatureDate`, performer.signatureDate)
-        }
-        if (performer.parentGuardianSignature) {
-          formData.append(`performers[${index}].parentGuardianSignature`, performer.parentGuardianSignature)
-        }
-      })
-      
-      // Submit to API
-      const response = await fetch('/api/contestant', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Submission failed')
-      }
-
-      // Store registration data and show success modal
-      setRegistrationData({
-        qrCodeUrl: result.data.qrCodeUrl,
-        isGroup: result.data.isGroup,
-        emailSent: result.emailSent,
-        leadName: data.performers[0]?.fullName || 'Participant'
-      })
+    const result = await submitRegistration(data)
+    if (result) {
       setShowSuccessModal(true)
-      
-    } catch (error) {
-      console.error("Submission error:", error)
-      toast.error("Submission failed", {
-        description: error instanceof Error ? error.message : "Something went wrong. Please try again." 
-      })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    setRegistrationData(null)
-    // Reset form for new registration
+    resetRegistration()
     form.reset()
     setNumberOfPerformers(0)
-    // Redirect to new registration
     router.push('/registration/contestant')
   }
 
@@ -379,24 +288,6 @@ export default function RegistrationPage() {
                             />
                           </div>
                         ))}
-                      </div>
-
-                      {/* Section 6: School Endorsement */}
-                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-8 h-8 flex items-center justify-center">
-                              <span className="text-sm font-bold text-gray-700 dark:text-gray-300">6</span>
-                            </div>
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">School Endorsement</h3>
-                              <p className="text-gray-600 dark:text-gray-400 text-sm">Official school certification and endorsement</p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-8">
-                          <SchoolEndorsement form={form} />
-                        </div>
                       </div>
                     </>
                   )}
