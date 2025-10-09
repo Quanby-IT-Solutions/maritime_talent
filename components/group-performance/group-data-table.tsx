@@ -66,7 +66,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { GroupData, GroupMemberData } from "./group-column-def";
 
 // Member Details Sheet Component
-const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: GroupMemberData; groupId: number; onMemberUpdate?: (updatedMember: GroupMemberData, groupId: number) => void }) => {
+const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: GroupMemberData; groupId: string; onMemberUpdate?: (updatedMember: GroupMemberData, groupId: string) => void }) => {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -341,7 +341,7 @@ interface GroupDataTableProps<TData, TValue> {
   onStatusFilterChange?: (value: string) => void;
   showFilters?: boolean;
   onUpdate?: (updatedGroup: GroupData) => void;
-  onMemberUpdate?: (updatedMember: GroupMemberData, groupId: number) => void;
+  onMemberUpdate?: (updatedMember: GroupMemberData, groupId: string) => void;
 }
 
 export function GroupDataTable<TData, TValue>({
@@ -358,7 +358,7 @@ export function GroupDataTable<TData, TValue>({
 }: GroupDataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const table = useReactTable({
     data,
@@ -375,7 +375,7 @@ export function GroupDataTable<TData, TValue>({
     },
   });
 
-  const toggleRowExpansion = (groupId: number) => {
+  const toggleRowExpansion = (groupId: string) => {
     const newExpandedRows = new Set(expandedRows);
     if (newExpandedRows.has(groupId)) {
       newExpandedRows.delete(groupId);

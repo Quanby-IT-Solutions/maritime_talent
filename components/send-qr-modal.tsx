@@ -35,7 +35,7 @@ interface SendQRModalProps {
 type UserType = "all" | "guest" | "contestant_single" | "contestant_group";
 
 type UserWithQR = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   type: "guest" | "contestant_single" | "contestant_group";
@@ -74,7 +74,7 @@ export function SendQRModal({ isOpen, onClose }: SendQRModalProps) {
       if (data.success) {
         // Map the API response to match our expected format
         const mappedUsers = data.items.map((item: {
-          id: number;
+          id: string;
           name: string;
           email: string;
           type: "guest" | "contestant_single" | "contestant_group";
@@ -218,7 +218,7 @@ export function SendQRModal({ isOpen, onClose }: SendQRModalProps) {
           </div>
           <DialogDescription className="text-base">
             Select users who have QR codes and send them their access passes via
-            email. Only users with generated QR codes can be selected.
+            email. <strong>Only users with generated QR codes can be selected.</strong> Users without QR codes will be disabled.
           </DialogDescription>
         </DialogHeader>
 
@@ -318,7 +318,7 @@ export function SendQRModal({ isOpen, onClose }: SendQRModalProps) {
                   {/* User List */}
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-muted-foreground uppercase">
-                      Users ({filteredUsers.length})
+                      Users ({filteredUsers.length}) - {filteredUsers.filter(u => u.hasQRCode && u.qrCodeUrl).length} with QR
                     </Label>
                     <ScrollArea className="h-[280px] border rounded-md">
                       <div className="p-2 space-y-1">

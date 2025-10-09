@@ -30,7 +30,7 @@ import { createClient } from "@/lib/supabase/client";
 
 // Zod schema for group member validation
 export const GroupMemberSchema = z.object({
-  member_id: z.number(),
+  member_id: z.string(),
   full_name: z.string().min(1, "Full name is required"),
   role: z.string().min(1, "Role is required"),
   email: z.string().email("Valid email is required").nullable(),
@@ -44,7 +44,7 @@ export const GroupMemberSchema = z.object({
 
 // Zod schema for group validation
 export const GroupSchema = z.object({
-  group_id: z.number(),
+  group_id: z.string(),
   group_name: z.string().min(1, "Group name is required"),
   performance_type: z.enum(["Musical", "Dance", "Drama"]),
   performance_date: z.string().nullable(),
@@ -358,30 +358,6 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
 
 export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): ColumnDef<GroupData>[] => [
   {
-    accessorKey: "group_id",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
-        >
-          ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-mono text-sm text-left px-2 py-1">
-        {row.getValue("group_id")}
-      </div>
-    ),
-    size: 80,
-    meta: {
-      className: "hidden sm:table-cell"
-    },
-  },
-  {
     accessorKey: "group_name",
     header: ({ column }) => {
       return (
@@ -461,7 +437,7 @@ export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): Col
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() =>
-                navigator.clipboard.writeText(group.group_id.toString())
+                navigator.clipboard.writeText(group.group_id)
               }
             >
               Copy group ID

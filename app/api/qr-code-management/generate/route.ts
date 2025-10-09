@@ -67,6 +67,9 @@ async function generateAndUploadQR(
   const { id, type, name, manual } = item
   console.log(`Generating QR for item:`, { id, type, name, manual })
 
+  // Convert string ID to number for database queries
+  const numericId = parseInt(id, 10)
+
   // QR code contains just the ID (single_id, group_id, or guest_id)
   const payload = id;
   const pngBuffer = await QRCode.toBuffer(payload, { type: "png", width: 512 })
@@ -84,7 +87,7 @@ async function generateAndUploadQR(
   const { data: existingQR } = await supabase
     .from("qr_codes")
     .select("qr_code_url")
-    .eq(queryField, id)
+    .eq(queryField, numericId)
     .single()
 
   const existingQRData = existingQR as { qr_code_url: string } | null
@@ -126,17 +129,16 @@ async function generateAndUploadQR(
   const insert: QRCodeInsert = {
     qr_code_url: publicUrl
   }
-  // Convert string ID to number for database
-  const numericId = parseInt(id, 10)
+  // Use the numericId we already converted at the top
   if (type === "guest") insert.guest_id = numericId
   if (type === "contestant_single") insert.single_id = numericId
   if (type === "contestant_group") insert.group_id = numericId
 
   console.log(`[QR Generate] Inserting QR code for ${type} ID ${id}:`, insert)
 
-  // First try to delete any existing QR code for this user
+  // First try to delete any existing QR code for this user (use numeric ID)
   const deleteField = type === "guest" ? "guest_id" : type === "contestant_single" ? "single_id" : "group_id"
-  await supabase.from("qr_codes").delete().eq(deleteField, id)
+  await supabase.from("qr_codes").delete().eq(deleteField, numericId)
 
   // Then insert the new one
   const insertResult = await supabase.from("qr_codes").insert([insert as unknown as never])

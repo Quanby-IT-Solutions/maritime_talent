@@ -1,6 +1,49 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
 
+// Type definitions
+interface Guest {
+  guest_id: string
+  full_name: string
+  email: string
+  registration_date: string
+}
+
+interface Student {
+  student_id: string
+  full_name: string
+  email: string
+}
+
+interface Single {
+  single_id: string
+  performance_title: string
+  created_at: string
+  students: Student | null
+}
+
+interface GroupMember {
+  student_id: string
+  is_leader: boolean
+  students: Student | null
+}
+
+interface Group {
+  group_id: string
+  group_name: string
+  performance_title: string
+  created_at: string
+  group_members: GroupMember[]
+}
+
+interface QRCode {
+  qr_code_url: string
+  guest_id?: string
+  single_id?: string
+  group_id?: string
+  created_at: string
+}
+
 // GET /api/qr-code-management
 // Query params:
 // - q: string (search full_name or email)
@@ -20,36 +63,38 @@ export async function GET(req: NextRequest) {
     const supabase = createServerClient()
 
     // 1) Guests
-    let gQuery = supabase
+    let guestsQuery = supabase
       .from("guests")
       .select("guest_id, full_name, email, registration_date")
       .order("guest_id", { ascending: true })
-    if (q) gQuery = gQuery.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`) as any
-    const { data: guests, error: guestsErr } = await gQuery
+    if (q) {
+      guestsQuery = guestsQuery.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)
+    }
+    const { data: guests, error: guestsErr } = await guestsQuery
     if (guestsErr) throw guestsErr
-    const guestIds = (guests || []).map((g: any) => g.guest_id)
+    const guestIds = (guests || []).map((g: Guest) => g.guest_id)
     const { data: guestQrs } = guestIds.length
       ? await supabase
         .from("qr_codes")
         .select("qr_code_url, guest_id, created_at")
         .in("guest_id", guestIds)
-      : { data: [] as any[] }
+      : { data: [] as QRCode[] }
     console.log(`[QR Management API] Found ${guestQrs?.length || 0} QR codes for ${guestIds.length} guests`)
     console.log(`[QR Management API] Guest IDs:`, guestIds)
     console.log(`[QR Management API] Guest QR codes:`, guestQrs?.map(r => ({ guest_id: r.guest_id, url: r.qr_code_url })))
-    const guestQrMap = new Map<number, any>()
-      ; (guestQrs || []).forEach((r: any) => guestQrMap.set(r.guest_id, r))
-    const guestItems = (guests || []).map((g: any) => ({
+    const guestQrMap = new Map<string, QRCode>()
+      ; (guestQrs || []).forEach((r: QRCode) => r.guest_id && guestQrMap.set(r.guest_id, r))
+    const guestItems = (guests || []).map((g: Guest) => ({
       type: "guest" as const,
-      id: g.guest_id as number,
-      name: g.full_name as string,
-      email: g.email as string,
+      id: g.guest_id,
+      name: g.full_name,
+      email: g.email,
       qr: guestQrMap.get(g.guest_id)?.qr_code_url || null,
       qrCreatedAt: guestQrMap.get(g.guest_id)?.created_at || null,
     }))
 
     // 2) Singles with students (using join)
-    let sQuery = supabase
+    const sQuery = supabase
       .from("singles")
       .select(`
         single_id,
@@ -65,26 +110,26 @@ export async function GET(req: NextRequest) {
     const { data: singles, error: singlesErr } = await sQuery
     if (singlesErr) throw singlesErr
 
-    const singleIds = (singles || []).map((s: any) => s.single_id)
+    const singleIds = (singles || []).map((s: Single) => s.single_id)
     const { data: singleQrs } = singleIds.length
       ? await supabase
         .from("qr_codes")
         .select("qr_code_url, single_id, created_at")
         .in("single_id", singleIds)
-      : { data: [] as any[] }
+      : { data: [] as QRCode[] }
     console.log(`[QR Management API] Found ${singleQrs?.length || 0} QR codes for ${singleIds.length} singles`)
     console.log(`[QR Management API] Single IDs:`, singleIds)
     console.log(`[QR Management API] Single QR codes:`, singleQrs?.map(r => ({ single_id: r.single_id, url: r.qr_code_url })))
-    const singleQrMap = new Map<number, any>()
-      ; (singleQrs || []).forEach((r: any) => singleQrMap.set(r.single_id, r))
+    const singleQrMap = new Map<string, QRCode>()
+      ; (singleQrs || []).forEach((r: QRCode) => r.single_id && singleQrMap.set(r.single_id, r))
     const singleItems = (singles || [])
-      .map((s: any) => {
+      .map((s: Single) => {
         const student = s.students
         return {
           type: "contestant_single" as const,
-          id: s.single_id as number,
-          name: (student?.full_name as string) || `Single #${s.single_id}`,
-          email: (student?.email as string) || "",
+          id: s.single_id,
+          name: student?.full_name || `Single #${s.single_id}`,
+          email: student?.email || "",
           qr: singleQrMap.get(s.single_id)?.qr_code_url || null,
           qrCreatedAt: singleQrMap.get(s.single_id)?.created_at || null,
         }
@@ -94,7 +139,7 @@ export async function GET(req: NextRequest) {
       )
 
     // 3) Groups with members (using group_members junction table)
-    let grQuery = supabase
+    const grQuery = supabase
       .from("groups")
       .select(`
         group_id,
@@ -115,28 +160,28 @@ export async function GET(req: NextRequest) {
     const { data: groups, error: groupsErr } = await grQuery
     if (groupsErr) throw groupsErr
 
-    const groupIds = (groups || []).map((g: any) => g.group_id)
+    const groupIds = (groups || []).map((g: Group) => g.group_id)
     const { data: groupQrs } = groupIds.length
       ? await supabase
         .from("qr_codes")
         .select("qr_code_url, group_id, created_at")
         .in("group_id", groupIds)
-      : { data: [] as any[] }
+      : { data: [] as QRCode[] }
     console.log(`[QR Management API] Found ${groupQrs?.length || 0} QR codes for ${groupIds.length} groups`)
-    const groupQrMap = new Map<number, any>()
-      ; (groupQrs || []).forEach((r: any) => groupQrMap.set(r.group_id, r))
+    const groupQrMap = new Map<string, QRCode>()
+      ; (groupQrs || []).forEach((r: QRCode) => r.group_id && groupQrMap.set(r.group_id, r))
     const groupItems = (groups || [])
-      .map((g: any) => {
+      .map((g: Group) => {
         // Find the leader from group members
         const members = g.group_members || []
-        const leader = members.find((m: any) => m.is_leader)?.students
+        const leader = members.find((m: GroupMember) => m.is_leader)?.students
         const memberCount = members.length
 
         return {
           type: "contestant_group" as const,
-          id: g.group_id as number,
-          name: (g.group_name as string) || `Group #${g.group_id}`,
-          email: (leader?.email as string) || "",
+          id: g.group_id,
+          name: g.group_name || `Group #${g.group_id}`,
+          email: leader?.email || "",
           memberCount,
           qr: groupQrMap.get(g.group_id)?.qr_code_url || null,
           qrCreatedAt: groupQrMap.get(g.group_id)?.created_at || null,

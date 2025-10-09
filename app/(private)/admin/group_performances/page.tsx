@@ -20,7 +20,6 @@ import {
   Download,
   UserPlus,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 export default function GroupPerformancesPage() {
   const [groups, setGroups] = useState<GroupData[]>([]);
@@ -41,92 +40,28 @@ export default function GroupPerformancesPage() {
       setLoading(true);
 
       try {
-        const supabase = createClient();
+        // Fetch groups from API
+        const response = await fetch('/api/group-performances');
+        const data = await response.json();
 
-        // Fetch groups from Supabase
-        const { data: groupsData, error: groupsError } = await supabase
-          .from('groups')
-          .select('*')
-          .order('group_id', { ascending: false });
-
-        if (groupsError) {
-          console.error('Error fetching groups:', groupsError);
-          setValidationErrors([`Database error: ${groupsError.message}`]);
+        if (!data.success) {
+          console.error('Error fetching groups:', data.error);
+          setValidationErrors([`API error: ${data.error}`]);
           return;
         }
 
-        console.log('[Groups] Raw groups data from DB:', groupsData);
-
-        // Fetch students for each group via group_members junction table
-        const groupsWithMembers = await Promise.all(
-          (groupsData || []).map(async (group: Record<string, unknown>) => {
-            // First, get the group member relationships
-            const { data: groupMembers, error: groupMembersError } = await supabase
-              .from('group_members')
-              .select('student_id, is_leader')
-              .eq('group_id', group.group_id);
-
-            if (groupMembersError) {
-              console.error('Error fetching group members for group:', group.group_id, groupMembersError);
-              return { ...group, students: [] };
-            }
-
-            if (!groupMembers || groupMembers.length === 0) {
-              return { ...group, students: [] };
-            }
-
-            // Then, fetch the actual student details
-            const studentIds = groupMembers.map((gm: { student_id: number }) => gm.student_id);
-            const { data: students, error: studentsError } = await supabase
-              .from('students')
-              .select('student_id, full_name, age, gender, contact_number, email, school, course_year')
-              .in('student_id', studentIds);
-
-            if (studentsError) {
-              console.error('Error fetching students for group:', group.group_id, studentsError);
-              return { ...group, students: [] };
-            }
-
-            // Merge student data with is_leader info
-            const studentsWithLeaderInfo = (students || []).map((student: { student_id: number;[key: string]: unknown }) => {
-              const memberInfo = groupMembers.find((gm: { student_id: number }) => gm.student_id === student.student_id);
-              return {
-                ...student,
-                is_leader: memberInfo?.is_leader || false
-              };
-            });
-
-            console.log(`[Groups] Group ${group.group_id} students:`, studentsWithLeaderInfo);
-            return { ...group, students: studentsWithLeaderInfo };
-          })
-        );
-
-        console.log('[Groups] Groups with members:', groupsWithMembers);
+        console.log('[Groups] Fetched groups from API:', data.groups);
 
         // Use the groups with their members
-        const dataToUse = groupsWithMembers;
+        const dataToUse = data.groups;
 
         // Transform database data to match our expected structure
         const transformedData: GroupData[] = dataToUse.map((group: Record<string, unknown>) => {
           // Transform students to group members
           const students = (group.students as Array<Record<string, unknown>>) || [];
           const group_members = students.map((student: Record<string, unknown>) => {
-            // Safely parse numeric values with NaN checks
-            let studentId: number;
-            if (typeof student.student_id === 'number') {
-              studentId = student.student_id;
-            } else {
-              const parsed = parseInt(String(student.student_id || '0'), 10);
-              studentId = isNaN(parsed) ? 0 : parsed;
-            }
-
-            let groupId: number;
-            if (typeof group.group_id === 'number') {
-              groupId = group.group_id;
-            } else {
-              const parsed = parseInt(String(group.group_id || '0'), 10);
-              groupId = isNaN(parsed) ? 0 : parsed;
-            }
+            // IDs are UUIDs (strings) in the database
+            const studentId = String(student.student_id || '');
 
             let age: number | null = null;
             if (student.age) {
@@ -148,7 +83,6 @@ export default function GroupPerformancesPage() {
 
             return {
               member_id: studentId,
-              group_id: groupId,
               full_name: String(student.full_name || ""),
               role: String(student.course_year || "Member"),
               email: student.email ? String(student.email) : null,
@@ -168,14 +102,8 @@ export default function GroupPerformancesPage() {
             performanceType = "Musical";
           }
 
-          // Safely parse group_id with NaN check
-          let groupId: number;
-          if (typeof group.group_id === 'number') {
-            groupId = group.group_id;
-          } else {
-            const parsed = parseInt(String(group.group_id || '0'), 10);
-            groupId = isNaN(parsed) ? 0 : parsed;
-          }
+          // IDs are UUIDs (strings) in the database
+          const groupId = String(group.group_id || '');
 
           console.log(`[Groups] Transformed group:`, {
             raw_group_id: group.group_id,
@@ -259,7 +187,7 @@ export default function GroupPerformancesPage() {
   };
 
   // Handle member updates - update local state like guest list does
-  const handleMemberUpdate = (updatedMember: GroupMemberData, groupId: number) => {
+  const handleMemberUpdate = (updatedMember: GroupMemberData, groupId: string) => {
     setGroups(prevGroups => {
       const updatedGroups = prevGroups.map(group => {
         if (group.group_id === groupId) {

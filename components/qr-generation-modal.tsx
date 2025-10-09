@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge"
 import QRCode from "qrcode"
 
 type UserQR = {
-  id: number
+  id: string
   name: string
   email: string
   qr: string | null
