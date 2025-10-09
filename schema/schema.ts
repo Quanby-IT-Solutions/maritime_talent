@@ -64,26 +64,20 @@ export type Database = {
         Row: {
           endorsement_id: string
           student_id: string | null
-          school_official_name: string | null
+          official_name: string | null
           position: string | null
-          signature_url: string | null
-          endorsement_date: string | null
         }
         Insert: {
           endorsement_id?: string
           student_id?: string | null
-          school_official_name?: string | null
+          official_name?: string | null
           position?: string | null
-          signature_url?: string | null
-          endorsement_date?: string | null
         }
         Update: {
           endorsement_id?: string
           student_id?: string | null
-          school_official_name?: string | null
+          official_name?: string | null
           position?: string | null
-          signature_url?: string | null
-          endorsement_date?: string | null
         }
       }
       group_members: {
@@ -115,6 +109,7 @@ export type Database = {
           group_name: string
           performance_title: string | null
           performance_description: string | null
+          performance_type: PerformanceType | null
           created_at: string | null
         }
         Insert: {
@@ -122,6 +117,7 @@ export type Database = {
           group_name: string
           performance_title?: string | null
           performance_description?: string | null
+          performance_type?: PerformanceType | null
           created_at?: string | null
         }
         Update: {
@@ -129,6 +125,7 @@ export type Database = {
           group_name?: string
           performance_title?: string | null
           performance_description?: string | null
+          performance_type?: PerformanceType | null
           created_at?: string | null
         }
       }
@@ -280,6 +277,7 @@ export type Database = {
           student_id: string | null
           performance_title: string | null
           performance_description: string | null
+          performance_type: PerformanceType | null
           created_at: string | null
         }
         Insert: {
@@ -287,6 +285,7 @@ export type Database = {
           student_id?: string | null
           performance_title?: string | null
           performance_description?: string | null
+          performance_type?: PerformanceType | null
           created_at?: string | null
         }
         Update: {
@@ -294,6 +293,7 @@ export type Database = {
           student_id?: string | null
           performance_title?: string | null
           performance_description?: string | null
+          performance_type?: PerformanceType | null
           created_at?: string | null
         }
       }
@@ -307,7 +307,11 @@ export type Database = {
           course_year: string | null
           contact_number: string | null
           email: string | null
+          single_id: string | null
+          group_id: string | null
+          qr_id: string | null
           created_at: string | null
+          is_registered: boolean | null
         }
         Insert: {
           student_id?: string
@@ -318,7 +322,11 @@ export type Database = {
           course_year?: string | null
           contact_number?: string | null
           email?: string | null
+          single_id?: string | null
+          group_id?: string | null
+          qr_id?: string | null
           created_at?: string | null
+          is_registered?: boolean | null
         }
         Update: {
           student_id?: string
@@ -329,14 +337,17 @@ export type Database = {
           course_year?: string | null
           contact_number?: string | null
           email?: string | null
+          single_id?: string | null
+          group_id?: string | null
+          qr_id?: string | null
           created_at?: string | null
+          is_registered?: boolean | null
         }
       }
       users: {
         Row: {
           user_id: string
           email: string
-          password_hash: string
           full_name: string
           role: UserRole
           created_at: string | null

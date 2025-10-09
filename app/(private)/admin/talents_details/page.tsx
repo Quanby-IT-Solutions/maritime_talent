@@ -101,10 +101,8 @@ export default function TalentsDetailsPage() {
             endorsements: {
               endorsement_id: 1,
               student_id: 1,
-              school_official_name: "Dr. Maria Rodriguez",
+              official_name: "Dr. Maria Rodriguez",
               position: "Dean of Marine Engineering",
-              signature_url: "https://example.com/endorsement1.png",
-              endorsement_date: "2024-01-15T08:30:00Z",
             },
           },
           {

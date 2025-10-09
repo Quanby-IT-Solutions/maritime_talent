@@ -18,6 +18,8 @@ export interface PerformerData {
   studentSignature: string;
   signatureDate: string;
   parentGuardianSignature?: string;
+  schoolOfficialName?: string;
+  schoolOfficialPosition?: string;
 }
 
 export interface RegistrationFormData {
@@ -55,6 +57,8 @@ export interface PerformerFormData {
   studentSignature: string;
   signatureDate: string;
   parentGuardianSignature: string | null;
+  schoolOfficialName?: string | null;
+  schoolOfficialPosition?: string | null;
 }
 
 export interface EmailRecipient {
