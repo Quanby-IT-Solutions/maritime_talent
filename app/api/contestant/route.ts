@@ -69,14 +69,16 @@ async function uploadSignatureToStorage(
 // Helper function to generate and upload QR code
 async function generateAndUploadQRCode(
   supabase: ReturnType<typeof createServerClient>,
-  id: number,
+  id: string,
   type: 'contestant_single' | 'contestant_group',
+  studentId?: string,
   studentName?: string
 ): Promise<string> {
-  const payload = JSON.stringify({ type, id });
+  // QR code contains just the ID (single_id or group_id)
+  const payload = id;
   const pngBuffer = await QRCode.toBuffer(payload, { type: 'png', width: 512 });
   const dir = type === 'contestant_single' ? 'singles' : 'groups';
-  const sanitizedName = studentName?.replace(/[^a-zA-Z0-9]/g, '_') || id.toString();
+  const sanitizedName = studentName?.replace(/[^a-zA-Z0-9]/g, '_') || id;
   const fileName = `${id}_${sanitizedName}.png`;
   const filePath = `${dir}/${fileName}`;
 
@@ -187,25 +189,33 @@ async function insertStudentRecords(
     schoolIdUrl: string | null;
     studentSigUrl: string | null;
     parentSigUrl: string | null;
+  },
+  groupId?: string | null
+): Promise<string> {
+  // Insert student record with group_id if provided
+  const studentInsert: any = {
+    full_name: performer.fullName,
+    age: performer.age,
+    gender: performer.gender,
+    school: performer.school,
+    course_year: performer.courseYear,
+    contact_number: performer.contactNumber,
+    email: performer.email,
+  };
+
+  // Add group_id if this is a group member
+  if (groupId) {
+    studentInsert.group_id = groupId;
   }
-): Promise<number> {
-  // Insert student record
+
   const { data: studentData, error: studentError } = await supabase
     .from('students')
-    .insert({
-      full_name: performer.fullName,
-      age: performer.age,
-      gender: performer.gender,
-      school: performer.school,
-      course_year: performer.courseYear,
-      contact_number: performer.contactNumber,
-      email: performer.email,
-    } as any)
+    .insert(studentInsert)
     .select()
     .single();
 
   if (studentError) throw new Error(`Failed to create student: ${studentError.message}`);
-  const studentId = (studentData as any).student_id;
+  const studentId = (studentData as any).student_id as string;
 
   // Insert performance record
   await supabase.from('performances').insert({
@@ -327,40 +337,43 @@ export async function POST(req: NextRequest) {
       performers.push(performerData);
     }
 
-    let groupId: number | null = null;
-    let singleId: number | null = null;
+    let groupId: string | null = null;
+    let singleId: string | null = null;
     let qrCodeUrl: string = '';
     let leadEmail: string = '';
     let leadName: string = '';
 
     if (isGroup) {
       // Create group entry
-      const performersNamesList = performers.map(p => p.fullName).join(', ');
+      const groupName = `${performanceTitle} Group`;
       const { data: groupData, error: groupError } = await supabase
         .from('groups')
         .insert({
-          group_name: `${performanceTitle} Group`,
+          group_name: groupName,
           performance_title: performanceTitle,
-          performance_description: groupMembers,
           performance_type: performanceType,
         } as any)
         .select()
         .single();
 
       if (groupError) throw new Error(`Failed to create group: ${groupError.message}`);
-      groupId = (groupData as any).group_id;
+      groupId = (groupData as any).group_id as string;
+
+      // Sanitize group name for folder structure
+      const sanitizedGroupName = groupName.replace(/[^a-zA-Z0-9]/g, '_');
 
       // Process each performer in the group
       for (let i = 0; i < performers.length; i++) {
         const performer = performers[i];
         const timestamp = Date.now();
-        const sanitizedName = performer.fullName.replace(/[^a-zA-Z0-9]/g, '_');
-        const performerFolder = `group_${groupId}/performer_${i + 1}_${sanitizedName}`;
+        const sanitizedMemberName = performer.fullName.replace(/[^a-zA-Z0-9]/g, '_');
+        // New folder structure: groups/{groupName}/{memberName}
+        const performerFolder = `groups/${sanitizedGroupName}/${sanitizedMemberName}`;
 
         // Process files and signatures
         const urls = await processPerformerFiles(supabase, performer, performerFolder, timestamp);
 
-        // Insert student and related records
+        // Insert student and related records with group_id
         const studentId = await insertStudentRecords(
           supabase,
           performer,
@@ -368,7 +381,8 @@ export async function POST(req: NextRequest) {
           performanceTitle,
           performanceDuration,
           numberOfPerformers,
-          urls
+          urls,
+          groupId  // Pass groupId to link student to group
         );
 
         // Add student to group_members table
@@ -399,15 +413,30 @@ export async function POST(req: NextRequest) {
 
         if (groupMemberData) {
           await supabase.from('endorsements').insert({
-            student_id: studentId,
-            school_official_name: performer.schoolOfficialName,
-            position: performer.schoolOfficialPosition,
+            student_id: (groupMemberData as any).student_id,
+            school_official_name: schoolOfficialName,
+            position: schoolOfficialPosition,
           } as any);
         }
       }
 
-      // Generate QR code for group
-      qrCodeUrl = await generateAndUploadQRCode(supabase, groupId as any, 'contestant_group', performers[0]?.fullName || 'group');
+      // Generate QR code for group (using leader's student_id)
+      const { data: leaderData } = await supabase
+        .from('group_members')
+        .select('student_id')
+        .eq('group_id', groupId as any)
+        .eq('is_leader', true)
+        .limit(1)
+        .single();
+      
+      const leaderStudentId = leaderData ? (leaderData as any).student_id : undefined;
+      qrCodeUrl = await generateAndUploadQRCode(
+        supabase, 
+        groupId as any, 
+        'contestant_group', 
+        leaderStudentId,
+        performers[0]?.fullName || 'group'
+      );
 
       // Insert QR code record for the group
       await supabase.from('qr_codes').insert({
@@ -420,6 +449,7 @@ export async function POST(req: NextRequest) {
       const performer = performers[0];
       const timestamp = Date.now();
       const sanitizedName = performer.fullName.replace(/[^a-zA-Z0-9]/g, '_');
+      const sanitizedPerformanceTitle = performanceTitle.replace(/[^a-zA-Z0-9]/g, '_');
 
       // Create single entry first
       const { data: singleData, error: singleError } = await supabase
@@ -432,9 +462,10 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (singleError) throw new Error(`Failed to create single entry: ${singleError.message}`);
-      singleId = (singleData as any).single_id;
+      singleId = (singleData as any).single_id as string;
 
-      const performerFolder = `single_${singleId}_${sanitizedName}`;
+      // New folder structure: singles/{performanceTitle}/{performerName}
+      const performerFolder = `singles/${sanitizedPerformanceTitle}/${sanitizedName}`;
 
       // Process files and signatures
       const urls = await processPerformerFiles(supabase, performer, performerFolder, timestamp);
@@ -471,7 +502,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Generate QR code for single
-      qrCodeUrl = await generateAndUploadQRCode(supabase, singleId as any, 'contestant_single', performers[0]?.fullName);
+      qrCodeUrl = await generateAndUploadQRCode(
+        supabase, 
+        singleId as any, 
+        'contestant_single', 
+        studentId,
+        performers[0]?.fullName
+      );
 
       // Insert QR code record
       await supabase.from('qr_codes').insert({

@@ -60,7 +60,6 @@ export const HealthFitnessSchema = z.object({
   declaration_id: z.number(),
   student_id: z.number(),
   is_physically_fit: z.boolean().nullable(),
-  medical_conditions: z.string().nullable(),
   student_signature_url: z.string().nullable(),
   parent_guardian_signature_url: z.string().nullable(),
   declaration_date: z.string().nullable(),

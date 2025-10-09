@@ -82,7 +82,6 @@ interface SinglePerformanceData {
   health: {
     declaration_id: number;
     is_physically_fit: boolean;
-    medical_conditions: string;
     student_signature_url: string;
     parent_guardian_signature_url: string;
     declaration_date: string;
@@ -454,12 +453,6 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
                           {data.health.is_physically_fit ? "Yes" : "No"}
                         </Badge>
                       </div>
-                      {data.health.medical_conditions && (
-                        <div className="col-span-2">
-                          <p className="text-sm font-medium text-muted-foreground">Medical Conditions</p>
-                          <p className="text-base">{data.health.medical_conditions}</p>
-                        </div>
-                      )}
                       <div>
                         <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
                         {data.health.student_signature_url ? (
@@ -856,12 +849,6 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
                           {data.health.is_physically_fit ? "Yes" : "No"}
                         </Badge>
                       </div>
-                      {data.health.medical_conditions && (
-                        <div className="col-span-2">
-                          <p className="text-sm font-medium text-muted-foreground">Medical Conditions</p>
-                          <p className="text-base">{data.health.medical_conditions}</p>
-                        </div>
-                      )}
                       <div>
                         <p className="text-sm font-medium text-muted-foreground mb-2">Student Signature</p>
                         {data.health.student_signature_url ? (
