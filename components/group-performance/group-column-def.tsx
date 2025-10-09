@@ -35,7 +35,10 @@ export const GroupMemberSchema = z.object({
   role: z.string().min(1, "Role is required"),
   email: z.string().email("Valid email is required").nullable(),
   contact_number: z.string().nullable(),
-  age: z.number().min(18, "Minimum age is 18").max(100, "Maximum age is 100").nullable(),
+  age: z.union([
+    z.number().min(1, "Age must be positive").max(100, "Maximum age is 100"),
+    z.null()
+  ]).optional(),
   gender: z.string().nullable(),
 });
 
@@ -421,49 +424,6 @@ export const createColumns = (onUpdate?: (updatedGroup: GroupData) => void): Col
     size: 100,
     meta: {
       className: "hidden md:table-cell"
-    },
-  },
-  {
-    accessorKey: "performance_date",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
-        >
-          Performance Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = row.getValue("performance_date") as string;
-      return (
-        <div className="text-sm text-left px-2 py-1">
-          {date ? new Date(date).toLocaleDateString() : "Not scheduled"}
-        </div>
-      );
-    },
-    size: 150,
-    meta: {
-      className: "hidden lg:table-cell"
-    },
-  },
-  {
-    accessorKey: "venue",
-    header: "Venue",
-    cell: ({ row }) => {
-      const venue = row.getValue("venue") as string;
-      return (
-        <div className="max-w-[200px] truncate text-sm">
-          {venue || "Not specified"}
-        </div>
-      );
-    },
-    size: 200,
-    meta: {
-      className: "hidden lg:table-cell"
     },
   },
   {

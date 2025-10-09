@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import Image from "next/image"
+import { QRGenerationModal } from "@/components/qr-generation-modal"
+import { SendQRModal } from "@/components/send-qr-modal"
 
 type UserQR = {
   id: number
@@ -36,20 +38,29 @@ export default function QrCodeManagementPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [generating, setGenerating] = useState(false)
-  const [sending, setSending] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const pageSize = 10 // Show 10 items per page
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [showSendQRModal, setShowSendQRModal] = useState(false)
 
-  const fetchUsers = async (query = "") => {
+  const fetchUsers = async (query = "", page = 1) => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
       if (query) params.set("q", query)
-      params.set("pageSize", "100")
+      params.set("page", page.toString())
+      params.set("pageSize", pageSize.toString())
 
       const res = await fetch(`/api/qr-code-management?${params}`)
       const data = await res.json()
+      console.log('Fetched users data:', data)
       if (data.success) {
         setUsers(data.items || [])
+        setTotalPages(Math.ceil((data.total || 0) / pageSize))
+        setTotalItems(data.total || 0)
+        console.log('Updated users state with:', data.items?.length, 'items')
       } else {
         toast.error("Failed to load users")
       }
@@ -66,7 +77,8 @@ export default function QrCodeManagementPage() {
   }, [])
 
   const handleSearch = () => {
-    fetchUsers(searchQuery)
+    setCurrentPage(1) // Reset to first page when searching
+    fetchUsers(searchQuery, 1)
   }
 
   // Helper to create composite key
@@ -90,99 +102,13 @@ export default function QrCodeManagementPage() {
     setSelectedIds(newSet)
   }
 
-  const handleGenerateQR = async () => {
-    if (selectedIds.size === 0) {
-      toast.error("Please select at least one user")
-      return
-    }
-
-    try {
-      setGenerating(true)
-      // Build items with type, name, and manual flag
-      const items = Array.from(selectedIds).map((userKey) => {
-        const u = users.find((x) => createUserKey(x) === userKey)
-        console.log('Processing user for bulk QR generation:', {
-          userKey,
-          user: u,
-          id: u?.id,
-          type: u?.type,
-          name: u?.name
-        })
-        return {
-          id: u?.id || 0,
-          type: (u?.type || "guest") as UserQR["type"],
-          name: u?.name,
-          manual: true
-        }
-      })
-
-      console.log('Bulk QR generation items:', items)
-
-      const res = await fetch("/api/qr-code-management/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        toast.success(`Generated ${data.results.length} QR code(s)`)
-        fetchUsers(searchQuery)
-        setSelectedIds(new Set())
-      } else {
-        toast.error("Failed to generate QR codes")
-      }
-    } catch (err) {
-      toast.error("Error generating QR codes")
-      console.error(err)
-    } finally {
-      setGenerating(false)
-    }
+  const handleQRModalSuccess = () => {
+    // Refresh the user list after successful QR generation
+    setTimeout(() => {
+      fetchUsers(searchQuery, currentPage)
+    }, 500)
   }
 
-  const handleSendEmail = async () => {
-    if (selectedIds.size === 0) {
-      toast.error("Please select at least one user")
-      return
-    }
-
-    const usersWithQR = users.filter((u) => selectedIds.has(createUserKey(u)) && u.qr)
-    if (usersWithQR.length === 0) {
-      toast.error("Selected users do not have QR codes. Generate QR codes first.")
-      return
-    }
-
-    try {
-      setSending(true)
-      const recipients = usersWithQR.map((u) => ({
-        email: u.email,
-        name: u.name,
-        userId: u.id.toString(),
-        userType: u.type,
-        qrCodeUrl: u.qr!,
-      }))
-
-      const res = await fetch("/api/send-qr-emails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipients,
-          subject: "Your MARITIME TALENT QUEST 2025 Guest Pass",
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        toast.success(`Sent ${data.results.successfulSends} email(s)`)
-        setSelectedIds(new Set())
-      } else {
-        toast.error("Failed to send emails")
-      }
-    } catch (err) {
-      toast.error("Error sending emails")
-      console.error(err)
-    } finally {
-      setSending(false)
-    }
-  }
 
   // Generate QR for a single user
   const handleGenerateSingleQR = async (user: UserQR) => {
@@ -200,9 +126,13 @@ export default function QrCodeManagementPage() {
         }),
       })
       const data = await res.json()
+      console.log('Single QR generation response:', data)
       if (data.success) {
         toast.success(`Generated QR code for ${user.name}`)
-        fetchUsers(searchQuery)
+        // Force refresh with a small delay to ensure database is updated
+        setTimeout(() => {
+          fetchUsers(searchQuery, currentPage)
+        }, 500)
       } else {
         toast.error("Failed to generate QR code")
       }
@@ -283,22 +213,20 @@ export default function QrCodeManagementPage() {
         </div>
 
         <Button
-          onClick={handleGenerateQR}
-          disabled={generating || selectedIds.size === 0}
+          onClick={() => setShowQRModal(true)}
           size="sm"
           variant="default"
         >
-          {generating ? <IconLoader2 className="animate-spin" /> : <IconQrcode />}
+          <IconQrcode />
           Generate QR Code
         </Button>
 
         <Button
-          onClick={handleSendEmail}
-          disabled={sending || selectedIds.size === 0}
+          onClick={() => setShowSendQRModal(true)}
           size="sm"
           variant="outline"
         >
-          {sending ? <IconLoader2 className="animate-spin" /> : <IconMail />}
+          <IconMail />
           Send QR via Email
         </Button>
 
@@ -422,7 +350,88 @@ export default function QrCodeManagementPage() {
             )}
           </TableBody>
         </Table>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-2 py-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {Math.min((currentPage - 1) * pageSize + 1, totalItems)} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newPage = Math.max(1, currentPage - 1)
+                  setCurrentPage(newPage)
+                  fetchUsers(searchQuery, newPage)
+                }}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum
+                  if (totalPages <= 5) {
+                    pageNum = i + 1
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i
+                  } else {
+                    pageNum = currentPage - 2 + i
+                  }
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setCurrentPage(pageNum)
+                        fetchUsers(searchQuery, pageNum)
+                      }}
+                      className="w-8 h-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  )
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newPage = Math.min(totalPages, currentPage + 1)
+                  setCurrentPage(newPage)
+                  fetchUsers(searchQuery, newPage)
+                }}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* QR Generation Modal */}
+      <QRGenerationModal
+        open={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        onSuccess={handleQRModalSuccess}
+      />
+
+      {/* Send QR Modal */}
+      <SendQRModal
+        isOpen={showSendQRModal}
+        onClose={() => {
+          setShowSendQRModal(false)
+          // Refresh the user list after sending emails
+          fetchUsers(searchQuery, currentPage)
+        }}
+      />
     </div>
   )
 }

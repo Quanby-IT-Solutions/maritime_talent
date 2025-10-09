@@ -55,22 +55,53 @@ export default function GroupPerformancesPage() {
           return;
         }
 
-        // Fetch students for each group separately
+        console.log('[Groups] Raw groups data from DB:', groupsData);
+
+        // Fetch students for each group via group_members junction table
         const groupsWithMembers = await Promise.all(
           (groupsData || []).map(async (group: Record<string, unknown>) => {
+            // First, get the group member relationships
+            const { data: groupMembers, error: groupMembersError } = await supabase
+              .from('group_members')
+              .select('student_id, is_leader')
+              .eq('group_id', group.group_id);
+
+            if (groupMembersError) {
+              console.error('Error fetching group members for group:', group.group_id, groupMembersError);
+              return { ...group, students: [] };
+            }
+
+            if (!groupMembers || groupMembers.length === 0) {
+              return { ...group, students: [] };
+            }
+
+            // Then, fetch the actual student details
+            const studentIds = groupMembers.map((gm: { student_id: number }) => gm.student_id);
             const { data: students, error: studentsError } = await supabase
               .from('students')
               .select('student_id, full_name, age, gender, contact_number, email, school, course_year')
-              .eq('gid', group.group_id);
+              .in('student_id', studentIds);
 
             if (studentsError) {
               console.error('Error fetching students for group:', group.group_id, studentsError);
               return { ...group, students: [] };
             }
 
-            return { ...group, students: students || [] };
+            // Merge student data with is_leader info
+            const studentsWithLeaderInfo = (students || []).map((student: { student_id: number;[key: string]: unknown }) => {
+              const memberInfo = groupMembers.find((gm: { student_id: number }) => gm.student_id === student.student_id);
+              return {
+                ...student,
+                is_leader: memberInfo?.is_leader || false
+              };
+            });
+
+            console.log(`[Groups] Group ${group.group_id} students:`, studentsWithLeaderInfo);
+            return { ...group, students: studentsWithLeaderInfo };
           })
         );
+
+        console.log('[Groups] Groups with members:', groupsWithMembers);
 
         // Use the groups with their members
         const dataToUse = groupsWithMembers;
@@ -79,27 +110,92 @@ export default function GroupPerformancesPage() {
         const transformedData: GroupData[] = dataToUse.map((group: Record<string, unknown>) => {
           // Transform students to group members
           const students = (group.students as Array<Record<string, unknown>>) || [];
-          const group_members = students.map((student: Record<string, unknown>) => ({
-            member_id: student.student_id as number,
-            group_id: group.group_id as number,
-            full_name: student.full_name as string,
-            role: student.course_year as string || "Member", // Use course_year as role
-            email: student.email as string || null,
-            contact_number: student.contact_number as string || null,
-            age: student.age as number || null,
-            gender: student.gender as string || null,
-          }));
+          const group_members = students.map((student: Record<string, unknown>) => {
+            // Safely parse numeric values with NaN checks
+            let studentId: number;
+            if (typeof student.student_id === 'number') {
+              studentId = student.student_id;
+            } else {
+              const parsed = parseInt(String(student.student_id || '0'), 10);
+              studentId = isNaN(parsed) ? 0 : parsed;
+            }
+
+            let groupId: number;
+            if (typeof group.group_id === 'number') {
+              groupId = group.group_id;
+            } else {
+              const parsed = parseInt(String(group.group_id || '0'), 10);
+              groupId = isNaN(parsed) ? 0 : parsed;
+            }
+
+            let age: number | null = null;
+            if (student.age) {
+              if (typeof student.age === 'number') {
+                age = student.age;
+              } else {
+                const parsed = parseInt(String(student.age), 10);
+                age = isNaN(parsed) ? null : parsed;
+              }
+            }
+
+            console.log(`[Groups] Processing member:`, {
+              student_id: student.student_id,
+              parsed_member_id: studentId,
+              age: student.age,
+              parsed_age: age,
+              full_name: student.full_name
+            });
+
+            return {
+              member_id: studentId,
+              group_id: groupId,
+              full_name: String(student.full_name || ""),
+              role: String(student.course_year || "Member"),
+              email: student.email ? String(student.email) : null,
+              contact_number: student.contact_number ? String(student.contact_number) : null,
+              age: age,
+              gender: student.gender ? String(student.gender) : null,
+            };
+          });
+
+          // Map performance_type from DB (ensure it matches expected values)
+          let performanceType: "Musical" | "Dance" | "Drama" = "Musical";
+          if (group.performance_type === "Dancing") {
+            performanceType = "Dance";
+          } else if (group.performance_type === "Theatrical/Drama") {
+            performanceType = "Drama";
+          } else if (group.performance_type === "Musical Instrument" || group.performance_type === "Singing") {
+            performanceType = "Musical";
+          }
+
+          // Safely parse group_id with NaN check
+          let groupId: number;
+          if (typeof group.group_id === 'number') {
+            groupId = group.group_id;
+          } else {
+            const parsed = parseInt(String(group.group_id || '0'), 10);
+            groupId = isNaN(parsed) ? 0 : parsed;
+          }
+
+          console.log(`[Groups] Transformed group:`, {
+            raw_group_id: group.group_id,
+            parsed_group_id: groupId,
+            group_name: group.group_name,
+            members_count: group_members.length
+          });
 
           return {
-            group_id: group.group_id as number,
-            group_name: group.group_name as string,
-            performance_type: "Musical" as const, // Default value since not in DB schema
+            group_id: groupId,
+            group_name: String(group.group_name || ""),
+            performance_type: performanceType,
             performance_date: null, // Not in DB schema
             venue: null, // Not in DB schema  
-            description: (group.performance_description as string) || (group.performance_title as string) || null,
+            description: String((group.performance_description || group.performance_title) || ""),
             group_members,
           };
         });
+
+        console.log('[Groups] Transformed data:', transformedData);
 
         // Validate with Zod and collect errors
         const validatedData: GroupData[] = [];
