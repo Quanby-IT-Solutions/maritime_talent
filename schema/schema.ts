@@ -5,27 +5,48 @@
 export type Database = {
   public: {
     Tables: {
-      attendance_logs: {
+      attendance: {
         Row: {
-          attendance_id: string
-          qr_id: string
-          scan_time: string | null
-          scanned_by: string | null
+          id: string
+          user_id: string | null
+          scantime: string | null
+          scandate: string | null
+          usertype: string | null
+          firstname: string | null
+          lastname: string | null
+          email: string | null
+          company: string | null
+          jobtitle: string | null
           status: string | null
+          created_at: string | null
         }
         Insert: {
-          attendance_id?: string
-          qr_id: string
-          scan_time?: string | null
-          scanned_by?: string | null
+          id?: string
+          user_id?: string | null
+          scantime?: string | null
+          scandate?: string | null
+          usertype?: string | null
+          firstname?: string | null
+          lastname?: string | null
+          email?: string | null
+          company?: string | null
+          jobtitle?: string | null
           status?: string | null
+          created_at?: string | null
         }
         Update: {
-          attendance_id?: string
-          qr_id?: string
-          scan_time?: string | null
-          scanned_by?: string | null
+          id?: string
+          user_id?: string | null
+          scantime?: string | null
+          scandate?: string | null
+          usertype?: string | null
+          firstname?: string | null
+          lastname?: string | null
+          email?: string | null
+          company?: string | null
+          jobtitle?: string | null
           status?: string | null
+          created_at?: string | null
         }
       }
       consents: {
