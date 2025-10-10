@@ -301,9 +301,6 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
                           onSelect={(date) => {
                             field.onChange(date ? format(date, "yyyy-MM-dd") : "")
                           }}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1900-01-01")
-                          }
                           initialFocus
                         />
                       </PopoverContent>
