@@ -205,7 +205,7 @@ async function generateAndUploadQR(
     return await generateGroupMemberQRs(supabase, id, numericId, metadata)
   }
 
-  // QR code contains the student_id for singles, or the id for guests
+  // QR code payload is always the student_id for contestants
   const payload = type === "contestant_single" && metadata.studentId ? metadata.studentId : id;
   const pngBuffer = await QRCode.toBuffer(payload, { type: "png", width: 512 })
   
@@ -219,16 +219,16 @@ async function generateAndUploadQR(
   if (type === "guest") {
     filePath = `guests/${filename}`
   } else if (type === "contestant_single") {
-    // single -> performance title -> name -> file
+    // single/[PerformanceTitle]/[FullName]/file.png
     const sanitizedPerformanceTitle = metadata.performanceTitle 
       ? sanitizeFilename(metadata.performanceTitle)
-      : 'unknown'
+      : 'Untitled'
     filePath = `single/${sanitizedPerformanceTitle}/${sanitizedName}/${filename}`
   } else {
     // This shouldn't be reached for groups anymore
     const sanitizedGroupName = metadata.groupName
       ? sanitizeFilename(metadata.groupName)
-      : 'unknown'
+      : 'Untitled'
     filePath = `group/${sanitizedGroupName}/member/${sanitizedName}/${filename}`
   }
 

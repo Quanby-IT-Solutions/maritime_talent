@@ -6,6 +6,11 @@ import type { PerformerFormData, EmailRecipient } from '@/types/contestant';
 const BUCKET_NAME = 'attachment';
 const QR_BUCKET_NAME = 'qr-codes';
 
+// Helper function to sanitize folder/file names
+function sanitizeName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
 // Helper function to upload file to Supabase Storage
 async function uploadFileToStorage(
   supabase: ReturnType<typeof createServerClient>,
@@ -69,22 +74,28 @@ async function uploadSignatureToStorage(
 // Helper function to generate and upload QR code
 async function generateAndUploadQRCode(
   supabase: ReturnType<typeof createServerClient>,
-  id: string | number,
+  studentId: string,
   type: 'contestant_single' | 'contestant_group',
-  studentName?: string,
+  studentName: string,
+  performanceTitle?: string,
   groupName?: string
 ): Promise<string> {
-  const payload = JSON.stringify({ type, id });
+  // QR code payload is always the student_id
+  const payload = studentId;
   const pngBuffer = await QRCode.toBuffer(payload, { type: 'png', width: 512 });
+  
+  const sanitizedStudentName = sanitizeName(studentName);
+  const fileName = `${studentId}_${sanitizedStudentName}.png`;
   
   let filePath: string;
   if (type === 'contestant_single') {
-    filePath = `single/${studentName?.replace(/[^a-zA-Z0-9]/g, '_') || id.toString()}.png`;
+    // single/[PerformanceTitle]/[FullName]/file.png
+    const sanitizedPerformanceTitle = sanitizeName(performanceTitle || 'Untitled');
+    filePath = `single/${sanitizedPerformanceTitle}/${sanitizedStudentName}/${fileName}`;
   } else {
-    // For groups: group/[GroupName]/member/[MemberName].png
-    const sanitizedGroupName = groupName?.replace(/[^a-zA-Z0-9]/g, '_') || `Group_${id}`;
-    const sanitizedMemberName = studentName?.replace(/[^a-zA-Z0-9]/g, '_') || id.toString();
-    filePath = `group/${sanitizedGroupName}/member/${sanitizedMemberName}.png`;
+    // group/[GroupName]/member/[FullName]/file.png
+    const sanitizedGroupName = sanitizeName(groupName || 'Untitled');
+    filePath = `group/${sanitizedGroupName}/member/${sanitizedStudentName}/${fileName}`;
   }
 
   const { error: uploadError } = await supabase.storage
@@ -309,6 +320,8 @@ export async function POST(req: NextRequest) {
     const schoolOfficialName = formData.get('schoolOfficialName') as string || null;
     const schoolOfficialPosition = formData.get('schoolOfficialPosition') as string || null;
     
+    console.log('School Endorsement Data:', { schoolOfficialName, schoolOfficialPosition });
+    
     // Determine if it's a group or single performance
     const isGroup = numberOfPerformers >= 2;
     
@@ -382,8 +395,10 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < performers.length; i++) {
         const performer = performers[i];
         const timestamp = Date.now();
-        const sanitizedName = performer.fullName.replace(/[^a-zA-Z0-9]/g, '_');
-        const performerFolder = `group_${groupId}/performer_${i + 1}_${sanitizedName}`;
+        const sanitizedName = sanitizeName(performer.fullName);
+        const sanitizedPerformanceTitle = sanitizeName(performanceTitle);
+        // Attachment folder: group/[GroupName]/member/[FullName]/
+        const performerFolder = `group/${sanitizedPerformanceTitle}/member/${sanitizedName}`;
 
         // Process files and signatures
         const urls = await processPerformerFiles(supabase, performer, performerFolder, timestamp);
@@ -414,14 +429,29 @@ export async function POST(req: NextRequest) {
           studentId, 
           'contestant_group', 
           performer.fullName,
+          performanceTitle,
           groupName
         );
 
-        // Insert QR code record for each member
+        // Insert QR code record for each member, linked to student
         await supabase.from('qr_codes').insert({
           qr_code_url: memberQrCodeUrl,
           group_id: groupId,
         } as any);
+        
+        // Update student record with qr_id
+        const { data: qrData } = await supabase
+          .from('qr_codes')
+          .select('qr_id')
+          .eq('qr_code_url', memberQrCodeUrl)
+          .single();
+        
+        if (qrData) {
+          await (supabase as any)
+            .from('students')
+            .update({ qr_id: (qrData as any).qr_id })
+            .eq('student_id', studentId);
+        }
 
         // Store member QR code info
         memberQrCodes.push({
@@ -439,9 +469,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Insert school endorsement if provided
-      if (schoolOfficialName && performers[0]) {
+      console.log('Attempting to insert group endorsement:', { schoolOfficialName, schoolOfficialPosition });
+      if (schoolOfficialName && schoolOfficialPosition) {
         // Get the leader's student_id from group_members
-        const { data: groupMemberData } = await supabase
+        const { data: groupMemberData, error: leaderError } = await supabase
           .from('group_members')
           .select('student_id')
           .eq('group_id', groupId as any)
@@ -449,20 +480,34 @@ export async function POST(req: NextRequest) {
           .limit(1)
           .single();
 
+        console.log('Leader data:', groupMemberData, 'Error:', leaderError);
+
         if (groupMemberData) {
-          await supabase.from('endorsements').insert({
+          const endorsementData = {
             student_id: (groupMemberData as any).student_id,
-            school_official_name: performers[0].schoolOfficialName,
-            position: performers[0].schoolOfficialPosition,
-          } as any);
+            official_name: schoolOfficialName,
+            position: schoolOfficialPosition,
+          };
+          console.log('Inserting group endorsement:', endorsementData);
+          
+          const { error: endorsementError } = await supabase.from('endorsements').insert(endorsementData as any);
+          
+          if (endorsementError) {
+            console.error('Failed to insert group endorsement:', endorsementError);
+          } else {
+            console.log('Group endorsement inserted successfully');
+          }
         }
+      } else {
+        console.log('Skipping group endorsement - missing data');
       }
 
     } else {
       // Single performer
       const performer = performers[0];
       const timestamp = Date.now();
-      const sanitizedName = performer.fullName.replace(/[^a-zA-Z0-9]/g, '_');
+      const sanitizedName = sanitizeName(performer.fullName);
+      const sanitizedPerformanceTitle = sanitizeName(performanceTitle);
 
       // Create single entry first
       const { data: singleData, error: singleError } = await supabase
@@ -477,7 +522,8 @@ export async function POST(req: NextRequest) {
       if (singleError) throw new Error(`Failed to create single entry: ${singleError.message}`);
       singleId = (singleData as any).single_id;
 
-      const performerFolder = `single_${singleId}_${sanitizedName}`;
+      // Attachment folder: single/[PerformanceTitle]/[FullName]/
+      const performerFolder = `single/${sanitizedPerformanceTitle}/${sanitizedName}`;
 
       // Process files and signatures
       const urls = await processPerformerFiles(supabase, performer, performerFolder, timestamp);
@@ -507,23 +553,55 @@ export async function POST(req: NextRequest) {
       leadName = performer.fullName;
 
       // Insert school endorsement if provided
-      if (performer.schoolOfficialName) {
-        await supabase.from('endorsements').insert({
+      console.log('Attempting to insert single endorsement:', { schoolOfficialName, schoolOfficialPosition, studentId });
+      if (schoolOfficialName && schoolOfficialPosition) {
+        const endorsementData = {
           student_id: studentId,
-          school_official_name: performer.schoolOfficialName,
-          position: performer.schoolOfficialPosition,
-        } as any);
+          official_name: schoolOfficialName,
+          position: schoolOfficialPosition,
+        };
+        console.log('Inserting single endorsement:', endorsementData);
+        
+        const { error: endorsementError } = await supabase.from('endorsements').insert(endorsementData as any);
+        
+        if (endorsementError) {
+          console.error('Failed to insert single endorsement:', endorsementError);
+        } else {
+          console.log('Single endorsement inserted successfully');
+        }
+      } else {
+        console.log('Skipping single endorsement - missing data');
       }
 
       // Generate QR code for single
       if (!singleId) throw new Error('Single ID is required');
-      qrCodeUrl = await generateAndUploadQRCode(supabase, singleId, 'contestant_single', performers[0]?.fullName);
+      qrCodeUrl = await generateAndUploadQRCode(
+        supabase, 
+        studentId, 
+        'contestant_single', 
+        performer.fullName,
+        performanceTitle
+      );
 
       // Insert QR code record
       await supabase.from('qr_codes').insert({
         qr_code_url: qrCodeUrl,
         single_id: singleId,
       } as any);
+      
+      // Update student record with qr_id
+      const { data: qrData } = await supabase
+        .from('qr_codes')
+        .select('qr_id')
+        .eq('qr_code_url', qrCodeUrl)
+        .single();
+      
+      if (qrData) {
+        await (supabase as any)
+          .from('students')
+          .update({ qr_id: (qrData as any).qr_id })
+          .eq('student_id', studentId);
+      }
     }
 
     // Prepare email recipients
