@@ -167,7 +167,7 @@ export default function RegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto p-6 max-w-5xl">
         
         {/* Header Banner */}
@@ -272,14 +272,14 @@ export default function RegistrationPage() {
 
         {/* Performer Cards Container - moved outside the main card */}
         {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
-          <div className="mt-8 space-y-6">
+          <div className="mt-4 space-y-4">
             {Array.from({ length: numberOfPerformers }, (_, index) => (
-              <div
-                key={`performer-${index}`}
-                className="opacity-0 animate-slide-in-bottom"
-                style={{ animationDelay: `${index * 150 + 200}ms`, animationFillMode: 'forwards' }}
-              >
-                <PerformerSection form={form} performerIndex={index} performerNumber={index + 1} />
+              <div key={`performer-${index}`} className="animate-fade-in-scale">
+                <PerformerSection
+                  form={form}
+                  performerIndex={index}
+                  performerNumber={index + 1}
+                />
               </div>
             ))}
           </div>
@@ -287,7 +287,7 @@ export default function RegistrationPage() {
 
         {/* Submit Section */}
         {numberOfPerformers > 0 && numberOfPerformers <= 10 && (
-          <div className="mt-12 text-center">
+          <div className="mt-8 text-center">
             <Button
               type="submit"
               className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
