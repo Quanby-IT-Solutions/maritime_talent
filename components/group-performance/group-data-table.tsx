@@ -61,10 +61,11 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Edit, Save, X, Pen, Upload } from "lucide-react";
+import { Eye, Edit, Save, X, Pen, Upload, Award } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { GroupData, GroupMemberData } from "./group-column-def";
 import ESignModal from "@/components/reusable/esign-modal";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Member Details Sheet Component
 const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: GroupMemberData; groupId: string; onMemberUpdate?: (updatedMember: GroupMemberData, groupId: string) => void }) => {
@@ -804,7 +805,7 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
-                          <p className="text-base font-semibold">{member.endorsement.school_official_name || "N/A"}</p>
+                          <p className="text-base font-semibold">{member.endorsement.official_name || "N/A"}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Position</p>
@@ -1090,43 +1091,28 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
                   </div>
                 )}
 
-                {/* Endorsement Card */}
+                {/* Endorsement */}
                 {member.endorsement && (
-                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                      <h3 className="text-sm font-semibold text-slate-900">School Endorsement</h3>
-                    </div>
-                    <div className="p-4 bg-white space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="h-5 w-5" />
+                        School Endorsement
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">School Official Name</p>
-                          <p className="text-base font-semibold">{member.endorsement.school_official_name || "N/A"}</p>
+                          <p className="text-base font-semibold">{member.endorsement.official_name || "N/A"}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Position</p>
-                          <Badge variant="outline">{member.endorsement.position || "N/A"}</Badge>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-2">Official Signature</p>
-                          {member.endorsement.signature_url ? (
-                            <div className="space-y-2">
-                              <img
-                                src={member.endorsement.signature_url}
-                                alt="Official Signature"
-                                className="w-full h-32 object-contain bg-white rounded-lg border border-gray-200 cursor-pointer hover:opacity-80"
-                                onClick={() => window.open(member.endorsement?.signature_url, '_blank')}
-                              />
-                              <a href={member.endorsement.signature_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                                View full size
-                              </a>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">Not provided</p>
-                          )}
+                          <p className="text-base">{member.endorsement.position || "N/A"}</p>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             )}
