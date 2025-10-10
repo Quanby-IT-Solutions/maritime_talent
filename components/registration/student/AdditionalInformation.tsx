@@ -444,16 +444,16 @@ export function AdditionalInformation({ form, performerIndex, needsParentSignatu
             </div>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-950/30 dark:border-blue-800">
             <div className="flex items-start space-x-3">
-              <FileText className="h-5 w-5 text-purple-600 mt-0.5" />
+              <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-purple-900 dark:text-purple-200">School Endorsement Requirements</h4>
-                <div className="text-sm text-purple-800 dark:text-purple-300 mt-1 space-y-1">
+                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200">School Endorsement Requirements</h4>
+                <div className="text-sm text-blue-800 dark:text-blue-300 mt-1 space-y-1">
                   <p>• Official signature and school seal required</p>
                   <p>• Date of endorsement must be provided</p>
                   <p>• School official must be authorized to endorse students</p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">
                     Physical signatures and school seal can be submitted separately or during event registration.
                   </p>
                 </div>
