@@ -137,10 +137,7 @@ export default function RegistrationButton() {
                   </div>
 
                   {/* Registration Button */}
-                  <Link
-                    href={`/registration?type=${regType.type}`}
-                    className="block"
-                  >
+                  <Link href="/registration/contestant" className="block">
                     <Button
                       size="lg"
                       className={`w-full group-hover:scale-105 transition-transform ${
