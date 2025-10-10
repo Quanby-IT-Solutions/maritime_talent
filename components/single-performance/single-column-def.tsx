@@ -333,7 +333,7 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
           .update({
             student_signature_url: healthStudentUrl,
             parent_guardian_signature_url: healthParentUrl,
-          })
+          } as never)
           .eq('student_id', data.student.student_id);
       }
 
@@ -343,7 +343,7 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
           .update({
             student_signature_url: consentStudentUrl,
             parent_guardian_signature_url: consentParentUrl,
-          })
+          } as never)
           .eq('student_id', data.student.student_id);
       }
 
@@ -352,7 +352,7 @@ const SingleDetailsSheet = ({ single, onUpdate }: { single: SingleData; onUpdate
           .from('endorsements')
           .update({
             signature_url: endorsementUrl,
-          })
+          } as never)
           .eq('student_id', data.student.student_id);
       }
 

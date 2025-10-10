@@ -59,10 +59,10 @@ export function PerformerSection({ form, performerIndex, performerNumber }: Perf
   ]
 
   return (
-    <div className="animate-slide-in-top opacity-0" style={{ animationFillMode: 'forwards' }}>
+    <div>
       {/* Collapsible Performer Card */}
       <Card 
-        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/30"
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/30 animate-fade-in-scale"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {/* Header - Always Visible and Fully Clickable */}
@@ -97,10 +97,12 @@ export function PerformerSection({ form, performerIndex, performerNumber }: Perf
         </div>
 
         {/* Expandable Content */}
-        <div className={`transition-all duration-400 ease-in-out ${
-          isExpanded ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+        <div className={`transition-all duration-300 ease-in-out ${
+          isExpanded 
+            ? 'opacity-100 border-t border-gray-200 dark:border-gray-700'
+            : 'max-h-0 opacity-0 overflow-hidden'
         }`}>
-          <div className="border-t border-gray-200 dark:border-gray-700">
+          <div>
             <div className="p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900/50" onClick={(e) => e.stopPropagation()}>
               {/* Performer Sections */}
               {performerSections.map((section, idx) => (

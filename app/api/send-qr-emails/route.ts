@@ -211,7 +211,7 @@ async function sendQRCodeEmail({
     const msg: any = {
       to,
       from: {
-        email: from || 'noreplymarintimetalentquest@gmail.com',
+        email: from || 'noreply.maritimetalentquest@gmail.com',
         name: 'MARITIME TALENT QUEST 2025 Team'
       },
       replyTo: 'dummyemail@gmail.com',
