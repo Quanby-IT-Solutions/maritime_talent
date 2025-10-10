@@ -12,30 +12,6 @@ import { Crown, Award, Star, Trophy } from "lucide-react";
 export default function SponsorTier() {
   const sponsorTiers = [
     {
-      tier: "Platinum",
-      icon: Crown,
-      color: "text-yellow-500",
-      bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
-      borderColor: "border-yellow-200 dark:border-yellow-800",
-      sponsors: ["Premium Maritime Corp", "Ocean Elite Solutions"],
-    },
-    {
-      tier: "Gold",
-      icon: Trophy,
-      color: "text-amber-500",
-      bgColor: "bg-amber-50 dark:bg-amber-950/20",
-      borderColor: "border-amber-200 dark:border-amber-800",
-      sponsors: ["SeaTech Industries", "Maritime Excellence Ltd"],
-    },
-    {
-      tier: "Silver",
-      icon: Award,
-      color: "text-slate-500",
-      bgColor: "bg-slate-50 dark:bg-slate-950/20",
-      borderColor: "border-slate-200 dark:border-slate-800",
-      sponsors: ["Nautical Solutions", "Harbor Tech Co", "Wave Dynamics"],
-    },
-    {
       tier: "Bronze",
       icon: Star,
       color: "text-orange-600",
@@ -47,6 +23,30 @@ export default function SponsorTier() {
         "Dock Systems Pro",
         "Sea Navigator Ltd",
       ],
+    },
+    {
+      tier: "Silver",
+      icon: Award,
+      color: "text-slate-500",
+      bgColor: "bg-slate-50 dark:bg-slate-950/20",
+      borderColor: "border-slate-200 dark:border-slate-800",
+      sponsors: ["Nautical Solutions", "Harbor Tech Co", "Wave Dynamics"],
+    },
+    {
+      tier: "Gold",
+      icon: Trophy,
+      color: "text-amber-500",
+      bgColor: "bg-amber-50 dark:bg-amber-950/20",
+      borderColor: "border-amber-200 dark:border-amber-800",
+      sponsors: ["SeaTech Industries", "Maritime Excellence Ltd"],
+    },
+    {
+      tier: "Platinum",
+      icon: Crown,
+      color: "text-blue-400",
+      bgColor: "bg-blue-50 dark:bg-yellow-950/20",
+      borderColor: "border-slate-300 dark:border-yellow-800",
+      sponsors: ["Premium Maritime Corp", "Ocean Elite Solutions"],
     },
   ];
 

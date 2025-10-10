@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
-import TitleOfEvent from "./components/titleofevent";
-import SponsorTier from "./components/sponsortier";
-import RegistrationButton from "./components/registrationbutton";
-import Donate from "./components/donate";
-import Mechanics from "./components/mechanics";
+import TitleOfEvent from "../../../components/home-components/titleofevent";
+import SponsorTier from "../../../components/home-components/sponsortier";
+import RegistrationButton from "../../../components/home-components/registrationbutton";
+import Donate from "../../../components/home-components/donate";
+import Mechanics from "../../../components/home-components/mechanics";
 import Iridescence from "@/components/Iridescence";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ import {
   MapPin,
   Award,
 } from "lucide-react";
-import SimpleHeader from "./components/simple-header";
+import SimpleHeader from "../../../components/home-components/simple-header";
 
 export default function LandingPage() {
   return (
@@ -124,7 +124,7 @@ export default function LandingPage() {
               <Card className="border-2 border-secondary/20 hover:border-secondary/40 transition-colors">
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-secondary" />
+                    <Award className="h-5 w-5 text-primary" />
                     <CardTitle className="text-xl">
                       Competition Categories
                     </CardTitle>
@@ -135,18 +135,16 @@ export default function LandingPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="default">Navigation Skills</Badge>
-                    <Badge variant="secondary">Safety Protocols</Badge>
-                    <Badge variant="outline">Technical Knowledge</Badge>
+                    <Badge variant="default">Singing</Badge>
+                    <Badge variant="secondary">Dancing</Badge>
+                    <Badge variant="outline">Musical Instrument</Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="default">Seamanship</Badge>
-                    <Badge variant="secondary">Leadership</Badge>
-                    <Badge variant="outline">Emergency Response</Badge>
+                    <Badge variant="default">Spoken Word / Poetry</Badge>
+                    <Badge variant="secondary">Theatrical Drama</Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="default">Communication</Badge>
-                    <Badge variant="secondary">Team Coordination</Badge>
+                    <Badge variant="default">Others</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -175,8 +173,8 @@ export default function LandingPage() {
                   </div>
 
                   <div className="text-center space-y-2">
-                    <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mx-auto">
-                      <Users className="h-6 w-6 text-secondary" />
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto">
+                      <Users className="h-6 w-6 text-primary" />
                     </div>
                     <h3 className="font-semibold">Networking</h3>
                     <p className="text-sm text-muted-foreground">
@@ -185,7 +183,7 @@ export default function LandingPage() {
                   </div>
 
                   <div className="text-center space-y-2">
-                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 bg-accent-foreground/10 rounded-lg flex items-center justify-center mx-auto">
                       <Waves className="h-6 w-6 text-accent-foreground" />
                     </div>
                     <h3 className="font-semibold">Career Opportunities</h3>
