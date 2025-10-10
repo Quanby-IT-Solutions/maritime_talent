@@ -106,187 +106,121 @@ export default function GroupPerformancesPage() {
       });
 
       // Add header with logo/title
-      doc.setFillColor(30, 64, 175); // Blue header
-      doc.rect(0, 0, 297, 35, "F");
+      doc.setFillColor(30, 64, 175);
+      doc.rect(0, 0, 297, 30, "F");
 
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
-      doc.text("MARITIME TALENT QUEST 2025", 148.5, 15, { align: "center" });
+      doc.text("MARITIME TALENT QUEST 2025", 148.5, 12, { align: "center" });
 
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
-      doc.text("Group Performances Report", 148.5, 24, { align: "center" });
-
-      // Add date and statistics
-      doc.setFontSize(9);
-      doc.setTextColor(220, 220, 220);
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, 148.5, 30, { align: "center" });
-
-      // Add summary statistics box
-      doc.setFillColor(248, 250, 252);
-      doc.rect(10, 40, 277, 20, "F");
-
-      doc.setTextColor(30, 41, 59);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-
-      const statY = 48;
-      doc.text(`Total Groups: ${stats.total}`, 20, statY);
-      doc.text(`Musical: ${stats.musical}`, 80, statY);
-      doc.text(`Dance: ${stats.dance}`, 130, statY);
-      doc.text(`Drama: ${stats.drama}`, 180, statY);
-      doc.text(`Total Members: ${stats.totalMembers}`, 230, statY);
+      doc.text("Group Performances Report", 148.5, 20, { align: "center" });
 
       doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Showing ${filteredGroups.length} of ${groups.length} groups`, 20, statY + 8);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 148.5, 26, { align: "center" });
 
-      // Prepare table data
-      const tableData = filteredGroups.map((group, index) => {
-        const members = (group.group_members || []);
-        const leader = members.find(m => m.role.toLowerCase().includes("leader"));
+      let currentY = 40;
 
-        return [
-          (index + 1).toString(),
-          group.group_name,
-          group.performance_type,
-          members.length.toString(),
-          leader?.full_name || "N/A",
-          group.description || "No description provided"
-        ];
-      });
-
-      // Add main table
-      autoTable(doc, {
-        startY: 65,
-        head: [["#", "Group Name", "Type", "Members", "Leader", "Description"]],
-        body: tableData,
-        theme: "striped",
-        headStyles: {
-          fillColor: [30, 64, 175],
-          textColor: [255, 255, 255],
-          fontSize: 10,
-          fontStyle: "bold",
-          halign: "left",
-        },
-        styles: {
-          fontSize: 9,
-          cellPadding: 3,
-          lineColor: [220, 220, 220],
-          lineWidth: 0.1,
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252],
-        },
-        columnStyles: {
-          0: { halign: "center", cellWidth: 10 },
-          1: { cellWidth: 50, fontStyle: "bold" },
-          2: { halign: "center", cellWidth: 25 },
-          3: { halign: "center", cellWidth: 20 },
-          4: { cellWidth: 40 },
-          5: { cellWidth: 70 },
-        },
-        margin: { left: 10, right: 10 },
-        didDrawPage: (data: { pageNumber: number }) => {
-          // Footer
-          const pageCount = doc.getNumberOfPages();
-          const currentPage = data.pageNumber;
-
-          doc.setFontSize(8);
-          doc.setTextColor(100, 100, 100);
-          doc.text(
-            `Page ${currentPage} of ${pageCount}`,
-            148.5,
-            doc.internal.pageSize.height - 10,
-            { align: "center" }
-          );
-
-          doc.text(
-            "Maritime Talent Quest © 2025",
-            10,
-            doc.internal.pageSize.height - 10
-          );
-
-          doc.text(
-            "Confidential",
-            doc.internal.pageSize.width - 10,
-            doc.internal.pageSize.height - 10,
-            { align: "right" }
-          );
-        },
-      });
-
-      // Add detailed member breakdown on new pages
-      filteredGroups.forEach((group) => {
+      // Iterate through each group
+      filteredGroups.forEach((group, groupIndex) => {
         const members = group.group_members || [];
 
-        if (members.length > 0) {
+        // Check if we need a new page
+        if (currentY > 180) {
           doc.addPage();
+          currentY = 20;
+        }
 
-          // Group header
-          doc.setFillColor(30, 64, 175);
-          doc.rect(0, 0, 297, 25, "F");
+        // GROUP HEADER (Parent Row)
+        doc.setFillColor(30, 64, 175);
+        doc.rect(10, currentY, 277, 10, "F");
 
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(16);
-          doc.setFont("helvetica", "bold");
-          doc.text(group.group_name, 148.5, 12, { align: "center" });
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${groupIndex + 1}. ${group.group_name}`, 15, currentY + 7);
 
-          doc.setFontSize(11);
-          doc.setFont("helvetica", "normal");
-          doc.text(`${group.performance_type} Performance • ${members.length} Members`, 148.5, 19, { align: "center" });
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${group.performance_type} • ${members.length} Members`, 250, currentY + 7, { align: "right" });
 
-          // Group details
-          doc.setFillColor(248, 250, 252);
-          doc.rect(10, 30, 277, 15, "F");
+        currentY += 10;
 
-          doc.setTextColor(30, 41, 59);
-          doc.setFontSize(9);
-          doc.setFont("helvetica", "bold");
-          doc.text("Description:", 15, 37);
-          doc.setFont("helvetica", "normal");
-          doc.text(group.description || "No description provided", 15, 42, {
-            maxWidth: 267,
-          });
-
-          // Members table
+        // MEMBERS TABLE (Child Rows)
+        if (members.length > 0) {
           const memberData = members.map((member, idx) => [
             (idx + 1).toString(),
             member.full_name,
             member.role,
-            member.email || "N/A",
-            member.contact_number || "N/A",
             member.age?.toString() || "N/A",
             member.gender || "N/A",
+            member.email || "N/A",
+            member.contact_number || "N/A",
           ]);
 
           autoTable(doc, {
-            startY: 50,
-            head: [["#", "Full Name", "Role", "Email", "Contact", "Age", "Gender"]],
+            startY: currentY,
+            head: [["#", "Name", "Role", "Age", "Gender", "Email", "Contact"]],
             body: memberData,
             theme: "grid",
             headStyles: {
-              fillColor: [30, 64, 175],
+              fillColor: [71, 85, 105],
               textColor: [255, 255, 255],
-              fontSize: 9,
+              fontSize: 8,
               fontStyle: "bold",
+              cellPadding: 2,
             },
             styles: {
               fontSize: 8,
-              cellPadding: 2.5,
+              cellPadding: 2,
+              lineColor: [200, 200, 200],
+              lineWidth: 0.1,
             },
             columnStyles: {
               0: { halign: "center", cellWidth: 10 },
               1: { cellWidth: 45, fontStyle: "bold" },
               2: { cellWidth: 35 },
-              3: { cellWidth: 50 },
-              4: { cellWidth: 35 },
-              5: { halign: "center", cellWidth: 15 },
-              6: { halign: "center", cellWidth: 20 },
+              3: { halign: "center", cellWidth: 15 },
+              4: { halign: "center", cellWidth: 20 },
+              5: { cellWidth: 60 },
+              6: { cellWidth: 35 },
             },
-            margin: { left: 10, right: 10 },
+            margin: { left: 15, right: 10 },
+            didDrawPage: () => {
+              // Footer
+              doc.setFontSize(8);
+              doc.setTextColor(100, 100, 100);
+              doc.text(
+                `Maritime Talent Quest © 2025`,
+                10,
+                doc.internal.pageSize.height - 10
+              );
+              doc.text(
+                `Page ${doc.internal.pages.length - 1}`,
+                148.5,
+                doc.internal.pageSize.height - 10,
+                { align: "center" }
+              );
+              doc.text(
+                "Confidential",
+                doc.internal.pageSize.width - 10,
+                doc.internal.pageSize.height - 10,
+                { align: "right" }
+              );
+            },
           });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          currentY = (doc as any).lastAutoTable.finalY + 8;
+        } else {
+          // No members
+          doc.setTextColor(100, 100, 100);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "italic");
+          doc.text("No members in this group", 20, currentY + 5);
+          currentY += 13;
         }
       });
 
