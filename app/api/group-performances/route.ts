@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase"
+import { Database } from "@/schema/schema"
 
 // GET /api/group-performances
 export async function GET() {
@@ -118,6 +119,130 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       groups: groupsWithMembers
+    })
+  } catch (err) {
+    console.error('[Group Performances API] Unexpected error:', err)
+    return NextResponse.json(
+      {
+        success: false,
+        error: err instanceof Error ? err.message : "Unknown error"
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// PUT /api/group-performances - Update group
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = createServerClient()
+    const body = await request.json()
+
+    const { group_id, group_name, performance_type, description } = body
+
+    if (!group_id) {
+      return NextResponse.json(
+        { success: false, error: 'Group ID is required' },
+        { status: 400 }
+      )
+    }
+
+    console.log('[Group Performances API] Updating group:', group_id)
+
+    // Map performance type back to DB format
+    let dbPerformanceType = performance_type
+    if (performance_type === "Dance") {
+      dbPerformanceType = "Dancing"
+    } else if (performance_type === "Drama") {
+      dbPerformanceType = "Theatrical/Drama"
+    } else if (performance_type === "Musical") {
+      dbPerformanceType = "Musical Instrument"
+    }
+
+    const updateData: Database['public']['Tables']['groups']['Update'] = {}
+    if (group_name !== undefined) updateData.group_name = group_name
+    if (dbPerformanceType !== undefined) updateData.performance_type = dbPerformanceType as Database['public']['Enums']['PerformanceType']
+    if (description !== undefined) updateData.performance_description = description
+
+    const { data, error } = await supabase
+      .from('groups')
+      // @ts-expect-error - Supabase type inference issue with partial updates
+      .update(updateData)
+      .eq('group_id', group_id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('[Group Performances API] Error updating group:', error)
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      )
+    }
+
+    console.log('[Group Performances API] Group updated successfully:', data)
+
+    return NextResponse.json({
+      success: true,
+      group: data
+    })
+  } catch (err) {
+    console.error('[Group Performances API] Unexpected error:', err)
+    return NextResponse.json(
+      {
+        success: false,
+        error: err instanceof Error ? err.message : "Unknown error"
+      },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/group-performances - Delete group
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createServerClient()
+    const { searchParams } = new URL(request.url)
+    const group_id = searchParams.get('group_id')
+
+    if (!group_id) {
+      return NextResponse.json(
+        { success: false, error: 'Group ID is required' },
+        { status: 400 }
+      )
+    }
+
+    console.log('[Group Performances API] Deleting group:', group_id)
+
+    // Delete group members first (if not cascading)
+    const { error: membersError } = await supabase
+      .from('group_members')
+      .delete()
+      .eq('group_id', group_id)
+
+    if (membersError) {
+      console.error('[Group Performances API] Error deleting group members:', membersError)
+    }
+
+    // Delete the group
+    const { error } = await supabase
+      .from('groups')
+      .delete()
+      .eq('group_id', group_id)
+
+    if (error) {
+      console.error('[Group Performances API] Error deleting group:', error)
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      )
+    }
+
+    console.log('[Group Performances API] Group deleted successfully')
+
+    return NextResponse.json({
+      success: true,
+      message: 'Group deleted successfully'
     })
   } catch (err) {
     console.error('[Group Performances API] Unexpected error:', err)

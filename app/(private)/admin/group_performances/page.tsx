@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GroupDataTable } from "@/components/group-performance/group-data-table";
-import { createColumns, GroupData, GroupMemberData, safeParseGroupData } from "@/components/group-performance/group-column-def";
+import { createColumns, GroupData, GroupMemberData } from "@/components/group-performance/group-column-def";
+import { useGroupPerformances } from "@/hooks/use-group-performance";
 import {
   Card,
   CardContent,
@@ -34,18 +35,21 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export default function GroupPerformancesPage() {
-  const [groups, setGroups] = useState<GroupData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  // Use the custom hook
+  const {
+    groups,
+    loading,
+    error,
+    validationErrors,
+    stats,
+    refetch,
+    updateGroup,
+    updateMember,
+    deleteGroup,
+  } = useGroupPerformances();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [performanceTypeFilter, setPerformanceTypeFilter] = useState<"all" | "Musical" | "Dance" | "Drama">("all");
-  const [stats, setStats] = useState({
-    total: 0,
-    musical: 0,
-    dance: 0,
-    drama: 0,
-    totalMembers: 0,
-  });
 
   // Export to CSV
   const exportToCSV = () => {
@@ -300,193 +304,24 @@ export default function GroupPerformancesPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      setLoading(true);
+  // All data fetching is now handled by the hook
 
-      try {
-        // Fetch groups from API
-        const response = await fetch('/api/group-performances');
-        const data = await response.json();
-
-        if (!data.success) {
-          console.error('Error fetching groups:', data.error);
-          setValidationErrors([`API error: ${data.error}`]);
-          return;
-        }
-
-        console.log('[Groups] Fetched groups from API:', data.groups);
-
-        // Use the groups with their members
-        const dataToUse = data.groups;
-
-        // Transform database data to match our expected structure
-        const transformedData: GroupData[] = dataToUse.map((group: Record<string, unknown>) => {
-          // Transform students to group members
-          const students = (group.students as Array<Record<string, unknown>>) || [];
-          const group_members = students.map((student: Record<string, unknown>) => {
-            // IDs are UUIDs (strings) in the database
-            const studentId = String(student.student_id || '');
-
-            let age: number | null = null;
-            if (student.age) {
-              if (typeof student.age === 'number') {
-                age = student.age;
-              } else {
-                const parsed = parseInt(String(student.age), 10);
-                age = isNaN(parsed) ? null : parsed;
-              }
-            }
-
-            console.log(`[Groups] Processing member:`, {
-              student_id: student.student_id,
-              parsed_member_id: studentId,
-              age: student.age,
-              parsed_age: age,
-              full_name: student.full_name
-            });
-
-            return {
-              member_id: studentId,
-              full_name: String(student.full_name || ""),
-              role: String(student.course_year || "Member"),
-              email: student.email ? String(student.email) : null,
-              contact_number: student.contact_number ? String(student.contact_number) : null,
-              age: age,
-              gender: student.gender ? String(student.gender) : null,
-              school: student.school ? String(student.school) : null,
-              course_year: student.course_year ? String(student.course_year) : null,
-              // Include all detailed data from API
-              requirements: student.requirements || null,
-              health: student.health || null,
-              consents: student.consents || null,
-              endorsement: student.endorsement || null,
-              performance: student.performance || null,
-            };
-          });
-
-          // Map performance_type from DB (ensure it matches expected values)
-          let performanceType: "Musical" | "Dance" | "Drama" = "Musical";
-          if (group.performance_type === "Dancing") {
-            performanceType = "Dance";
-          } else if (group.performance_type === "Theatrical/Drama") {
-            performanceType = "Drama";
-          } else if (group.performance_type === "Musical Instrument" || group.performance_type === "Singing") {
-            performanceType = "Musical";
-          }
-
-          // IDs are UUIDs (strings) in the database
-          const groupId = String(group.group_id || '');
-
-          console.log(`[Groups] Transformed group:`, {
-            raw_group_id: group.group_id,
-            parsed_group_id: groupId,
-            group_name: group.group_name,
-            members_count: group_members.length
-          });
-
-          return {
-            group_id: groupId,
-            group_name: String(group.group_name || ""),
-            performance_type: performanceType,
-            performance_date: null, // Not in DB schema
-            venue: null, // Not in DB schema  
-            description: String((group.performance_description || group.performance_title) || ""),
-            group_members,
-          };
-        });
-
-        console.log('[Groups] Transformed data:', transformedData);
-
-        // Validate with Zod and collect errors
-        const validatedData: GroupData[] = [];
-        const errors: string[] = [];
-
-        transformedData.forEach((item: unknown, index: number) => {
-          const result = safeParseGroupData(item);
-          if (result.success) {
-            validatedData.push(result.data);
-          } else {
-            errors.push(
-              `Group ${index + 1}: ${result.error.issues
-                .map((i: { message: string }) => i.message)
-                .join(", ")}`
-            );
-          }
-        });
-
-        if (errors.length > 0) {
-          setValidationErrors(errors);
-        }
-
-        setGroups(validatedData);
-
-        // Calculate statistics
-        const total = validatedData.length;
-        const musical = validatedData.filter(g => g.performance_type === "Musical").length;
-        const dance = validatedData.filter(g => g.performance_type === "Dance").length;
-        const drama = validatedData.filter(g => g.performance_type === "Drama").length;
-        const totalMembers = validatedData.reduce((sum, group) => sum + (group.group_members?.length || 0), 0);
-
-        setStats({ total, musical, dance, drama, totalMembers });
-      } catch (error) {
-        console.error("Error:", error);
-        setValidationErrors([`Unexpected error: ${error instanceof Error ? error.message : String(error)}`]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGroups();
-  }, []);
-
-  // Handle group updates
+  // Handle group updates - now using the hook
   const handleGroupUpdate = async (updatedGroup: GroupData) => {
-    setGroups(prevGroups => {
-      const updatedGroups = prevGroups.map(group =>
-        group.group_id === updatedGroup.group_id ? updatedGroup : group
-      );
-
-      // Recalculate statistics
-      const total = updatedGroups.length;
-      const musical = updatedGroups.filter(g => g.performance_type === "Musical").length;
-      const dance = updatedGroups.filter(g => g.performance_type === "Dance").length;
-      const drama = updatedGroups.filter(g => g.performance_type === "Drama").length;
-      const totalMembers = updatedGroups.reduce((sum, group) => sum + (group.group_members?.length || 0), 0);
-
-      setStats({ total, musical, dance, drama, totalMembers });
-      return updatedGroups;
-    });
+    const result = await updateGroup(updatedGroup);
+    if (!result.success) {
+      console.error('Failed to update group:', result.error);
+      alert(`Failed to update group: ${result.error}`);
+    }
   };
 
-  // Handle member updates - update local state like guest list does
-  const handleMemberUpdate = (updatedMember: GroupMemberData, groupId: string) => {
-    setGroups(prevGroups => {
-      const updatedGroups = prevGroups.map(group => {
-        if (group.group_id === groupId) {
-          // Update the specific member in the group
-          const updatedMembers = group.group_members?.map(member =>
-            member.member_id === updatedMember.member_id ? updatedMember : member
-          ) || [updatedMember];
-
-          return {
-            ...group,
-            group_members: updatedMembers
-          };
-        }
-        return group;
-      });
-
-      // Recalculate statistics
-      const total = updatedGroups.length;
-      const musical = updatedGroups.filter(g => g.performance_type === "Musical").length;
-      const dance = updatedGroups.filter(g => g.performance_type === "Dance").length;
-      const drama = updatedGroups.filter(g => g.performance_type === "Drama").length;
-      const totalMembers = updatedGroups.reduce((sum, group) => sum + (group.group_members?.length || 0), 0);
-
-      setStats({ total, musical, dance, drama, totalMembers });
-      return updatedGroups;
-    });
+  // Handle member updates - now using the hook
+  const handleMemberUpdate = async (updatedMember: GroupMemberData, groupId: string) => {
+    const result = await updateMember(updatedMember, groupId);
+    if (!result.success) {
+      console.error('Failed to update member:', result.error);
+      alert(`Failed to update member: ${result.error}`);
+    }
   };
 
   // Filter groups based on search and performance type
@@ -516,7 +351,7 @@ export default function GroupPerformancesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.location.reload()}
+            onClick={() => refetch()}
             className="w-full sm:w-auto"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
