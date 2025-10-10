@@ -76,23 +76,23 @@ async function generateAndUploadQRCode(
   performanceTitle?: string,
   groupName?: string
 ): Promise<string> {
-  // QR code contains just the ID (single_id or group_id)
-  const payload = id;
+  // QR code contains the student_id for both single and group members
+  const payload = studentId || id;
   const pngBuffer = await QRCode.toBuffer(payload, { type: 'png', width: 512 });
   
   // Organize folder structure based on type
   let filePath: string;
   const sanitizedName = studentName?.replace(/[^a-zA-Z0-9]/g, '_') || id;
-  const fileName = `${id}_${sanitizedName}.png`;
+  const fileName = `${studentId || id}_${sanitizedName}.png`;
   
   if (type === 'contestant_single') {
     // single -> performance title -> name -> file
     const sanitizedPerformanceTitle = performanceTitle?.replace(/[^a-zA-Z0-9]/g, '_') || 'unknown';
     filePath = `single/${sanitizedPerformanceTitle}/${sanitizedName}/${fileName}`;
   } else {
-    // group -> groupname -> members -> name -> file
+    // group -> groupname -> member -> name -> file
     const sanitizedGroupName = groupName?.replace(/[^a-zA-Z0-9]/g, '_') || 'unknown';
-    filePath = `group/${sanitizedGroupName}/members/${sanitizedName}/${fileName}`;
+    filePath = `group/${sanitizedGroupName}/member/${sanitizedName}/${fileName}`;
   }
 
   const { error: uploadError } = await supabase.storage
@@ -355,6 +355,7 @@ export async function POST(req: NextRequest) {
     let qrCodeUrl: string = '';
     let leadEmail: string = '';
     let leadName: string = '';
+    const memberQRCodes: Array<{ studentId: string; qrCodeUrl: string; email: string; name: string }> = [];
 
     if (isGroup) {
       // Create group entry
@@ -406,10 +407,37 @@ export async function POST(req: NextRequest) {
           is_leader: isLeader,
         } as any);
 
+        // Generate individual QR code for this group member based on student_id
+        const memberQRCodeUrl = await generateAndUploadQRCode(
+          supabase,
+          groupId,
+          'contestant_group',
+          studentId,
+          performer.fullName,
+          performanceTitle,
+          groupName
+        );
+
+        // Insert QR code record for this group member
+        await supabase.from('qr_codes').insert({
+          qr_code_url: memberQRCodeUrl,
+          group_id: groupId,
+          single_id: null,
+        } as any);
+
+        // Store member QR code info for email
+        memberQRCodes.push({
+          studentId,
+          qrCodeUrl: memberQRCodeUrl,
+          email: performer.email,
+          name: performer.fullName,
+        });
+
         // Set leader email and name
         if (isLeader) {
           leadEmail = performer.email;
           leadName = performer.fullName;
+          qrCodeUrl = memberQRCodeUrl; // For backward compatibility in response
         }
       }
 
@@ -446,32 +474,6 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-
-      // Generate QR code for group (using leader's student_id)
-      const { data: leaderData } = await supabase
-        .from('group_members')
-        .select('student_id')
-        .eq('group_id', groupId as any)
-        .eq('is_leader', true)
-        .limit(1)
-        .single();
-      
-      const leaderStudentId = leaderData ? (leaderData as any).student_id : undefined;
-      qrCodeUrl = await generateAndUploadQRCode(
-        supabase, 
-        groupId as any, 
-        'contestant_group', 
-        leaderStudentId,
-        performers[0]?.fullName || 'group',
-        performanceTitle,
-        groupName
-      );
-
-      // Insert QR code record for the group
-      await supabase.from('qr_codes').insert({
-        qr_code_url: qrCodeUrl,
-        group_id: groupId,
-      } as any);
 
     } else {
       // Single performer
@@ -553,13 +555,20 @@ export async function POST(req: NextRequest) {
       } as any);
     }
 
-    // Prepare email recipients
-    const emailRecipients: EmailRecipient[] = performers.map(performer => ({
-      email: performer.email,
-      name: performer.fullName,
-      qrCodeUrl,
-      userType: isGroup ? 'contestant_group' : 'contestant_single'
-    }));
+    // Prepare email recipients with individual QR codes
+    const emailRecipients: EmailRecipient[] = isGroup
+      ? memberQRCodes.map(member => ({
+          email: member.email,
+          name: member.name,
+          qrCodeUrl: member.qrCodeUrl,
+          userType: 'contestant_group' as const
+        }))
+      : [{
+          email: performers[0].email,
+          name: performers[0].fullName,
+          qrCodeUrl,
+          userType: 'contestant_single' as const
+        }];
     
     // Send QR code emails
     const emailSent = await sendQRCodeEmail(emailRecipients);

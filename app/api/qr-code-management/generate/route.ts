@@ -31,7 +31,7 @@ async function getUserMetadata(
   supabase: ReturnType<typeof createServerClient>,
   id: string,
   type: string
-): Promise<{ name: string; performanceTitle?: string; groupName?: string }> {
+): Promise<{ name: string; performanceTitle?: string; groupName?: string; studentId?: string }> {
   if (type === "guest") {
     const { data } = await supabase
       .from("guests")
@@ -43,13 +43,14 @@ async function getUserMetadata(
   } else if (type === "contestant_single") {
     const { data } = await supabase
       .from("singles")
-      .select("students!fk_single_student(full_name), performance_title")
+      .select("student_id, students!fk_single_student(full_name), performance_title")
       .eq("single_id", id)
       .single()
-    const singleData = data as { students: { full_name: string }; performance_title: string } | null
+    const singleData = data as { student_id: string; students: { full_name: string }; performance_title: string } | null
     return {
       name: singleData?.students?.full_name || `single_${id}`,
-      performanceTitle: singleData?.performance_title
+      performanceTitle: singleData?.performance_title,
+      studentId: singleData?.student_id
     }
   } else if (type === "contestant_group") {
     const { data } = await supabase
@@ -71,7 +72,6 @@ async function generateGroupMemberQRs(
   supabase: ReturnType<typeof createServerClient>,
   groupId: string,
   numericGroupId: number,
-  pngBuffer: Buffer,
   metadata: { name: string; performanceTitle?: string; groupName?: string }
 ): Promise<string> {
   // Fetch all group members
@@ -80,9 +80,9 @@ async function generateGroupMemberQRs(
     .select(`
       group_member_id,
       student_id,
-      students!fk_group_member_student(full_name)
+      students!group_members_student_id_fkey(full_name)
     `)
-    .eq("group_id", numericGroupId)
+    .eq("group_id", groupId)
   
   const members = membersData as Array<{
     group_member_id: string
@@ -99,6 +99,9 @@ async function generateGroupMemberQRs(
     const filename = `${groupId}_${sanitizedGroupName}.png`
     const filePath = `group/${sanitizedGroupName}/${filename}`
     
+    // Generate QR code with group_id as payload
+    const pngBuffer = await QRCode.toBuffer(groupId, { type: "png", width: 512 })
+    
     await supabase.storage
       .from(BUCKET)
       .upload(filePath, pngBuffer, { contentType: "image/png", upsert: true })
@@ -112,48 +115,45 @@ async function generateGroupMemberQRs(
     : 'unknown'
 
   // Delete old QR code files for this group
-  const { data: existingQR } = await supabase
-    .from("qr_codes")
-    .select("qr_code_url")
-    .eq("group_id", numericGroupId)
-    .single()
-
-  const existingQRData = existingQR as { qr_code_url: string } | null
-  if (existingQRData?.qr_code_url) {
-    try {
-      // List all member folders in the group
-      const { data: memberFolders } = await supabase.storage
-        .from(BUCKET)
-        .list(`group/${sanitizedGroupName}/members`)
-      
-      if (memberFolders && memberFolders.length > 0) {
-        // For each member folder, list and delete all files inside
-        for (const folder of memberFolders) {
-          if (folder.name) {
-            const { data: filesInFolder } = await supabase.storage
-              .from(BUCKET)
-              .list(`group/${sanitizedGroupName}/members/${folder.name}`)
-            
-            if (filesInFolder && filesInFolder.length > 0) {
-              const filesToDelete = filesInFolder.map(f => 
-                `group/${sanitizedGroupName}/members/${folder.name}/${f.name}`
-              )
-              await supabase.storage.from(BUCKET).remove(filesToDelete)
-            }
+  try {
+    // List all member folders in the group
+    const { data: memberFolders } = await supabase.storage
+      .from(BUCKET)
+      .list(`group/${sanitizedGroupName}/member`)
+    
+    if (memberFolders && memberFolders.length > 0) {
+      // For each member folder, list and delete all files inside
+      for (const folder of memberFolders) {
+        if (folder.name) {
+          const { data: filesInFolder } = await supabase.storage
+            .from(BUCKET)
+            .list(`group/${sanitizedGroupName}/member/${folder.name}`)
+          
+          if (filesInFolder && filesInFolder.length > 0) {
+            const filesToDelete = filesInFolder.map(f => 
+              `group/${sanitizedGroupName}/member/${folder.name}/${f.name}`
+            )
+            await supabase.storage.from(BUCKET).remove(filesToDelete)
           }
         }
       }
-    } catch (e) {
-      console.log("Could not delete old QR code files", e)
     }
+  } catch (e) {
+    console.log("Could not delete old QR code files", e)
   }
 
-  // Upload QR code for each member (each in their own subfolder)
+  // Delete existing QR code records for this group
+  await supabase.from("qr_codes").delete().eq("group_id", groupId)
+
+  // Upload QR code for each member (each with their own student_id as payload)
   const uploadPromises = members.map(async (member) => {
     const memberName = member.students?.full_name || `member_${member.student_id}`
     const sanitizedMemberName = sanitizeFilename(memberName)
-    const filename = `${groupId}_${sanitizedMemberName}.png`
-    const filePath = `group/${sanitizedGroupName}/members/${sanitizedMemberName}/${filename}`
+    const filename = `${member.student_id}_${sanitizedMemberName}.png`
+    const filePath = `group/${sanitizedGroupName}/member/${sanitizedMemberName}/${filename}`
+
+    // Generate QR code with student_id as payload
+    const pngBuffer = await QRCode.toBuffer(member.student_id, { type: "png", width: 512 })
 
     const { error: upErr } = await supabase.storage
       .from(BUCKET)
@@ -164,40 +164,25 @@ async function generateGroupMemberQRs(
       throw upErr
     }
 
-    return filePath
+    // Get public URL for this member's QR code
+    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath)
+    
+    // Insert QR code record for this member
+    const insert = {
+      qr_code_url: publicUrlData.publicUrl,
+      group_id: groupId
+    }
+    
+    await supabase.from("qr_codes").insert([insert as unknown as never])
+    
+    return publicUrlData.publicUrl
   })
 
-  await Promise.all(uploadPromises)
+  const urls = await Promise.all(uploadPromises)
 
-  // Return the public URL of the first member's QR code (they're all the same content)
-  const firstMemberName = members[0].students?.full_name || `member_${members[0].student_id}`
-  const sanitizedFirstMemberName = sanitizeFilename(firstMemberName)
-  const firstFilename = `${groupId}_${sanitizedFirstMemberName}.png`
-  const firstFilePath = `group/${sanitizedGroupName}/members/${sanitizedFirstMemberName}/${firstFilename}`
-  
-  const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(firstFilePath)
-  const publicUrl = publicUrlData.publicUrl
-
-  // Update the qr_codes table with the group's QR code URL
-  const insert = {
-    qr_code_url: publicUrl,
-    group_id: numericGroupId
-  }
-
-  console.log(`[QR Generate] Inserting QR code for group ID ${groupId}:`, insert)
-
-  // Delete any existing QR code for this group
-  await supabase.from("qr_codes").delete().eq("group_id", numericGroupId)
-
-  // Insert the new one
-  const insertResult = await supabase.from("qr_codes").insert([insert as unknown as never])
-  if (insertResult.error) {
-    console.error(`[QR Generate] Database error for group ID ${groupId}:`, insertResult.error)
-    throw insertResult.error
-  }
-  console.log(`[QR Generate] Successfully saved QR code for group ID ${groupId}`)
-
-  return publicUrl
+  // Return the first member's QR code URL for backward compatibility
+  console.log(`[QR Generate] Successfully saved ${urls.length} QR codes for group ID ${groupId}`)
+  return urls[0]
 }
 
 async function generateAndUploadQR(
@@ -210,22 +195,24 @@ async function generateAndUploadQR(
   // Convert string ID to number for database queries
   const numericId = parseInt(id, 10)
 
-  // QR code contains just the ID (single_id, group_id, or guest_id)
-  const payload = id;
-  const pngBuffer = await QRCode.toBuffer(payload, { type: "png", width: 512 })
-
-  // Get user metadata (name, performance title, group name)
+  // Get user metadata (name, performance title, group name, student_id)
   const metadata = name 
-    ? { name, performanceTitle: undefined, groupName: undefined }
+    ? { name, performanceTitle: undefined, groupName: undefined, studentId: undefined }
     : await getUserMetadata(supabase, id, type)
   
   // For group contestants, generate separate QR codes for each member
   if (type === "contestant_group") {
-    return await generateGroupMemberQRs(supabase, id, numericId, pngBuffer, metadata)
+    return await generateGroupMemberQRs(supabase, id, numericId, metadata)
   }
+
+  // QR code contains the student_id for singles, or the id for guests
+  const payload = type === "contestant_single" && metadata.studentId ? metadata.studentId : id;
+  const pngBuffer = await QRCode.toBuffer(payload, { type: "png", width: 512 })
   
   const sanitizedName = sanitizeFilename(metadata.name)
-  const filename = `${id}_${sanitizedName}.png`
+  const filename = type === "contestant_single" && metadata.studentId 
+    ? `${metadata.studentId}_${sanitizedName}.png`
+    : `${id}_${sanitizedName}.png`
   
   // Organize folder structure based on type
   let filePath: string
@@ -242,15 +229,15 @@ async function generateAndUploadQR(
     const sanitizedGroupName = metadata.groupName
       ? sanitizeFilename(metadata.groupName)
       : 'unknown'
-    filePath = `group/${sanitizedGroupName}/members/${sanitizedName}/${filename}`
+    filePath = `group/${sanitizedGroupName}/member/${sanitizedName}/${filename}`
   }
 
   // Check if there's an existing QR code in the database and delete old file
-  const queryField = type === "guest" ? "guest_id" : type === "contestant_single" ? "single_id" : "group_id"
+  const queryField = type === "guest" ? "guest_id" : "single_id"
   const { data: existingQR } = await supabase
     .from("qr_codes")
     .select("qr_code_url")
-    .eq(queryField, numericId)
+    .eq(queryField, type === "guest" ? id : id)
     .single()
 
   const existingQRData = existingQR as { qr_code_url: string } | null
@@ -292,16 +279,16 @@ async function generateAndUploadQR(
   const insert: QRCodeInsert = {
     qr_code_url: publicUrl
   }
-  // Use the numericId we already converted at the top
-  if (type === "guest") insert.guest_id = numericId
-  if (type === "contestant_single") insert.single_id = numericId
+  // Use the id directly (Supabase will handle UUID conversion)
+  if (type === "guest") insert.guest_id = parseInt(id, 10)
+  if (type === "contestant_single") insert.single_id = parseInt(id, 10)
   // Note: contestant_group is handled separately in generateGroupMemberQRs
 
   console.log(`[QR Generate] Inserting QR code for ${type} ID ${id}:`, insert)
 
-  // First try to delete any existing QR code for this user (use numeric ID)
+  // First try to delete any existing QR code for this user
   const deleteField = type === "guest" ? "guest_id" : "single_id"
-  await supabase.from("qr_codes").delete().eq(deleteField, numericId)
+  await supabase.from("qr_codes").delete().eq(deleteField, id)
 
   // Then insert the new one
   const insertResult = await supabase.from("qr_codes").insert([insert as unknown as never])
