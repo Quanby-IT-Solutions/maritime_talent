@@ -162,7 +162,7 @@ export async function PUT(request: NextRequest) {
     const updateData: Database['public']['Tables']['groups']['Update'] = {}
     if (group_name !== undefined) updateData.group_name = group_name
     if (dbPerformanceType !== undefined) updateData.performance_type = dbPerformanceType as Database['public']['Enums']['PerformanceType']
-    if (description !== undefined) updateData.performance_description = description
+    if (description !== undefined) updateData.performance_title = description
 
     const { data, error } = await supabase
       .from('groups')

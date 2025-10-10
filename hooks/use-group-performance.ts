@@ -112,7 +112,7 @@ export function useGroupPerformances(): UseGroupPerformancesReturn {
         performance_type: performanceType,
         performance_date: null,
         venue: null,
-        description: String((group.performance_description || group.performance_title) || ""),
+        description: String(group.performance_title || ""),
         group_members,
       };
     });
