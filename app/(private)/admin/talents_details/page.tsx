@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { DataTable } from "@/components/talent-datatables/talent-data-table";
+import { useState, useMemo, useEffect } from "react";
 import {
-  createColumns,
-  TalentData,
-  safeParseTalentData,
-} from "@/components/talent-datatables/talent-column-def";
+  useTalentDetails,
+  useDeletePerformance,
+} from "@/hooks/use-talent-details-api";
+import { DataTable } from "@/components/talent-datatables/talent-data-table";
+import { createColumns } from "@/components/talent-datatables/talent-column-def";
 import {
   Card,
   CardContent,
@@ -16,272 +16,135 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
-  AlertTriangle,
   Users,
   CheckCircle,
   Clock,
   RefreshCw,
   Download,
   GraduationCap,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import type { PerformanceWithStudent } from "@/app/api/talent-details/types";
 
 export default function TalentsDetailsPage() {
-  const [talents, setTalents] = useState<TalentData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "complete" | "partial" | "incomplete"
-  >("all");
-  const [stats, setStats] = useState({
-    total: 0,
-    complete: 0,
-    partial: 0,
-    incomplete: 0,
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [performanceTypeFilter, setPerformanceTypeFilter] =
+    useState<string>("all");
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Use TanStack Query to fetch talent details
+  const {
+    data: talentsData,
+    isLoading,
+    error,
+    refetch,
+    isRefetching,
+  } = useTalentDetails({
+    page: 1,
+    limit: 100, // Get more data for server-side filtering
+    search: debouncedSearch || undefined,
+    performance_type:
+      performanceTypeFilter !== "all"
+        ? (performanceTypeFilter as
+            | "Singing"
+            | "Dancing"
+            | "Musical Instrument"
+            | "Spoken Word/Poetry"
+            | "Theatrical/Drama"
+            | "Other")
+        : undefined,
+    sort: "created_at",
+    order: "desc",
   });
 
-  useEffect(() => {
-    const fetchTalents = async () => {
-      setLoading(true);
+  // Delete performance mutation
+  const deletePerformance = useDeletePerformance();
 
-      try {
-        // Mock data with comprehensive registration information
-        const mockData = [
-          {
-            student_id: 1,
-            user_id: 1,
-            full_name: "Juan Carlos Santos",
-            age: 20,
-            gender: "Male",
-            school: "Maritime Academy of Asia and the Pacific",
-            course_year: "3rd Year Marine Engineering",
-            contact_number: "+63 912 345 6789",
-            email: "juan.santos@email.com",
-            created_at: "2024-01-15T08:30:00Z",
-            performances: [
-              {
-                performance_id: 1,
-                student_id: 1,
-                performance_type: "Singing" as const,
-                title: "Sea Shanty Performance",
-                duration: "5 minutes",
-                num_performers: 1,
-                group_members: null,
-                created_at: "2024-01-15T08:30:00Z",
-              },
-            ],
-            requirements: {
-              requirement_id: 1,
-              student_id: 1,
-              certification_url: "https://example.com/cert1.pdf",
-              school_id_url: "https://example.com/id1.pdf",
-              uploaded_at: "2024-01-15T08:30:00Z",
-            },
-            health_fitness: {
-              declaration_id: 1,
-              student_id: 1,
-              is_physically_fit: true,
-              student_signature_url: "https://example.com/sig1.png",
-              parent_guardian_signature_url:
-                "https://example.com/parent_sig1.png",
-              declaration_date: "2024-01-15T08:30:00Z",
-            },
-            consents: {
-              consent_id: 1,
-              student_id: 1,
-              info_correct: true,
-              agree_to_rules: true,
-              consent_to_publicity: true,
-              student_signature_url: "https://example.com/consent_sig1.png",
-              parent_guardian_signature_url:
-                "https://example.com/parent_consent1.png",
-              consent_date: "2024-01-15T08:30:00Z",
-            },
-            endorsements: {
-              endorsement_id: 1,
-              student_id: 1,
-              official_name: "Dr. Maria Rodriguez",
-              position: "Dean of Marine Engineering",
-            },
-          },
-          {
-            student_id: 2,
-            user_id: 2,
-            full_name: "Maria Isabella Cruz",
-            age: 19,
-            gender: "Female",
-            school: "Philippine Merchant Marine Academy",
-            course_year: "2nd Year Marine Transportation",
-            contact_number: "+63 917 654 3210",
-            email: "maria.cruz@email.com",
-            created_at: "2024-01-16T10:15:00Z",
-            performances: [
-              {
-                performance_id: 2,
-                student_id: 2,
-                performance_type: "Dancing" as const,
-                title: "Traditional Filipino Dance",
-                duration: "8 minutes",
-                num_performers: 4,
-                group_members: "Ana, Ben, Carlos",
-                created_at: "2024-01-16T10:15:00Z",
-              },
-            ],
-            requirements: {
-              requirement_id: 2,
-              student_id: 2,
-              certification_url: "https://example.com/cert2.pdf",
-              school_id_url: null,
-              uploaded_at: "2024-01-16T10:15:00Z",
-            },
-          },
-          {
-            student_id: 3,
-            user_id: 3,
-            full_name: "Robert James Wilson",
-            age: 22,
-            gender: "Male",
-            school: "John B. Lacson Foundation Maritime University",
-            course_year: "4th Year Marine Engineering",
-            contact_number: "+63 909 876 5432",
-            email: "robert.wilson@email.com",
-            created_at: "2024-01-17T14:45:00Z",
-            performances: [],
-          },
-        ];
+  // Calculate statistics from fetched data
+  const stats = useMemo(() => {
+    if (!talentsData?.data) {
+      return { total: 0, singing: 0, dancing: 0, other: 0 };
+    }
 
-        // Validate with Zod and collect errors
-        const validatedData: TalentData[] = [];
-        const errors: string[] = [];
+    const performances = talentsData.data;
+    const total = performances.length;
 
-        mockData.forEach((item, index) => {
-          const result = safeParseTalentData(item);
-          if (result.success) {
-            validatedData.push(result.data);
-          } else {
-            errors.push(
-              `Student ${index + 1}: ${result.error.issues
-                .map((i) => i.message)
-                .join(", ")}`
-            );
-          }
-        });
+    const singing = performances.filter(
+      (p: PerformanceWithStudent) => p.performance_type === "Singing"
+    ).length;
+    const dancing = performances.filter(
+      (p: PerformanceWithStudent) => p.performance_type === "Dancing"
+    ).length;
+    const other = performances.filter(
+      (p: PerformanceWithStudent) =>
+        p.performance_type !== "Singing" && p.performance_type !== "Dancing"
+    ).length;
 
-        if (errors.length > 0) {
-          setValidationErrors(errors);
-        }
+    return { total, singing, dancing, other };
+  }, [talentsData]);
 
-        setTalents(validatedData);
-
-        // Calculate statistics
-        const total = validatedData.length;
-        let complete = 0,
-          partial = 0,
-          incomplete = 0;
-
-        validatedData.forEach((talent) => {
-          const sections = [
-            !!talent.requirements,
-            !!talent.health_fitness,
-            !!talent.consents,
-            !!talent.endorsements,
-          ];
-          const completedCount = sections.filter(Boolean).length;
-
-          if (completedCount === 4) complete++;
-          else if (completedCount > 1) partial++;
-          else incomplete++;
-        });
-
-        setStats({ total, complete, partial, incomplete });
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTalents();
-  }, []);
-
-  // Handle talent updates
-  const handleTalentUpdate = (updatedTalent: TalentData) => {
-    setTalents(prevTalents => {
-      const updatedTalents = prevTalents.map(talent =>
-        talent.student_id === updatedTalent.student_id ? updatedTalent : talent
-      );
-
-      // Recalculate statistics
-      const total = updatedTalents.length;
-      let complete = 0, partial = 0, incomplete = 0;
-
-      updatedTalents.forEach((talent) => {
-        const sections = [
-          !!talent.requirements,
-          !!talent.health_fitness,
-          !!talent.consents,
-          !!talent.endorsements,
-        ];
-        const completedCount = sections.filter(Boolean).length;
-
-        if (completedCount === 4) complete++;
-        else if (completedCount > 1) partial++;
-        else incomplete++;
-      });
-
-      setStats({ total, complete, partial, incomplete });
-      return updatedTalents;
-    });
+  // Handle refresh
+  const handleRefresh = () => {
+    refetch();
   };
 
-  // Filter talents based on search and status
-  const filteredTalents = talents.filter((talent) => {
-    const matchesSearch =
-      talent.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      talent.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      talent.school?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Handle edit performance
+  const handleEditPerformance = (performance: PerformanceWithStudent) => {
+    toast.info(`Edit functionality for ${performance.title} - Coming soon!`);
+  };
 
-    const matchesStatus =
-      statusFilter === "all" ||
-      (() => {
-        const sections = [
-          !!talent.requirements,
-          !!talent.health_fitness,
-          !!talent.consents,
-          !!talent.endorsements,
-        ];
-        const completedCount = sections.filter(Boolean).length;
-
-        if (statusFilter === "complete") return completedCount === 4;
-        if (statusFilter === "partial")
-          return completedCount > 1 && completedCount < 4;
-        if (statusFilter === "incomplete") return completedCount <= 1;
-
-        return true;
-      })();
-
-    return matchesSearch && matchesStatus;
-  });
+  // Handle delete performance
+  const handleDeletePerformance = (performanceId: string) => {
+    if (confirm("Are you sure you want to delete this performance?")) {
+      deletePerformance.mutate(performanceId, {
+        onSuccess: () => {
+          toast.success("Performance deleted successfully");
+        },
+        onError: (error) => {
+          toast.error(`Failed to delete performance: ${error.message}`);
+        },
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6">
       {/* Page Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Talent Details</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            Talent Details
+          </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Maritime Talent Quest - Student registrations with Zod validation
+            Maritime Talent Quest - Performance registrations with TanStack
+            Query
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.location.reload()}
+            onClick={handleRefresh}
+            disabled={isRefetching}
             className="w-full sm:w-auto"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            {isRefetching ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
             Refresh
           </Button>
           <Button variant="outline" size="sm" className="w-full sm:w-auto">
@@ -291,18 +154,14 @@ export default function TalentsDetailsPage() {
         </div>
       </div>
 
-      {/* Validation Errors Alert */}
-      {validationErrors.length > 0 && (
+      {/* Error Alert */}
+      {error && (
         <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+          <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-1">
-              <p className="font-semibold">Zod Validation Errors:</p>
-              {validationErrors.map((error, index) => (
-                <p key={index} className="text-sm">
-                  • {error}
-                </p>
-              ))}
+              <p className="font-semibold">Error loading data:</p>
+              <p className="text-sm">{error.message}</p>
             </div>
           </AlertDescription>
         </Alert>
@@ -312,89 +171,105 @@ export default function TalentsDetailsPage() {
       <div className="grid gap-3 grid-cols-2 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Talents</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Performances
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">
-              Validated registrations
+              Registered performances
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Complete</CardTitle>
+            <CardTitle className="text-sm font-medium">Singing</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {stats.complete}
+              {stats.singing}
             </div>
             <p className="text-xs text-muted-foreground">
-              All sections completed
+              Singing performances
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Partial</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+            <CardTitle className="text-sm font-medium">Dancing</CardTitle>
+            <Clock className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {stats.partial}
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.dancing}
             </div>
-            <p className="text-xs text-muted-foreground">Partially completed</p>
+            <p className="text-xs text-muted-foreground">
+              Dancing performances
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Incomplete</CardTitle>
-            <GraduationCap className="h-4 w-4 text-red-600" />
+            <CardTitle className="text-sm font-medium">Others</CardTitle>
+            <GraduationCap className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {stats.incomplete}
+            <div className="text-2xl font-bold text-purple-600">
+              {stats.other}
             </div>
-            <p className="text-xs text-muted-foreground">Need attention</p>
+            <p className="text-xs text-muted-foreground">Other performances</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Talent Registrations with Search, Filter, and Pagination */}
+      {/* Data Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Talent Registrations</CardTitle>
+          <CardTitle>Performance Registrations</CardTitle>
           <CardDescription>
-            {filteredTalents.length} of {stats.total} talents shown (validated
-            with Zod)
+            {talentsData
+              ? `${talentsData.data.length} performances loaded`
+              : "Loading performances..."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <div className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                <span>Loading and validating talents...</span>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading performances...</span>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center space-y-2">
+                <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
+                <p className="text-sm text-muted-foreground">
+                  Failed to load performances
+                </p>
+                <Button onClick={handleRefresh} variant="outline" size="sm">
+                  Try Again
+                </Button>
               </div>
             </div>
           ) : (
             <DataTable
-              columns={createColumns(handleTalentUpdate)}
-              data={filteredTalents}
-              searchPlaceholder="Search by name, email, or school..."
+              columns={createColumns(
+                handleEditPerformance,
+                handleDeletePerformance
+              )}
+              data={talentsData?.data || []}
+              searchPlaceholder="Search by student name, school, or performance title..."
               searchValue={searchQuery}
               onSearchChange={setSearchQuery}
-              statusFilter={statusFilter}
-              onStatusFilterChange={(value) =>
-                setStatusFilter(
-                  value as "all" | "complete" | "partial" | "incomplete"
-                )
-              }
+              statusFilter={performanceTypeFilter}
+              onStatusFilterChange={setPerformanceTypeFilter}
               showFilters={true}
             />
           )}
