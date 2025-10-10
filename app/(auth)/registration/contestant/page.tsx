@@ -25,6 +25,7 @@ import { EmergencySafety } from "@/components/registration/student/EmergencySafe
 import { AdditionalInformation } from "@/components/registration/student/AdditionalInformation"
 import { PerformerSection } from "@/components/registration/student/PerformerSection"
 import { DraftManager } from "@/components/registration/student/DraftManager"
+import { SchoolEndorsement } from "@/components/registration/student/SchoolEndorsement"
 
 // Schema for individual performer
 const performerSchema = z.object({
@@ -55,10 +56,6 @@ const performerSchema = z.object({
   studentSignature: z.string().min(1, "Student signature is required"),
   signatureDate: z.string().min(1, "Signature date is required"),
   parentGuardianSignature: z.string().optional(),
-  
-  // School Endorsement (individual per performer)
-  schoolOfficialName: z.string().optional(),
-  schoolOfficialPosition: z.string().optional(),
 })
 
 const formSchema = z.object({
@@ -70,6 +67,10 @@ const formSchema = z.object({
     .min(1, "Performance duration is required")
     .regex(/^[1-5]$/, "Duration must be between 1-5 minutes"),
   numberOfPerformers: z.string().min(1, "Number of performers is required"),
+  
+  // School Endorsement (top-level, applies to all performers)
+  schoolOfficialName: z.string().optional(),
+  schoolOfficialPosition: z.string().optional(),
   
   // Performers (up to 10)
   performers: z.array(performerSchema).min(1, "At least one performer is required").max(10, "Maximum 10 performers allowed"),
@@ -94,6 +95,8 @@ export default function RegistrationPage() {
       performanceTitle: "",
       performanceDuration: "",
       numberOfPerformers: "",
+      schoolOfficialName: "",
+      schoolOfficialPosition: "",
       performers: [],
     },
     mode: 'onChange'
@@ -130,8 +133,6 @@ export default function RegistrationPage() {
           studentSignature: "",
           signatureDate: "",
           parentGuardianSignature: "",
-          schoolOfficialName: "",
-          schoolOfficialPosition: "",
         }
       })
       
@@ -310,6 +311,11 @@ export default function RegistrationPage() {
                 />
               </div>
             ))}
+            
+            {/* School Endorsement Section - shown once after all performers */}
+            <div className="mt-6">
+              <SchoolEndorsement form={form} />
+            </div>
           </div>
         )}
 

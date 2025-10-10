@@ -320,8 +320,6 @@ export async function POST(req: NextRequest) {
     const schoolOfficialName = formData.get('schoolOfficialName') as string || null;
     const schoolOfficialPosition = formData.get('schoolOfficialPosition') as string || null;
     
-    console.log('School Endorsement Data:', { schoolOfficialName, schoolOfficialPosition });
-    
     // Determine if it's a group or single performance
     const isGroup = numberOfPerformers >= 2;
     
@@ -469,10 +467,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Insert school endorsement if provided
-      console.log('Attempting to insert group endorsement:', { schoolOfficialName, schoolOfficialPosition });
       if (schoolOfficialName && schoolOfficialPosition) {
         // Get the leader's student_id from group_members
-        const { data: groupMemberData, error: leaderError } = await supabase
+        const { data: groupMemberData } = await supabase
           .from('group_members')
           .select('student_id')
           .eq('group_id', groupId as any)
@@ -480,26 +477,17 @@ export async function POST(req: NextRequest) {
           .limit(1)
           .single();
 
-        console.log('Leader data:', groupMemberData, 'Error:', leaderError);
-
         if (groupMemberData) {
-          const endorsementData = {
+          const { error: endorsementError } = await supabase.from('endorsements').insert({
             student_id: (groupMemberData as any).student_id,
             official_name: schoolOfficialName,
             position: schoolOfficialPosition,
-          };
-          console.log('Inserting group endorsement:', endorsementData);
-          
-          const { error: endorsementError } = await supabase.from('endorsements').insert(endorsementData as any);
+          } as any);
           
           if (endorsementError) {
             console.error('Failed to insert group endorsement:', endorsementError);
-          } else {
-            console.log('Group endorsement inserted successfully');
           }
         }
-      } else {
-        console.log('Skipping group endorsement - missing data');
       }
 
     } else {
@@ -553,24 +541,16 @@ export async function POST(req: NextRequest) {
       leadName = performer.fullName;
 
       // Insert school endorsement if provided
-      console.log('Attempting to insert single endorsement:', { schoolOfficialName, schoolOfficialPosition, studentId });
       if (schoolOfficialName && schoolOfficialPosition) {
-        const endorsementData = {
+        const { error: endorsementError } = await supabase.from('endorsements').insert({
           student_id: studentId,
           official_name: schoolOfficialName,
           position: schoolOfficialPosition,
-        };
-        console.log('Inserting single endorsement:', endorsementData);
-        
-        const { error: endorsementError } = await supabase.from('endorsements').insert(endorsementData as any);
+        } as any);
         
         if (endorsementError) {
           console.error('Failed to insert single endorsement:', endorsementError);
-        } else {
-          console.log('Single endorsement inserted successfully');
         }
-      } else {
-        console.log('Skipping single endorsement - missing data');
       }
 
       // Generate QR code for single
