@@ -637,6 +637,7 @@ export async function POST(req: NextRequest) {
         singleId,
         qrCodeUrl,
         emailSent,
+        members: isGroup ? memberQrCodes : [],
         emailRecipients: emailRecipients.map(recipient => ({
           email: recipient.email,
           name: recipient.name

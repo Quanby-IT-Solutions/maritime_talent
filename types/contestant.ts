@@ -38,6 +38,7 @@ export interface RegistrationResult {
   isGroup: boolean;
   emailSent: boolean;
   leadName: string;
+  members?: { name: string; email: string; qrCodeUrl: string }[];
 }
 
 export interface PerformerFormData {
