@@ -35,7 +35,7 @@ async function fetchImageAsBase64(imageUrl: string): Promise<string> {
     if (!response.ok) {
       throw new Error(`Failed to fetch image: ${response.statusText}`);
     }
-    
+
     const arrayBuffer = await response.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString('base64');
     return base64;
@@ -184,7 +184,7 @@ async function sendQRCodeEmail({
   to,
   subject,
   html,
-  from,
+
   qrCodeAttachment,
   userName,
   userType
@@ -212,10 +212,10 @@ async function sendQRCodeEmail({
     const msg: any = {
       to,
       from: {
-        email: from || SENDGRID_FROM_EMAIL,
+        email: process.env.SENDGRID_FROM_EMAIL,
         name: 'MARITIME TALENT QUEST 2025 Team'
       },
-      replyTo: SENDGRID_FROM_EMAIL,
+      replyTo: process.env.SENDGRID_FROM_EMAIL,
       subject,
       content: [
         {
@@ -375,7 +375,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`Bulk QR code email send completed:`, results);
-    
+
     return NextResponse.json({
       success: true,
       message: `Successfully sent ${results.successfulSends} out of ${results.totalSent} emails`,
@@ -384,9 +384,9 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error in send-qr-emails API route:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       },
       { status: 500 }
     );
@@ -395,8 +395,8 @@ export async function POST(req: NextRequest) {
 
 // GET handler (optional - for testing)
 export async function GET() {
-  return NextResponse.json({ 
-    success: true, 
-    message: 'MARITIME TALENT QUEST 2025 QR Code Email API Endpoint is running' 
+  return NextResponse.json({
+    success: true,
+    message: 'MARITIME TALENT QUEST 2025 QR Code Email API Endpoint is running'
   });
 }

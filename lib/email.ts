@@ -107,7 +107,7 @@ export async function sendEmail({ to, subject, html, from, userId }: EmailData):
           value: plainText
         },
         {
-          type: 'text/html', 
+          type: 'text/html',
           value: html
         }
       ],
@@ -355,7 +355,7 @@ export async function sendRegistrationEmail(data: RegistrationEmailData): Promis
     to: data.userEmail,
     subject,
     html: emailHTML,
-    from: 'buensalidakarlnestor@gmail.com', // Using your email as sender
+    from: 'noreply@manilaegc.com', // Using your email as sender
     userId: data.userId // Pass userId for QR code generation
   });
 }
@@ -413,7 +413,7 @@ export async function sendQRCodeEmail(data: QRCodeEmailData): Promise<boolean> {
       to,
       subject,
       html,
-      from: from || 'noreply@maritimetalentquest.com',
+      from: from || 'noreply@manilaegc.com',
       userId // Pass userId to generate QR code
     });
   } catch (error) {
