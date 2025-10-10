@@ -5,27 +5,48 @@
 export type Database = {
   public: {
     Tables: {
-      attendance_logs: {
+      attendance: {
         Row: {
-          attendance_id: string
-          qr_id: string
-          scan_time: string | null
-          scanned_by: string | null
+          id: string
+          user_id: string | null
+          scantime: string | null
+          scandate: string | null
+          usertype: string | null
+          firstname: string | null
+          lastname: string | null
+          email: string | null
+          company: string | null
+          jobtitle: string | null
           status: string | null
+          created_at: string | null
         }
         Insert: {
-          attendance_id?: string
-          qr_id: string
-          scan_time?: string | null
-          scanned_by?: string | null
+          id?: string
+          user_id?: string | null
+          scantime?: string | null
+          scandate?: string | null
+          usertype?: string | null
+          firstname?: string | null
+          lastname?: string | null
+          email?: string | null
+          company?: string | null
+          jobtitle?: string | null
           status?: string | null
+          created_at?: string | null
         }
         Update: {
-          attendance_id?: string
-          qr_id?: string
-          scan_time?: string | null
-          scanned_by?: string | null
+          id?: string
+          user_id?: string | null
+          scantime?: string | null
+          scandate?: string | null
+          usertype?: string | null
+          firstname?: string | null
+          lastname?: string | null
+          email?: string | null
+          company?: string | null
+          jobtitle?: string | null
           status?: string | null
+          created_at?: string | null
         }
       }
       consents: {
@@ -108,7 +129,6 @@ export type Database = {
           group_id: string
           group_name: string
           performance_title: string | null
-          performance_description: string | null
           performance_type: PerformanceType | null
           created_at: string | null
         }
@@ -116,7 +136,6 @@ export type Database = {
           group_id?: string
           group_name: string
           performance_title?: string | null
-          performance_description?: string | null
           performance_type?: PerformanceType | null
           created_at?: string | null
         }
@@ -124,7 +143,6 @@ export type Database = {
           group_id?: string
           group_name?: string
           performance_title?: string | null
-          performance_description?: string | null
           performance_type?: PerformanceType | null
           created_at?: string | null
         }
@@ -276,7 +294,6 @@ export type Database = {
           single_id: string
           student_id: string | null
           performance_title: string | null
-          performance_description: string | null
           performance_type: PerformanceType | null
           created_at: string | null
         }
@@ -284,7 +301,6 @@ export type Database = {
           single_id?: string
           student_id?: string | null
           performance_title?: string | null
-          performance_description?: string | null
           performance_type?: PerformanceType | null
           created_at?: string | null
         }
@@ -292,7 +308,6 @@ export type Database = {
           single_id?: string
           student_id?: string | null
           performance_title?: string | null
-          performance_description?: string | null
           performance_type?: PerformanceType | null
           created_at?: string | null
         }
@@ -311,7 +326,6 @@ export type Database = {
           group_id: string | null
           qr_id: string | null
           created_at: string | null
-          is_registered: boolean | null
         }
         Insert: {
           student_id?: string
@@ -326,7 +340,6 @@ export type Database = {
           group_id?: string | null
           qr_id?: string | null
           created_at?: string | null
-          is_registered?: boolean | null
         }
         Update: {
           student_id?: string
@@ -341,13 +354,13 @@ export type Database = {
           group_id?: string | null
           qr_id?: string | null
           created_at?: string | null
-          is_registered?: boolean | null
         }
       }
       users: {
         Row: {
           user_id: string
           email: string
+          password_hash: string
           full_name: string
           role: UserRole
           created_at: string | null

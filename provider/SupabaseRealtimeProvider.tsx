@@ -12,7 +12,7 @@ type GuestData = Database['public']['Tables']['guests']['Row'];
 type GroupData = Database['public']['Tables']['groups']['Row'];
 type SingleData = Database['public']['Tables']['singles']['Row'];
 type QRCodeData = Database['public']['Tables']['qr_codes']['Row'];
-type AttendanceLogData = Database['public']['Tables']['attendance_logs']['Row'];
+type AttendanceData = Database['public']['Tables']['attendance']['Row'];
 
 // Realtime context type
 interface RealtimeContextType {
@@ -26,7 +26,7 @@ interface RealtimeContextType {
   groups: GroupData[];
   singles: SingleData[];
   qrCodes: QRCodeData[];
-  attendanceLogs: AttendanceLogData[];
+  attendanceLogs: AttendanceData[];
   
   // Loading states
   loading: {
@@ -71,7 +71,7 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [singles, setSingles] = useState<SingleData[]>([]);
   const [qrCodes, setQRCodes] = useState<QRCodeData[]>([]);
-  const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLogData[]>([]);
+  const [attendanceLogs, setAttendanceLogs] = useState<AttendanceData[]>([]);
   
   // Loading states
   const [loading, setLoading] = useState({
@@ -181,9 +181,9 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
     try {
       setLoading(prev => ({ ...prev, attendanceLogs: true }));
       const { data, error } = await supabase
-        .from('attendance_logs')
+        .from('attendance')
         .select('*')
-        .order('attendance_id', { ascending: false });
+        .order('id', { ascending: false });
       
       if (error) throw error;
       setAttendanceLogs(data || []);
@@ -315,7 +315,7 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
     }
   }, []);
 
-  const handleAttendanceLogChange = useCallback((payload: RealtimePostgresChangesPayload<AttendanceLogData>) => {
+  const handleAttendanceLogChange = useCallback((payload: RealtimePostgresChangesPayload<AttendanceData>) => {
     console.log('Attendance log change:', payload);
     
     switch (payload.eventType) {
@@ -325,13 +325,13 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
         break;
       case 'UPDATE':
         setAttendanceLogs(prev => 
-          prev.map(item => item.attendance_id === payload.new.attendance_id ? payload.new : item)
+          prev.map(item => item.id === payload.new.id ? payload.new : item)
         );
         toast.info('Attendance log updated');
         break;
       case 'DELETE':
         setAttendanceLogs(prev => 
-          prev.filter(item => item.attendance_id !== payload.old.attendance_id)
+          prev.filter(item => item.id !== payload.old.id)
         );
         toast.info('Attendance log removed');
         break;
@@ -495,20 +495,20 @@ export function SupabaseRealtimeProvider({ children }: SupabaseRealtimeProviderP
       });
 
     const attendanceLogChannel = supabase
-      .channel('attendance-logs-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, handleAttendanceLogChange)
+      .channel('attendance-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, handleAttendanceLogChange)
       .subscribe((status) => {
-        console.log('Attendance Logs channel status:', status);
+        console.log('Attendance channel status:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Attendance Logs realtime subscribed');
-          subscribedChannels.add('attendance_logs');
+          console.log('✅ Attendance realtime subscribed');
+          subscribedChannels.add('attendance');
           checkAllSubscribed();
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Attendance Logs channel error');
+          console.error('❌ Attendance channel error');
         } else if (status === 'TIMED_OUT') {
-          console.error('⏱️ Attendance Logs channel timed out');
+          console.error('⏱️ Attendance channel timed out');
         } else if (status === 'CLOSED') {
-          console.warn('🔌 Attendance Logs channel closed');
+          console.warn('🔌 Attendance channel closed');
         }
       });
 

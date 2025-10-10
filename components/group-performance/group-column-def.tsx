@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUpDown, Eye, Edit, MoreHorizontal, Save, X, Users } from "lucide-react";
+import { ArrowUpDown, Eye, Edit, MoreHorizontal, Save, X, Users, Music } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,10 +20,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { z } from "zod";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -75,8 +75,8 @@ export const safeParseGroupMemberData = (data: unknown) => {
 
 // Group Details Sheet Component
 const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (updatedGroup: GroupData) => void }) => {
-  const [open, setOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     group_name: group.group_name,
@@ -105,9 +105,8 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
         .from('groups')
         .update({
           group_name: updatedGroup.group_name,
-          performance_title: updatedGroup.description, // Map description to performance_title
-          performance_description: updatedGroup.description,
-        })
+          performance_title: updatedGroup.description,
+        } as never)
         .eq('group_id', group.group_id);
 
       if (error) {
@@ -122,7 +121,7 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
       }
 
       console.log('Group updated successfully:', updatedGroup);
-      setIsEditing(false);
+      setEditOpen(false);
     } catch (error) {
       console.error('Error saving group:', error);
       alert('Failed to update group. Please try again.');
@@ -132,7 +131,7 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
   };
 
   const handleCancel = () => {
-    setOpen(false); // Close the dialog immediately
+    setEditOpen(false); // Close the dialog immediately
     // Reset state after a short delay to avoid the flash
     setTimeout(() => {
       setFormData({
@@ -142,7 +141,6 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
         venue: group.venue || '',
         description: group.description || '',
       });
-      setIsEditing(false);
     }, 200);
   };
 
@@ -152,8 +150,7 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
         className="flex items-center gap-2"
         onSelect={(e) => {
           e.preventDefault();
-          setOpen(true);
-          setIsEditing(false);
+          setViewOpen(true);
         }}
       >
         <Eye className="h-4 w-4" />
@@ -164,198 +161,175 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
         className="flex items-center gap-2"
         onSelect={(e) => {
           e.preventDefault();
-          setOpen(true);
-          setIsEditing(true);
+          setEditOpen(true);
         }}
       >
         <Edit className="h-4 w-4" />
         Edit Information
       </DropdownMenuItem>
 
-      <Dialog open={open} onOpenChange={(newOpen) => {
-        setOpen(newOpen);
-        if (!newOpen) setIsEditing(false);
-      }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      {/* View Modal */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="min-w-[55%] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <DialogTitle className="text-2xl font-bold">
-                  {isEditing ? "Edit Group Information" : group.group_name}
-                </DialogTitle>
-                <DialogDescription className="text-sm mt-1">
-                  Group ID: <span className="font-mono font-semibold text-slate-900">#{group.group_id}</span>
-                </DialogDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                {isEditing ? (
-                  <>
-                    <Button size="sm" onClick={handleCancel} variant="outline">
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                      <Save className="h-4 w-4 mr-1" />
-                      {isSaving ? "Saving..." : "Save"}
-                    </Button>
-                  </>
-                ) : (
-                  <Badge variant="secondary" className="text-xs">
-                    {group.performance_type}
-                  </Badge>
-                )}
+            <DialogTitle className="text-2xl font-bold">
+              {group.group_name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-6 mt-4">
+            {/* Group Information Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Music className="h-5 w-5" />
+                  Group Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Group Name</p>
+                    <p className="text-base font-semibold">{group.group_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Performance Type</p>
+                    <Badge variant="secondary">{group.performance_type}</Badge>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground">Description</p>
+                    <p className="text-base leading-relaxed">
+                      {group.description || 'No description provided'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Members</p>
+                    <p className="text-base font-medium">{group.group_members?.length || 0} members</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Group Members Card */}
+            {group.group_members && group.group_members.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Group Members ({group.group_members.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {group.group_members.map((member) => (
+                      <div key={member.member_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5 text-slate-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-slate-900">{member.full_name}</p>
+                            <p className="text-xs text-slate-500">{member.role}</p>
+                          </div>
+                        </div>
+                        {member.gender && (
+                          <Badge variant="outline" className="text-xs font-medium">
+                            {member.gender}
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="min-w-[55%] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-bold">Edit Group Information</DialogTitle>
+              <div className="flex gap-2">
+                <Button onClick={handleCancel} variant="outline" size="sm">
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </div>
           </DialogHeader>
 
-          <div className="space-y-6 mt-4">
-            {isEditing ? (
-              <div className="space-y-6">
-                {/* Group Information Card - Edit Mode */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                    <h3 className="text-sm font-semibold text-slate-900">Group Information</h3>
+          <div className="grid gap-6 mt-4">
+            {/* Group Information Card - Edit Mode */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Music className="h-5 w-5" />
+                  Group Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="group_name">Group Name</Label>
+                    <Input
+                      id="group_name"
+                      value={formData.group_name}
+                      onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
+                      placeholder="Enter group name"
+                    />
                   </div>
-                  <div className="p-4 bg-white space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="group_name" className="text-xs font-medium text-slate-700">Group Name</Label>
-                        <Input
-                          id="group_name"
-                          value={formData.group_name}
-                          onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
-                          placeholder="Enter group name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="performance_type" className="text-xs font-medium text-slate-700">Performance Type</Label>
-                        <Select value={formData.performance_type} onValueChange={(value) => setFormData({ ...formData, performance_type: value as "Musical" | "Dance" | "Drama" })}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Musical">Musical</SelectItem>
-                            <SelectItem value="Dance">Dance</SelectItem>
-                            <SelectItem value="Drama">Drama</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="performance_date" className="text-xs font-medium text-slate-700">Performance Date</Label>
-                      <Input
-                        id="performance_date"
-                        type="datetime-local"
-                        value={formData.performance_date}
-                        onChange={(e) => setFormData({ ...formData, performance_date: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="venue" className="text-xs font-medium text-slate-700">Venue</Label>
-                      <Input
-                        id="venue"
-                        value={formData.venue}
-                        onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                        placeholder="Enter venue location"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description" className="text-xs font-medium text-slate-700">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        rows={4}
-                        placeholder="Describe the performance..."
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="performance_type">Performance Type</Label>
+                    <Select value={formData.performance_type} onValueChange={(value) => setFormData({ ...formData, performance_type: value as "Musical" | "Dance" | "Drama" })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Musical">Musical</SelectItem>
+                        <SelectItem value="Dance">Dance</SelectItem>
+                        <SelectItem value="Drama">Drama</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Group Information Card - View Mode */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                    <h3 className="text-sm font-semibold text-slate-900">Group Information</h3>
-                  </div>
-                  <div className="p-4 bg-white space-y-4">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Performance Type</p>
-                        <Badge variant="outline" className="font-medium">
-                          {group.performance_type}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Members</p>
-                        <p className="text-base font-medium text-slate-900">
-                          {group.group_members?.length || 0} members
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Performance Date</p>
-                      <p className="text-base font-medium text-slate-900">
-                        {group.performance_date
-                          ? new Date(group.performance_date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
-                          : <span className="text-slate-400">Not scheduled</span>
-                        }
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Venue</p>
-                      <p className="text-base font-medium text-slate-900">
-                        {group.venue || <span className="text-slate-400">Not specified</span>}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Description</p>
-                      <p className="text-base font-medium text-slate-900 leading-relaxed">
-                        {group.description || <span className="text-slate-400">No description provided</span>}
-                      </p>
-                    </div>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="performance_date">Performance Date</Label>
+                  <Input
+                    id="performance_date"
+                    type="datetime-local"
+                    value={formData.performance_date}
+                    onChange={(e) => setFormData({ ...formData, performance_date: e.target.value })}
+                  />
                 </div>
-
-                {/* Group Members Card - View Mode */}
-                {group.group_members && group.group_members.length > 0 && (
-                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-                      <h3 className="text-sm font-semibold text-slate-900">Group Members ({group.group_members.length})</h3>
-                    </div>
-                    <div className="p-4 bg-white">
-                      <div className="space-y-3">
-                        {group.group_members.map((member) => (
-                          <div key={member.member_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full flex items-center justify-center">
-                                <Users className="h-5 w-5 text-slate-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-sm text-slate-900">{member.full_name}</p>
-                                <p className="text-xs text-slate-500">{member.role}</p>
-                              </div>
-                            </div>
-                            {member.gender && (
-                              <Badge variant="outline" className="text-xs font-medium">
-                                {member.gender}
-                              </Badge>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                <div className="space-y-2">
+                  <Label htmlFor="venue">Venue</Label>
+                  <Input
+                    id="venue"
+                    value={formData.venue}
+                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                    placeholder="Enter venue location"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={4}
+                    placeholder="Describe the performance..."
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </DialogContent>
       </Dialog>
