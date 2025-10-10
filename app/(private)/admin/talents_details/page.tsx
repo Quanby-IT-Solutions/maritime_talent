@@ -28,6 +28,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { PerformanceWithStudent } from "@/app/api/talent-details/types";
+import { EditPerformanceModal } from "@/components/edit-performance-modal";
+import { PerformanceInfoModal } from "@/components/performance-info-modal";
 
 export default function TalentsDetailsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,9 +102,22 @@ export default function TalentsDetailsPage() {
     refetch();
   };
 
+  // State for modals
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [infoSheetOpen, setInfoSheetOpen] = useState(false);
+  const [selectedPerformance, setSelectedPerformance] =
+    useState<PerformanceWithStudent | null>(null);
+
   // Handle edit performance
   const handleEditPerformance = (performance: PerformanceWithStudent) => {
-    toast.info(`Edit functionality for ${performance.title} - Coming soon!`);
+    setSelectedPerformance(performance);
+    setEditModalOpen(true);
+  };
+
+  // Handle view details
+  const handleViewDetails = (performance: PerformanceWithStudent) => {
+    setSelectedPerformance(performance);
+    setInfoSheetOpen(true);
   };
 
   // Handle delete performance
@@ -262,7 +277,8 @@ export default function TalentsDetailsPage() {
             <DataTable
               columns={createColumns(
                 handleEditPerformance,
-                handleDeletePerformance
+                handleDeletePerformance,
+                handleViewDetails
               )}
               data={talentsData?.data || []}
               searchPlaceholder="Search by student name, school, or performance title..."
@@ -275,6 +291,25 @@ export default function TalentsDetailsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Performance Modal */}
+      <EditPerformanceModal
+        performance={selectedPerformance}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onSuccess={() => {
+          setEditModalOpen(false);
+          setSelectedPerformance(null);
+          refetch();
+        }}
+      />
+
+      {/* Performance Info Modal */}
+      <PerformanceInfoModal
+        performance={selectedPerformance}
+        open={infoSheetOpen}
+        onOpenChange={setInfoSheetOpen}
+      />
     </div>
   );
 }

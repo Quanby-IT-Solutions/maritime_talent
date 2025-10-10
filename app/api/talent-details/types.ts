@@ -52,7 +52,6 @@ export const PerformanceSchema = z.object({
   title: z.string().nullable(),
   duration: z.string().nullable(),
   num_performers: z.number().int().min(1).nullable(),
-  group_members: z.string().nullable(),
   created_at: z.string().datetime().nullable(),
 });
 
@@ -110,7 +109,6 @@ export const PerformanceWithStudentSchema = z.object({
   title: z.string().nullable(),
   duration: z.string().nullable(),
   num_performers: z.number().nullable(),
-  group_members: z.string().nullable(),
   performance_created_at: z.string().nullable(),
   // Nested student data
   student: z.object({
@@ -151,7 +149,6 @@ export const StudentWithPerformancesSchema = z.object({
       title: z.string().nullable(),
       duration: z.string().nullable(),
       num_performers: z.number().nullable(),
-      group_members: z.string().nullable(),
       performance_created_at: z.string().datetime().nullable(),
     })
   ),
@@ -209,7 +206,6 @@ export const CreatePerformanceSchema = z.object({
   title: z.string().max(255).optional(),
   duration: z.string().max(50).optional(),
   num_performers: z.number().int().min(1).max(50).optional(),
-  group_members: z.string().max(1000).optional(),
 });
 
 export const UpdatePerformanceSchema = CreatePerformanceSchema.partial().extend(
