@@ -96,7 +96,7 @@ export function useContestantRegistration() {
       const registrationResult: RegistrationResult = {
         qrCodeUrl: result.data.qrCodeUrl,
         isGroup: result.data.isGroup,
-        emailSent: result.emailSent,
+        emailSent: result.data.emailSent,
         leadName: data.performers[0]?.fullName || 'Participant',
         members: result.data.members || undefined
       };
