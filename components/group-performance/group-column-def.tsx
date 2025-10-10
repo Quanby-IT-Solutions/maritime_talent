@@ -110,7 +110,11 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
 
       const { error } = await supabase
         .from('groups')
-        .update(updatePayload as never)
+        // @ts-expect-error - Supabase type inference issue with partial updates
+        .update({
+          group_name: updatedGroup.group_name,
+          performance_title: updatedGroup.description, // Map description to performance_title
+        })
         .eq('group_id', group.group_id);
 
       if (error) {
