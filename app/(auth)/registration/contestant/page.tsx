@@ -149,6 +149,34 @@ export default function RegistrationPage() {
     }
   }
 
+  // Handle invalid submissions: show toast and focus the first error
+  const onInvalid = (errors: any) => {
+    toast.error("Please fill in all required fields to continue.")
+
+    // Find the first error path and focus it
+    const findFirstErrorPath = (errObj: any, path: string[] = []): string | null => {
+      if (!errObj || typeof errObj !== 'object') return null
+      for (const key of Object.keys(errObj)) {
+        const val = errObj[key]
+        if (!val) continue
+        // FieldError shape usually has 'message' or 'type'
+        if (val && (val.message || val.type)) {
+          return [...path, key].join('.')
+        }
+        if (typeof val === 'object') {
+          const nested = findFirstErrorPath(val, [...path, key])
+          if (nested) return nested
+        }
+      }
+      return null
+    }
+
+    const firstPath = findFirstErrorPath(errors)
+    if (firstPath) {
+      try { form.setFocus(firstPath as any, { shouldSelect: true }) } catch {}
+    }
+  }
+
   const handleModalClose = () => {
     setShowSuccessModal(false)
     resetRegistration()
@@ -197,7 +225,7 @@ export default function RegistrationPage() {
 
         {/* Form Wrapper moved up to contain Card + Performer sections */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="relative">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="relative">
 
         {/* Main Registration Card */}
         <Card className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -292,7 +320,7 @@ export default function RegistrationPage() {
               type="submit"
               className="w-full max-w-md bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               size="lg"
-              disabled={isSubmitting || !form.formState.isValid}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
