@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
           school
         )
       `)
-      .order('single_id', { ascending: false});
+      .order('single_id', { ascending: false });
 
     if (singlesError) {
       return NextResponse.json(
@@ -32,29 +32,55 @@ export async function GET(req: NextRequest) {
     // Fetch performances to get duration
     const { data: performancesData } = await supabase
       .from('performances')
-      .select('student_id, duration');
+      .select('student_id, duration, performance_type');
+
+    console.log('All performances data:', JSON.stringify(performancesData, null, 2));
 
     // Create a map of student_id to duration
-    const durationMap = new Map();
-    (performancesData || []).forEach((perf: any) => {
-      durationMap.set(perf.student_id, perf.duration);
+    const durationMap = new Map<string, string>();
+    (performancesData || []).forEach((perf: { student_id: string; duration?: string; performance_type?: string }) => {
+      if (perf.duration) {
+        durationMap.set(perf.student_id, perf.duration);
+        console.log(`Added to map - student_id: ${perf.student_id}, duration: ${perf.duration}`);
+      } else {
+        console.log(`Skipped (no duration) - student_id: ${perf.student_id}`);
+      }
     });
 
+    console.log('Duration map size:', durationMap.size);
+
     // Transform database data to match our expected structure
-    const transformedData = (singlesData || []).map((single: any) => {
-      // Handle both nested object and direct reference
+    const transformedData = (singlesData || []).map((single: {
+      single_id: string;
+      performance_title?: string;
+      student_id: string;
+      created_at?: string;
+      performance_type?: string;
+      students?: { full_name?: string; school?: string } | null;
+    }) => {
+      // Handle both nested object and direct reference - safely handle null
       const studentData = single.students || {};
-      
+      const studentName = studentData?.full_name || "Not assigned";
+      const studentSchool = studentData?.school || "Not assigned";
+
+      const duration = durationMap.get(single.student_id) || null;
+      console.log(`Single ${single.single_id} - student_id: ${single.student_id}, student_name: ${studentName}, duration from map: ${duration}`);
+
+      // Warn about missing student data
+      if (!single.students) {
+        console.warn(`⚠️ Single ${single.single_id} (${single.performance_title}) has no student record! student_id: ${single.student_id}`);
+      }
+
       return {
         id: single.single_id,
         single_id: single.single_id,
         performance_title: single.performance_title || "Untitled Performance",
         student_id: single.student_id || null,
         created_at: single.created_at || null,
-        student_name: studentData.full_name || "Not assigned",
-        student_school: studentData.school || "Not assigned",
+        student_name: studentName,
+        student_school: studentSchool,
         performance_type: single.performance_type || null,
-        duration: durationMap.get(single.student_id) || null,
+        duration: duration,
       };
     });
 
@@ -80,7 +106,7 @@ export async function PUT(req: NextRequest) {
   try {
     const supabase = createServerClient();
     const body = await req.json();
-    
+
     const { single_id, performance_title } = body;
 
     if (!single_id) {
@@ -93,11 +119,11 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('singles')
       .update({
         performance_title,
-      })
+      } as never)
       .eq('single_id', single_id)
       .select()
       .single();
@@ -165,15 +191,15 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const studentId = (singleData as any).student_id;
+    const studentId = (singleData as { student_id: string }).student_id;
 
     // Fetch QR code data (may not exist for all singles)
     const { data: qrCodeData, error: qrError } = await supabase
       .from('qr_codes')
       .select('qr_code_url, qr_id')
       .eq('single_id', single_id)
-      .maybeSingle() as { data: any; error: any };
-    
+      .maybeSingle() as { data: { qr_code_url?: string; qr_id?: string } | null; error: unknown };
+
     if (qrError) {
       console.log('QR code query error:', qrError);
     }
@@ -184,26 +210,26 @@ export async function DELETE(req: NextRequest) {
       .from('requirements')
       .select('certification_url, school_id_url')
       .eq('student_id', studentId)
-      .maybeSingle() as { data: any };
+      .maybeSingle() as { data: { certification_url?: string; school_id_url?: string } | null };
 
     const { data: healthData } = await supabase
       .from('health_fitness')
       .select('student_signature_url, parent_guardian_signature_url')
       .eq('student_id', studentId)
-      .maybeSingle() as { data: any };
+      .maybeSingle() as { data: { student_signature_url?: string; parent_guardian_signature_url?: string } | null };
 
     const { data: consentsData } = await supabase
       .from('consents')
       .select('student_signature_url, parent_guardian_signature_url')
       .eq('student_id', studentId)
-      .maybeSingle() as { data: any };
+      .maybeSingle() as { data: { student_signature_url?: string; parent_guardian_signature_url?: string } | null };
 
     const { data: endorsementData } = await supabase
       .from('endorsements')
       .select('signature_url')
       .eq('student_id', studentId)
-      .maybeSingle() as { data: any };
-    
+      .maybeSingle() as { data: { signature_url?: string } | null };
+
     console.log('Requirements data:', requirementsData);
     console.log('Health data:', healthData);
     console.log('Consents data:', consentsData);
@@ -211,16 +237,16 @@ export async function DELETE(req: NextRequest) {
 
     // Collect all file paths to delete from attachment bucket
     const filesToDelete: string[] = [];
-    
+
     // Collect QR code files to delete from qr-codes bucket
     const qrFilesToDelete: string[] = [];
-    
+
     if (qrCodeData?.qr_code_url) {
       console.log('QR Code URL:', qrCodeData.qr_code_url);
       // Extract path from URL - format: https://.../storage/v1/object/public/qr-codes/singles/filename.png
       // or singles/filename.png or single/filename.png
       let filePath = '';
-      
+
       if (qrCodeData.qr_code_url.includes('/qr-codes/')) {
         const urlParts = qrCodeData.qr_code_url.split('/qr-codes/');
         filePath = urlParts[1];
@@ -231,13 +257,13 @@ export async function DELETE(req: NextRequest) {
         // Might already be just the path
         filePath = qrCodeData.qr_code_url;
       }
-      
+
       if (filePath) {
         console.log('Extracted QR file path:', filePath);
         qrFilesToDelete.push(filePath);
       }
     }
-    
+
     // Helper function to extract file path from URL
     const extractFilePath = (url: string, bucketName: string) => {
       if (!url) return null;
@@ -352,10 +378,10 @@ export async function DELETE(req: NextRequest) {
     await supabase.from('endorsements').delete().eq('student_id', studentId);
     await supabase.from('performances').delete().eq('student_id', studentId);
     await supabase.from('qr_codes').delete().eq('single_id', single_id);
-    
+
     // Delete the single performance
     await supabase.from('singles').delete().eq('single_id', single_id);
-    
+
     // Finally delete the student
     await supabase.from('students').delete().eq('student_id', studentId);
 

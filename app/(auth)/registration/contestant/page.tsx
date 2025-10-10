@@ -386,6 +386,7 @@ export default function RegistrationPage() {
                         />
                       </div>
                       <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{registrationData.members[qrIndex].name}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{registrationData.members[qrIndex].email}</p>
                       <div className="flex items-center justify-center gap-2 mt-3">
                         <Button variant="outline" size="sm" onClick={() => setQrIndex((i) => (i - 1 + registrationData.members!.length) % registrationData.members!.length)}>Prev</Button>
                         <Button variant="outline" size="sm" onClick={() => setQrIndex((i) => (i + 1) % registrationData.members!.length)}>Next</Button>

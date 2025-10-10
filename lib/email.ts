@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 
 // Initialize SendGrid - will be set when first email is sent
 let isInitialized = false;
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@manilaegc.com';
 
 function initializeSendGrid() {
   if (!isInitialized) {
@@ -94,10 +95,10 @@ export async function sendEmail({ to, subject, html, from, userId }: EmailData):
     const msg: any = {
       to,
       from: {
-        email: from || 'noreply-maritimetalentquest@gmail.com',
+        email: from || SENDGRID_FROM_EMAIL,
         name: 'MARITIME TALENT QUEST 2025 Team'
       },
-      replyTo: 'dummyemail@gmail.com',
+      replyTo: SENDGRID_FROM_EMAIL,
       subject,
       // Add both HTML and plain text content for better deliverability
       content: [

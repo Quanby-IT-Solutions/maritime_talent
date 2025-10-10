@@ -230,14 +230,19 @@ async function insertStudentRecords(
   const studentId = (studentData as any).student_id;
 
   // Insert performance record
-  await supabase.from('performances').insert({
+  const performanceData: any = {
     student_id: studentId,
     performance_type: performanceType,
     title: performanceTitle,
     duration: performanceDuration,
     num_performers: numberOfPerformers,
-    group_members: null,
-  } as any);
+  };
+
+  const { error: performanceError } = await supabase.from('performances').insert(performanceData);
+
+  if (performanceError) {
+    throw new Error(`Failed to insert performance: ${performanceError.message}`);
+  }
 
   // Insert requirements
   if (urls.certificationUrl || urls.schoolIdUrl) {

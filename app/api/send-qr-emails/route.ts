@@ -3,6 +3,7 @@ import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || 'noreply@manilaegc.com';
 
 if (!SENDGRID_API_KEY) {
   console.error('SENDGRID_API_KEY is not set in environment variables');
@@ -211,10 +212,10 @@ async function sendQRCodeEmail({
     const msg: any = {
       to,
       from: {
-        email: from || 'noreply.maritimetalentquest@gmail.com',
+        email: from || SENDGRID_FROM_EMAIL,
         name: 'MARITIME TALENT QUEST 2025 Team'
       },
-      replyTo: 'dummyemail@gmail.com',
+      replyTo: SENDGRID_FROM_EMAIL,
       subject,
       content: [
         {
