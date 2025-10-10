@@ -33,7 +33,7 @@ export async function GET(
 
     const supabase = createClient();
 
-    const { data: performance, error } = await supabase
+    const { data: performance, error } = (await supabase
       .from("performances")
       .select(
         `
@@ -42,7 +42,6 @@ export async function GET(
         title,
         duration,
         num_performers,
-        group_members,
         created_at,
         student:students!inner (
           student_id,
@@ -61,7 +60,7 @@ export async function GET(
       `
       )
       .eq("performance_id", id)
-      .single();
+      .single()) as { data: any; error: any };
 
     if (error || !performance) {
       return NextResponse.json(
@@ -81,7 +80,6 @@ export async function GET(
       title: performance.title,
       duration: performance.duration,
       num_performers: performance.num_performers,
-      group_members: performance.group_members,
       performance_created_at: performance.created_at,
       student: {
         student_id: performance.student.student_id,
@@ -198,7 +196,7 @@ export async function PUT(
     }
 
     // Update the performance
-    const { data: updatedPerformance, error: updateError } = await supabase
+    const updateResult = await (supabase as any)
       .from("performances")
       .update(updateData)
       .eq("performance_id", id)
@@ -209,7 +207,6 @@ export async function PUT(
         title,
         duration,
         num_performers,
-        group_members,
         created_at,
         student:students!inner (
           student_id,
@@ -228,6 +225,9 @@ export async function PUT(
       `
       )
       .single();
+
+    const { data: updatedPerformance, error: updateError } =
+      updateResult as any;
 
     if (updateError) {
       console.error("Update error:", updateError);
@@ -248,7 +248,6 @@ export async function PUT(
       title: updatedPerformance.title,
       duration: updatedPerformance.duration,
       num_performers: updatedPerformance.num_performers,
-      group_members: updatedPerformance.group_members,
       performance_created_at: updatedPerformance.created_at,
       student: {
         student_id: updatedPerformance.student.student_id,

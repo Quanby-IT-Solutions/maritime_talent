@@ -54,7 +54,6 @@ export async function GET(request: NextRequest) {
         title,
         duration,
         num_performers,
-        group_members,
         created_at,
         student:students!inner (
           student_id,
@@ -132,7 +131,6 @@ export async function GET(request: NextRequest) {
         title: performance.title,
         duration: performance.duration,
         num_performers: performance.num_performers,
-        group_members: performance.group_members,
         performance_created_at: performance.created_at,
         student: {
           student_id: performance.student.student_id,
@@ -259,9 +257,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the performance
-    const { data: newPerformance, error: insertError } = await supabase
+    const { data: newPerformance, error: insertError } = (await supabase
       .from("performances")
-      .insert([performanceData])
+      .insert([performanceData] as any)
       .select(
         `
         performance_id,
@@ -269,7 +267,6 @@ export async function POST(request: NextRequest) {
         title,
         duration,
         num_performers,
-        group_members,
         created_at,
         student:students!inner (
           student_id,
@@ -287,7 +284,7 @@ export async function POST(request: NextRequest) {
         )
       `
       )
-      .single();
+      .single()) as { data: any; error: any };
 
     if (insertError) {
       console.error("Insert error:", insertError);
@@ -308,7 +305,6 @@ export async function POST(request: NextRequest) {
       title: newPerformance.title,
       duration: newPerformance.duration,
       num_performers: newPerformance.num_performers,
-      group_members: newPerformance.group_members,
       performance_created_at: newPerformance.created_at,
       student: {
         student_id: newPerformance.student.student_id,
