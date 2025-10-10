@@ -228,7 +228,7 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
           age: formData.age ? parseInt(String(formData.age)) : null,
           gender: formData.gender || null,
           course_year: formData.role,
-        })
+        } as never)
         .eq('student_id', member.member_id);
 
       if (studentError) {
@@ -244,7 +244,7 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
           .update({
             student_signature_url: healthStudentSigUrl,
             parent_guardian_signature_url: healthParentSigUrl,
-          })
+          } as never)
           .eq('student_id', member.member_id);
 
         if (healthError) {
@@ -259,7 +259,7 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
           .update({
             student_signature_url: consentsStudentSigUrl,
             parent_guardian_signature_url: consentsParentSigUrl,
-          })
+          } as never)
           .eq('student_id', member.member_id);
 
         if (consentsError) {
@@ -273,7 +273,7 @@ const MemberDetailsSheet = ({ member, groupId, onMemberUpdate }: { member: Group
           .from('endorsements')
           .update({
             school_official_signature_url: endorsementSigUrl,
-          })
+          } as never)
           .eq('student_id', member.member_id);
 
         if (endorsementError) {

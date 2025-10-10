@@ -27,6 +27,7 @@ import {
 import { z } from "zod";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/schema/schema";
 
 // Zod schema for group member validation
 export const GroupMemberSchema = z.object({
@@ -101,13 +102,15 @@ const GroupDetailsSheet = ({ group, onUpdate }: { group: GroupData; onUpdate?: (
 
       // Update in Supabase database (using the actual groups table structure)
       const supabase = createClient();
+      const updatePayload: Database['public']['Tables']['groups']['Update'] = {
+        group_name: updatedGroup.group_name,
+        performance_title: updatedGroup.description,
+        performance_description: updatedGroup.description,
+      };
+
       const { error } = await supabase
         .from('groups')
-        .update({
-          group_name: updatedGroup.group_name,
-          performance_title: updatedGroup.description, // Map description to performance_title
-          performance_description: updatedGroup.description,
-        })
+        .update(updatePayload as never)
         .eq('group_id', group.group_id);
 
       if (error) {
