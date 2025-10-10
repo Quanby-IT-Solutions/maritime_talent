@@ -97,7 +97,8 @@ export function useContestantRegistration() {
         qrCodeUrl: result.data.qrCodeUrl,
         isGroup: result.data.isGroup,
         emailSent: result.emailSent,
-        leadName: data.performers[0]?.fullName || 'Participant'
+        leadName: data.performers[0]?.fullName || 'Participant',
+        members: result.data.members || undefined
       };
 
       setRegistrationData(registrationResult);

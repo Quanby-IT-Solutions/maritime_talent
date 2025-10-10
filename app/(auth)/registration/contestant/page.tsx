@@ -25,6 +25,7 @@ import { EmergencySafety } from "@/components/registration/student/EmergencySafe
 import { AdditionalInformation } from "@/components/registration/student/AdditionalInformation"
 import { PerformerSection } from "@/components/registration/student/PerformerSection"
 import { DraftManager } from "@/components/registration/student/DraftManager"
+import { SchoolEndorsement } from "@/components/registration/student/SchoolEndorsement"
 
 // Schema for individual performer
 const performerSchema = z.object({
@@ -55,10 +56,6 @@ const performerSchema = z.object({
   studentSignature: z.string().min(1, "Student signature is required"),
   signatureDate: z.string().min(1, "Signature date is required"),
   parentGuardianSignature: z.string().optional(),
-  
-  // School Endorsement (individual per performer)
-  schoolOfficialName: z.string().optional(),
-  schoolOfficialPosition: z.string().optional(),
 })
 
 const formSchema = z.object({
@@ -71,6 +68,10 @@ const formSchema = z.object({
     .regex(/^[1-5]$/, "Duration must be between 1-5 minutes"),
   numberOfPerformers: z.string().min(1, "Number of performers is required"),
   
+  // School Endorsement (top-level, applies to all performers)
+  schoolOfficialName: z.string().optional(),
+  schoolOfficialPosition: z.string().optional(),
+  
   // Performers (up to 10)
   performers: z.array(performerSchema).min(1, "At least one performer is required").max(10, "Maximum 10 performers allowed"),
 })
@@ -80,6 +81,7 @@ type FormData = z.infer<typeof formSchema>
 export default function RegistrationPage() {
   const [numberOfPerformers, setNumberOfPerformers] = useState(0)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [qrIndex, setQrIndex] = useState(0)
   const router = useRouter()
   
   // Use custom hook for registration
@@ -94,6 +96,8 @@ export default function RegistrationPage() {
       performanceTitle: "",
       performanceDuration: "",
       numberOfPerformers: "",
+      schoolOfficialName: "",
+      schoolOfficialPosition: "",
       performers: [],
     },
     mode: 'onChange'
@@ -130,8 +134,6 @@ export default function RegistrationPage() {
           studentSignature: "",
           signatureDate: "",
           parentGuardianSignature: "",
-          schoolOfficialName: "",
-          schoolOfficialPosition: "",
         }
       })
       
@@ -145,6 +147,7 @@ export default function RegistrationPage() {
   const onSubmit = async (data: FormData) => {
     const result = await submitRegistration(data)
     if (result) {
+      setQrIndex(0)
       setShowSuccessModal(true)
     }
   }
@@ -186,10 +189,14 @@ export default function RegistrationPage() {
   }
 
   const downloadQRCode = () => {
-    if (registrationData?.qrCodeUrl) {
+    if (!registrationData) return
+    const isGroup = registrationData.isGroup && registrationData.members && registrationData.members.length > 0
+    const url = isGroup ? registrationData.members![qrIndex].qrCodeUrl : registrationData.qrCodeUrl
+    const name = isGroup ? registrationData.members![qrIndex].name : registrationData.leadName
+    if (url) {
       const link = document.createElement('a')
-      link.href = registrationData.qrCodeUrl
-      link.download = `qr-code-${registrationData.leadName.replace(/\s+/g, '-')}.png`
+      link.href = url
+      link.download = `qr-code-${name.replace(/\s+/g, '-')}.png`
       link.click()
     }
   }
@@ -310,6 +317,11 @@ export default function RegistrationPage() {
                 />
               </div>
             ))}
+            
+            {/* School Endorsement Section - shown once after all performers */}
+            <div className="mt-6">
+              <SchoolEndorsement form={form} />
+            </div>
           </div>
         )}
 
@@ -358,25 +370,44 @@ export default function RegistrationPage() {
             {registrationData && (
               <>
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    {registrationData.isGroup ? 'Group' : 'Individual'} registration completed for{' '}
-                    <span className="font-semibold">{registrationData.leadName}</span>
-                  </p>
-                  
-                  {/* QR Code Display */}
-                  <div className="bg-white p-4 rounded-lg border inline-block">
-                    <Image
-                      src={registrationData.qrCodeUrl}
-                      alt="Registration QR Code"
-                      width={200}
-                      height={200}
-                      className="mx-auto"
-                    />
-                  </div>
-                  
-                  <p className="text-xs text-gray-500 mt-2">
-                    Your unique QR code for event entry
-                  </p>
+                  {registrationData.isGroup && registrationData.members && registrationData.members.length > 0 ? (
+                    <>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        Group registration completed for <span className="font-semibold">{registrationData.leadName}</span>
+                      </p>
+                      <p className="text-xs text-gray-500 mb-3">Showing QR {qrIndex + 1} of {registrationData.members.length}</p>
+                      <div className="bg-white p-4 rounded-lg border inline-block">
+                        <Image
+                          src={registrationData.members[qrIndex].qrCodeUrl}
+                          alt={`QR for ${registrationData.members[qrIndex].name}`}
+                          width={200}
+                          height={200}
+                          className="mx-auto"
+                        />
+                      </div>
+                      <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{registrationData.members[qrIndex].name}</p>
+                      <div className="flex items-center justify-center gap-2 mt-3">
+                        <Button variant="outline" size="sm" onClick={() => setQrIndex((i) => (i - 1 + registrationData.members!.length) % registrationData.members!.length)}>Prev</Button>
+                        <Button variant="outline" size="sm" onClick={() => setQrIndex((i) => (i + 1) % registrationData.members!.length)}>Next</Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Individual registration completed for <span className="font-semibold">{registrationData.leadName}</span>
+                      </p>
+                      <div className="bg-white p-4 rounded-lg border inline-block">
+                        <Image
+                          src={registrationData.qrCodeUrl}
+                          alt="Registration QR Code"
+                          width={200}
+                          height={200}
+                          className="mx-auto"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Your unique QR code for event entry</p>
+                    </>
+                  )}
                 </div>
 
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">

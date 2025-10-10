@@ -5,11 +5,12 @@ import { createServerClient } from "@/lib/supabase"
 // Returns single user with QR code data
 export async function GET(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const userId = parseInt(params.userId, 10)
-    if (isNaN(userId)) {
+    const { userId } = await params
+    const userIdNum = parseInt(userId, 10)
+    if (isNaN(userIdNum)) {
       return NextResponse.json({ success: false, error: "Invalid userId" }, { status: 400 })
     }
 
@@ -19,7 +20,7 @@ export async function GET(
     const { data: guest, error: guestErr } = await supabase
       .from("guests")
       .select("guest_id, full_name, email, registration_date")
-      .eq("guest_id", userId)
+      .eq("guest_id", userIdNum)
       .single()
 
     if (guestErr) throw guestErr
@@ -31,7 +32,7 @@ export async function GET(
     const { data: qr, error: qrErr } = await supabase
       .from("qr_codes")
       .select("qr_code_url, created_at")
-      .eq("guest_id", userId)
+      .eq("guest_id", userIdNum)
       .maybeSingle()
 
     if (qrErr) throw qrErr
