@@ -1,0 +1,89 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GAR_LOCATION: ${{ vars.GAR_LOCATION }}
+  REPOSITORY: ${{ vars.GAR_REPOSITORY }}
+  SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+  REGION: ${{ vars.GCP_REGION }}
+  CONTAINER_PORT: ${{ vars.CONTAINER_PORT }}
+  GCP_CREDENTIALS_JSON: ${{ secrets.GCP_CREDENTIALS_JSON }}
+
+jobs:
+  deploy:
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate with GCP
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Ensure Artifact Registry exists
+        run: |
+          if ! gcloud artifacts repositories describe "$REPOSITORY" --location="$GAR_LOCATION" >/dev/null 2>&1; then
+            gcloud artifacts repositories create "$REPOSITORY" \
+              --repository-format=docker \
+              --location="$GAR_LOCATION" \
+              --description="Docker repository for $SERVICE"
+          fi
+
+      - name: Configure Docker to use Artifact Registry
+        run: gcloud auth configure-docker ${GAR_LOCATION}-docker.pkg.dev --quiet
+
+      - name: Build and Push Container
+        run: |
+          IMAGE_URI="${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${SERVICE}:${{ github.sha }}"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+
+      - name: Create Cloud Run service if not exists
+        run: |
+          if ! gcloud run services describe "$SERVICE" --region="$REGION" --format="value(status.url)" >/dev/null 2>&1; then
+            gcloud run deploy "$SERVICE" \
+              --image="${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${SERVICE}:${{ github.sha }}" \
+              --region="$REGION" \
+              --port="$CONTAINER_PORT" \
+              --platform=managed \
+              --allow-unauthenticated
+          fi
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE }}:${{ github.sha }}
+          env_vars: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
+            SENDGRID_FROM_EMAIL=${{ vars.SENDGRID_FROM_EMAIL }}
+            SENDGRID_FROM_NAME=${{ vars.SENDGRID_FROM_NAME }}
+          flags: >
+            --min-instances=0
+            --max-instances=25
+            --memory=1Gi
+            --cpu=1
+
+      - name: Show URL
+        run: echo ${{ steps.deploy.outputs.url }}
