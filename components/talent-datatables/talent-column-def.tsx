@@ -1,14 +1,8 @@
 "use client";
 
-import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUpDown, Eye, Edit, MoreHorizontal, Save, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import type { PerformanceWithStudent } from "@/app/api/talent-details/types";
 import {
   Dialog,
   DialogContent,
@@ -127,6 +123,28 @@ export const safeParseTalentData = (data: unknown) => {
   return TalentDataSchema.safeParse(data);
 };
 
+// Helper function to get performance type badge variant
+const getPerformanceTypeBadge = (type: string) => {
+  switch (type) {
+    case "Singing":
+      return <Badge variant="default">{type}</Badge>;
+    case "Dancing":
+      return <Badge variant="secondary">{type}</Badge>;
+    case "Musical Instrument":
+      return <Badge variant="outline">{type}</Badge>;
+    case "Spoken Word/Poetry":
+      return <Badge variant="destructive">{type}</Badge>;
+    case "Theatrical/Drama":
+      return <Badge>{type}</Badge>;
+    default:
+      return <Badge variant="outline">{type || "Other"}</Badge>;
+  }
+};
+
+export const createColumns = (
+  onEdit?: (performance: PerformanceWithStudent) => void,
+  onDelete?: (performanceId: string) => void
+): ColumnDef<PerformanceWithStudent>[] => [
 // Talent Details Component
 const TalentDetailsSheet = ({ talent, onUpdate }: { talent: TalentData; onUpdate?: (updatedTalent: TalentData) => void }) => {
   const [open, setOpen] = useState(false);
@@ -518,243 +536,119 @@ const TalentDetailsSheet = ({ talent, onUpdate }: { talent: TalentData; onUpdate
 
 export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): ColumnDef<TalentData>[] => [
   {
-    accessorKey: "student_id",
+    accessorKey: "student.full_name",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
         >
-          ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-mono text-sm text-center">
-        {row.getValue("student_id")}
-      </div>
-    ),
-    size: 80,
-    meta: {
-      className: "hidden sm:table-cell"
-    },
-  },
-  {
-    accessorKey: "full_name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
-        >
-          Full Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="font-medium text-left">{row.getValue("full_name")}</div>
-    ),
-    size: 200,
-  },
-  {
-    accessorKey: "email",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
-        >
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="text-sm text-muted-foreground lowercase">
-        {row.getValue("email") || "Not provided"}
-      </div>
-    ),
-    size: 250,
-    meta: {
-      className: "hidden lg:table-cell"
-    },
-  },
-  {
-    accessorKey: "age",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
-        >
-          Age
+          Student Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
-      const age = row.getValue("age") as number;
-      return <div className="text-center">{age || "N/A"}</div>;
-    },
-    size: 70,
-    meta: {
-      className: "hidden md:table-cell"
-    },
-  },
-  {
-    accessorKey: "gender",
-    header: "Gender",
-    cell: ({ row }) => {
-      const gender = row.getValue("gender") as string;
+      const student = row.original.student;
       return (
-        <Badge variant="outline" className="text-xs">
-          {gender || "Not specified"}
-        </Badge>
-      );
-    },
-    size: 100,
-    meta: {
-      className: "hidden md:table-cell"
-    },
-  },
-  {
-    accessorKey: "school",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
-        >
-          School
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="max-w-[200px] truncate text-sm">
-        {row.getValue("school") || "Not provided"}
-      </div>
-    ),
-    size: 200,
-    meta: {
-      className: "hidden lg:table-cell"
-    },
-  },
-  {
-    accessorKey: "course_year",
-    header: "Course/Year",
-    cell: ({ row }) => (
-      <div className="text-sm">
-        {row.getValue("course_year") || "Not specified"}
-      </div>
-    ),
-    size: 150,
-    meta: {
-      className: "hidden lg:table-cell"
-    },
-  },
-  {
-    accessorKey: "contact_number",
-    header: "Contact",
-    cell: ({ row }) => (
-      <div className="text-sm font-mono">
-        {row.getValue("contact_number") || "Not provided"}
-      </div>
-    ),
-    size: 140,
-    meta: {
-      className: "hidden lg:table-cell"
-    },
-  },
-  {
-    id: "performances",
-    header: "Performances",
-    cell: ({ row }) => {
-      const performances = row.original.performances || [];
-      return (
-        <div className="flex flex-wrap gap-1">
-          {performances.length > 0 ? (
-            performances.slice(0, 2).map((perf, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs">
-                {perf.performance_type}
-              </Badge>
-            ))
-          ) : (
-            <span className="text-xs text-muted-foreground">None</span>
-          )}
-          {performances.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{performances.length - 2}
-            </Badge>
-          )}
-        </div>
-      );
-    },
-    size: 150,
-  },
-  {
-    id: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const hasRequirements = !!row.original.requirements;
-      const hasHealthFitness = !!row.original.health_fitness;
-      const hasConsents = !!row.original.consents;
-      const hasEndorsements = !!row.original.endorsements;
-
-      // Calculate completion status
-      const completionItems = [
-        hasRequirements,
-        hasHealthFitness,
-        hasConsents,
-        hasEndorsements,
-      ];
-      const completedCount = completionItems.filter(Boolean).length;
-      const isComplete = completedCount === 4;
-
-      return (
-        <div className="flex flex-col gap-1">
-          <Badge
-            variant={
-              isComplete
-                ? "default"
-                : completedCount > 2
-                  ? "secondary"
-                  : "destructive"
-            }
-            className="text-xs"
-          >
-            {isComplete
-              ? "Complete"
-              : completedCount > 2
-                ? "Partial"
-                : "Incomplete"}
-          </Badge>
-          <div className="text-xs text-muted-foreground">
-            {completedCount}/4 sections
+        <div className="font-medium">
+          <div>{student.full_name}</div>
+          <div className="text-sm text-muted-foreground">
+            {student.age} years • {student.gender}
           </div>
         </div>
       );
     },
-    size: 120,
-    meta: {
-      className: "hidden md:table-cell"
-    },
   },
   {
-    accessorKey: "created_at",
+    accessorKey: "title",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="h-8 px-2"
+        >
+          Performance Title
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return (
+        <div>
+          <div className="font-medium">
+            {row.getValue("title") || "Untitled"}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {row.original.duration || "No duration specified"}
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "performance_type",
+    header: "Type",
+    cell: ({ row }) => {
+      return getPerformanceTypeBadge(row.getValue("performance_type"));
+    },
+  },
+  {
+    accessorKey: "num_performers",
+    header: "Performers",
+    cell: ({ row }) => {
+      const numPerformers = row.getValue("num_performers") as number;
+      const groupMembers = row.original.group_members;
+
+      return (
+        <div>
+          <div className="font-medium">{numPerformers || 1}</div>
+          {groupMembers && (
+            <div className="text-xs text-muted-foreground">
+              Group: {groupMembers}
+            </div>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "student.school",
+    header: "School",
+    cell: ({ row }) => {
+      const student = row.original.student;
+      return (
+        <div>
+          <div className="font-medium text-sm">{student.school}</div>
+          <div className="text-xs text-muted-foreground">
+            {student.course_year}
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "student.email",
+    header: "Contact",
+    cell: ({ row }) => {
+      const student = row.original.student;
+      return (
+        <div>
+          <div className="text-sm">{student.email}</div>
+          <div className="text-xs text-muted-foreground">
+            {student.contact_number}
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "performance_created_at",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Registered
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -762,23 +656,19 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
       );
     },
     cell: ({ row }) => {
-      const date = row.getValue("created_at") as string;
+      const date = row.getValue("performance_created_at") as string;
       return (
-        <div className="text-sm text-muted-foreground text-center">
+        <div className="text-sm">
           {date ? new Date(date).toLocaleDateString() : "N/A"}
         </div>
       );
     },
-    size: 100,
-    meta: {
-      className: "hidden md:table-cell"
-    },
   },
   {
     id: "actions",
-    header: "Actions",
+    enableHiding: false,
     cell: ({ row }) => {
-      const talent = row.original;
+      const performance = row.original;
 
       return (
         <DropdownMenu>
@@ -792,20 +682,24 @@ export const createColumns = (onUpdate?: (updatedTalent: TalentData) => void): C
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() =>
-                navigator.clipboard.writeText(talent.student_id.toString())
+                navigator.clipboard.writeText(performance.performance_id)
               }
             >
-              Copy student ID
+              Copy performance ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <TalentDetailsSheet talent={talent} onUpdate={onUpdate} />
+            <DropdownMenuItem onClick={() => onEdit?.(performance)}>
+              Edit performance
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDelete?.(performance.performance_id)}
+              className="text-destructive"
+            >
+              Delete performance
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       );
     },
-    size: 80,
   },
 ];
-
-// Default export for backward compatibility
-export const columns = createColumns();

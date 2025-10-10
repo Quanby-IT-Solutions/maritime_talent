@@ -70,7 +70,7 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
+    // Remove getFilteredRowModel since we're using server-side filtering
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     state: {
@@ -102,13 +102,22 @@ export function DataTable<TData, TValue>({
 
             <Select value={statusFilter} onValueChange={onStatusFilterChange}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="complete">Complete</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
-                <SelectItem value="incomplete">Incomplete</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="Singing">Singing</SelectItem>
+                <SelectItem value="Dancing">Dancing</SelectItem>
+                <SelectItem value="Musical Instrument">
+                  Musical Instrument
+                </SelectItem>
+                <SelectItem value="Spoken Word/Poetry">
+                  Spoken Word/Poetry
+                </SelectItem>
+                <SelectItem value="Theatrical/Drama">
+                  Theatrical/Drama
+                </SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -131,7 +140,7 @@ export function DataTable<TData, TValue>({
           )}
           {statusFilter !== "all" && (
             <Badge variant="secondary" className="text-xs">
-              Status: {statusFilter}
+              Type: {statusFilter}
               <button
                 onClick={() => onStatusFilterChange?.("all")}
                 className="ml-1 hover:text-destructive"
@@ -198,17 +207,14 @@ export function DataTable<TData, TValue>({
       {/* Pagination */}
       <div className="flex items-center justify-between px-2">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          {table.getSelectedRowModel().rows.length > 0 && (
             <>
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
+              {table.getSelectedRowModel().rows.length} of{" "}
+              {table.getRowModel().rows.length} row(s) selected.
             </>
           )}
-          {table.getFilteredSelectedRowModel().rows.length === 0 && (
-            <>
-              Showing {table.getRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s).
-            </>
+          {table.getSelectedRowModel().rows.length === 0 && (
+            <>Showing {table.getRowModel().rows.length} row(s).</>
           )}
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
