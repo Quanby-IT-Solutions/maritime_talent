@@ -82,7 +82,7 @@ jobs:
           flags: >
             --min-instances=0
             --max-instances=25
-            --memory=1Gi
+            --memory=3Gi
             --cpu=1
 
       - name: Show URL
